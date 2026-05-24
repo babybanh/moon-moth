@@ -73,6 +73,7 @@ type ForwardControlState = {
 }
 type MothMotionState = {
   velocity: number
+  blurResumeAt: number
 }
 type EditScrubState = {
   pressed: boolean
@@ -148,7 +149,7 @@ function App() {
     startedAt: 0,
     shiftKey: false,
   })
-  const mothMotionRef = useRef<MothMotionState>({ velocity: 0 })
+  const mothMotionRef = useRef<MothMotionState>({ velocity: 0, blurResumeAt: 0 })
   const tourHoldUntilRef = useRef(0)
   const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
   const cameraRef = useRef<Camera>(project.camera)
@@ -512,7 +513,16 @@ function App() {
       } else {
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
       }
-      if (shouldAnimate || editScrub.pressed || forwardControl.pressed || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > 0.0001) {
+      const motionActive = editScrub.pressed || forwardControl.pressed || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > 0.00012
+      if (motionActive) {
+        mothMotionRef.current.blurResumeAt = time + 650
+      }
+      const blurResumePending = mothMotionRef.current.blurResumeAt > time
+      const blurResumeReady = mothMotionRef.current.blurResumeAt > 0 && !motionActive && mothMotionRef.current.blurResumeAt <= time
+      if (blurResumeReady) {
+        mothMotionRef.current.blurResumeAt = 0
+      }
+      if (shouldAnimate || motionActive || blurResumePending || blurResumeReady) {
         setAnimationTime(time)
       }
       frame = requestAnimationFrame(tick)
@@ -621,6 +631,7 @@ function App() {
     : undefined
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
+  const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > 0.00012 || forwardPressed || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
@@ -914,6 +925,7 @@ function App() {
     setZoomFromMothView((current) => {
       const next = !current
       if (!current) {
+        mothMotionRef.current.blurResumeAt = performance.now() + 650
         setCamera(cameraAtMoth(projectRef.current.camera.zoom))
         setMessage('Moth view zoom enabled')
       } else {
@@ -927,6 +939,7 @@ function App() {
     stopForwardControl(false)
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.blurResumeAt = 0
     setSandboxId(nextSandboxId)
     const next = readProjectFromStorage(nextSandboxId)
     setProject(next)
@@ -951,6 +964,7 @@ function App() {
     stopForwardControl(false)
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.blurResumeAt = 0
     const next = createDefaultProject()
     setProject(next)
     projectRef.current = next
@@ -967,6 +981,7 @@ function App() {
   const handleClear = () => {
     stopForwardControl(false)
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.blurResumeAt = 0
     clearProjectStorage(sandboxId)
     const next = createDefaultProject()
     setProject(next)
@@ -1009,6 +1024,7 @@ function App() {
     try {
       stopForwardControl(false)
       mothMotionRef.current.velocity = 0
+      mothMotionRef.current.blurResumeAt = 0
       const next = migrateProject(JSON.parse(jsonDraft))
       pushHistory(projectRef.current)
       setProject(next)
@@ -1577,7 +1593,7 @@ function App() {
             onDrop={handleCanvasDrop}
           />
           {project.gameplay.cameraExtensionEnabled !== false && (
-            <div className="camera-extension-overlay" style={cameraExtensionOverlayStyle} aria-hidden="true">
+            <div className={`camera-extension-overlay${cameraExtensionMotionActive ? ' moving' : ''}`} style={cameraExtensionOverlayStyle} aria-hidden="true">
               <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle} />
               <div className="camera-extension-frame" />
             </div>
@@ -2082,6 +2098,7 @@ function App() {
             <button type="button" onClick={() => {
               stopForwardControl(false)
               mothMotionRef.current.velocity = 0
+              mothMotionRef.current.blurResumeAt = 0
               setPlayProgress(0)
               playProgressRef.current = 0
               setMessage('Moth returned to route start')

@@ -50,29 +50,29 @@ export const defaultProjectData = {
     {
       "id": "route-4",
       "label": "Moon Pool",
-      "x": 3837.018472021467,
-      "y": 2435.406616311805,
+      "x": 3545.657387753115,
+      "y": 2049.735687178842,
       "handleIn": {
-        "x": 3387.018472021467,
-        "y": 2115.406616311805
+        "x": 3095.657387753115,
+        "y": 1729.735687178842
       },
       "handleOut": {
-        "x": 4297.0184720214675,
-        "y": 2755.406616311805
+        "x": 4005.6573877531155,
+        "y": 2369.735687178842
       }
     },
     {
       "id": "route-5",
       "label": "Canopy",
-      "x": 4872.828112096915,
-      "y": 736.6267514735391,
+      "x": 4369.077677880891,
+      "y": 1571.56442387642,
       "handleIn": {
-        "x": 4302.828112096915,
-        "y": 1306.6267514735391
+        "x": 3799.0776778808913,
+        "y": 2141.56442387642
       },
       "handleOut": {
-        "x": 5312.828112096915,
-        "y": 316.6267514735391
+        "x": 4809.077677880891,
+        "y": 1151.56442387642
       }
     },
     {
@@ -92,15 +92,15 @@ export const defaultProjectData = {
     {
       "id": "route-ps07xc",
       "label": "Point 7",
-      "x": 8482.747701581922,
-      "y": 1519.906265806456,
+      "x": 8514.158742368074,
+      "y": 1466.7581895191367,
       "handleIn": {
-        "x": 8179.095086034651,
-        "y": 1618.3122060301087
+        "x": 8210.506126820803,
+        "y": 1565.1641297427893
       },
       "handleOut": {
-        "x": 8710.487163242375,
-        "y": 1446.1018106387164
+        "x": 8741.898204028526,
+        "y": 1392.953734351397
       }
     },
     {
@@ -120,370 +120,370 @@ export const defaultProjectData = {
     {
       "id": "route-gw9c2a",
       "label": "Point 9",
-      "x": 4925.136446073747,
-      "y": 1553.3514152333946,
+      "x": 4914.133840893097,
+      "y": 1533.7660218190413,
       "handleIn": {
-        "x": 4628.11236612887,
-        "y": 1436.452587468104
+        "x": 4617.10976094822,
+        "y": 1416.8671940537506
       },
       "handleOut": {
-        "x": 5147.904506032405,
-        "y": 1641.0255360573628
+        "x": 5136.901900851755,
+        "y": 1621.4401426430095
       }
     },
     {
       "id": "route-3q3shb",
       "label": "Point 10",
-      "x": 6352.3793731093765,
-      "y": 469.0093715140297,
+      "x": 6424.936071877994,
+      "y": 492.13626785594624,
       "handleIn": {
-        "x": 6129.611313150718,
-        "y": 381.33525069006146
+        "x": 6202.168011919336,
+        "y": 404.462147031978
       },
       "handleOut": {
-        "x": 6519.45541807837,
-        "y": 534.7649621320058
+        "x": 6592.012116846988,
+        "y": 557.8918584739224
       }
     },
     {
       "id": "route-y15hl0",
       "label": "Point 11",
-      "x": 9690.345249184897,
-      "y": 3267.012659569266,
+      "x": 8928.641809863546,
+      "y": 3006.198597043864,
       "handleIn": {
-        "x": 9523.269204215901,
-        "y": 3201.25706895129
+        "x": 8761.56576489455,
+        "y": 2940.443006425888
       },
       "handleOut": {
-        "x": 9854.490135470223,
-        "y": 3331.6146433342947
+        "x": 9092.786696148873,
+        "y": 3070.800580808893
       }
     },
     {
       "id": "route-hudiwf",
       "label": "Point 43",
-      "x": 10258.62672779994,
-      "y": 3151.002726338357
+      "x": 10466.838922149873,
+      "y": 3085.086452481891
     },
     {
       "id": "route-34gw8n",
       "label": "Point 12",
-      "x": 11351.544396352474,
-      "y": 1997.0123537441634,
+      "x": 11533.701203615958,
+      "y": 2135.8161469992037,
       "handleIn": {
-        "x": 11187.399510067147,
-        "y": 1932.4103699791347
+        "x": 11369.556317330631,
+        "y": 2071.214163234175
       },
       "handleOut": {
-        "x": 11515.6892826378,
-        "y": 2061.6143375091924
+        "x": 11697.846089901284,
+        "y": 2200.418130764233
       }
     },
     {
       "id": "route-0c83fy",
       "label": "Point 13",
-      "x": 13564.305029207935,
-      "y": 2759.1391243980233,
+      "x": 13647.68612779322,
+      "y": 2756.316904822681,
       "handleIn": {
-        "x": 13400.160142922608,
-        "y": 2694.537140632995
+        "x": 13483.541241507894,
+        "y": 2691.7149210576526
       },
       "handleOut": {
-        "x": 13728.449915493262,
-        "y": 2823.7411081630526
+        "x": 13811.831014078547,
+        "y": 2820.91888858771
       }
     },
     {
       "id": "route-0jkhn1",
       "label": "Point 14",
-      "x": 14234.287630535764,
-      "y": 1306.0610341716438,
+      "x": 13902.344199552987,
+      "y": 1287.395675325661,
       "handleIn": {
-        "x": 14070.142744250437,
-        "y": 1241.4590504066155
+        "x": 13738.19931326766,
+        "y": 1222.7936915606326
       },
       "handleOut": {
-        "x": 14472.80606313209,
-        "y": 1093.9346630816917
+        "x": 14140.862632149312,
+        "y": 1075.269304235709
       }
     },
     {
       "id": "route-erk14f",
       "label": "Point 15",
-      "x": 12416.741127088675,
-      "y": 1259.7009342229803,
+      "x": 12298.737241285206,
+      "y": 1388.56878986118,
       "handleIn": {
-        "x": 12178.22269449235,
-        "y": 1471.8273053129324
+        "x": 12060.21880868888,
+        "y": 1600.695160951132
       },
       "handleOut": {
-        "x": 12595.629951535919,
-        "y": 1100.606155905516
+        "x": 12477.62606573245,
+        "y": 1229.4740115437157
       }
     },
     {
       "id": "route-k8y7u9",
       "label": "Point 16",
-      "x": 12517.380586622581,
-      "y": 3210.1174780649653,
+      "x": 12487.38493905105,
+      "y": 3189.4608115230576,
       "handleIn": {
-        "x": 12338.491762175336,
-        "y": 3369.2122563824296
+        "x": 12308.496114603804,
+        "y": 3348.555589840522
       },
       "handleOut": {
-        "x": 12651.547204958015,
-        "y": 3090.7963943268674
+        "x": 12621.551557386483,
+        "y": 3070.1397277849596
       }
     },
     {
       "id": "route-orzl22",
       "label": "Point 17",
-      "x": 14014.266132276214,
-      "y": 3565.26632629337,
+      "x": 14330.186544893892,
+      "y": 3803.664801362672,
       "handleIn": {
-        "x": 13880.099513940782,
-        "y": 3684.5874100314686
+        "x": 14196.01992655846,
+        "y": 3922.9858851007702
       },
       "handleOut": {
-        "x": 14146.078950289973,
-        "y": 3448.0385949015545
+        "x": 14461.99936290765,
+        "y": 3686.437069970856
       }
     },
     {
       "id": "route-lkf0w6",
       "label": "Point 18",
-      "x": 14825.139368401959,
-      "y": 2759.1452330579295,
+      "x": 15143.65385893517,
+      "y": 2933.296118302008,
       "handleIn": {
-        "x": 14693.326550388198,
-        "y": 2876.3729644497453
+        "x": 15011.841040921408,
+        "y": 3050.5238496938236
       },
       "handleOut": {
-        "x": 14956.95218641572,
-        "y": 2641.917501666114
+        "x": 15275.46667694893,
+        "y": 2816.068386910192
       }
     },
     {
       "id": "route-ey3dad",
       "label": "Point 19",
-      "x": 16034.989671578367,
-      "y": 1805.6326227564914,
+      "x": 15623.101592850071,
+      "y": 1913.1085700332897,
       "handleIn": {
-        "x": 15903.176853564606,
-        "y": 1922.860354148307
+        "x": 15491.28877483631,
+        "y": 2030.3363014251051
       },
       "handleOut": {
-        "x": 16166.802489592124,
-        "y": 1688.4048913646757
+        "x": 15754.914410863828,
+        "y": 1795.880838641474
       }
     },
     {
       "id": "route-h18uje",
       "label": "Point 20",
-      "x": 16669.426728509236,
-      "y": 2486.1836182752345,
+      "x": 16622.758366320748,
+      "y": 2458.159512380329,
       "handleIn": {
-        "x": 16537.61391049548,
-        "y": 2603.41134966705
+        "x": 16490.94554830699,
+        "y": 2575.3872437721448
       },
       "handleOut": {
-        "x": 16801.239546522993,
-        "y": 2368.9558868834183
+        "x": 16754.571184334505,
+        "y": 2340.931780988513
       }
     },
     {
       "id": "route-cpudpf",
       "label": "Point 21",
-      "x": 15977.444840881111,
-      "y": 3292.786517837259,
+      "x": 15685.10559299498,
+      "y": 3410.258039051968,
       "handleIn": {
-        "x": 15845.632022867354,
-        "y": 3410.014249229075
+        "x": 15553.292774981222,
+        "y": 3527.485770443784
       },
       "handleOut": {
-        "x": 16109.257658894869,
-        "y": 3175.558786445443
+        "x": 15816.918411008737,
+        "y": 3293.0303076601517
       }
     },
     {
       "id": "route-ku15uu",
       "label": "Point 22",
-      "x": 16842.23318268228,
-      "y": 4138.385521642874,
+      "x": 16807.22145623114,
+      "y": 4138.662792334711,
       "handleIn": {
-        "x": 16710.420364668524,
-        "y": 4255.6132530346895
+        "x": 16675.40863821738,
+        "y": 4255.890523726527
       },
       "handleOut": {
-        "x": 16974.04600069604,
-        "y": 4021.157790251057
+        "x": 16939.034274244896,
+        "y": 4021.435060942895
       }
     },
     {
       "id": "route-i98xzr",
       "label": "Point 23",
-      "x": 17661.227189176447,
-      "y": 3743.564806177221,
+      "x": 17676.40145794793,
+      "y": 3733.003313460858,
       "handleIn": {
-        "x": 17529.41437116269,
-        "y": 3860.7925375690374
+        "x": 17544.588639934173,
+        "y": 3850.2310448526746
       },
       "handleOut": {
-        "x": 17793.040007190204,
-        "y": 3626.337074785404
+        "x": 17808.214275961687,
+        "y": 3615.7755820690413
       }
     },
     {
       "id": "route-qqcbiz",
       "label": "Point 24",
-      "x": 17647.600285419318,
-      "y": 2110.4330484684506,
+      "x": 17642.35734870093,
+      "y": 2080.6768619489603,
       "handleIn": {
-        "x": 17515.78746740556,
-        "y": 2227.6607798602668
+        "x": 17510.544530687173,
+        "y": 2197.9045933407765
       },
       "handleOut": {
-        "x": 17779.413103433075,
-        "y": 1993.2053170766342
+        "x": 17774.170166714688,
+        "y": 1963.449130557144
       }
     },
     {
       "id": "route-6d6bnq",
       "label": "Point 25",
-      "x": 19130.85426917646,
-      "y": 1811.6705462227187,
+      "x": 18773.03916145997,
+      "y": 1892.1470755371613,
       "handleIn": {
-        "x": 18999.041451162702,
-        "y": 1928.8982776145353
+        "x": 18641.22634344621,
+        "y": 2009.374806928978
       },
       "handleOut": {
-        "x": 19413.455529541472,
-        "y": 1960.0793318120723
+        "x": 19055.64042182498,
+        "y": 2040.5558611265149
       }
     },
     {
       "id": "route-ecnwpm",
       "label": "Point 26",
-      "x": 18763.851704463308,
-      "y": 3384.3914293760945,
+      "x": 18921.518484632837,
+      "y": 3357.8631963065377,
       "handleIn": {
-        "x": 18481.250444098296,
-        "y": 3235.982643786741
+        "x": 18638.917224267825,
+        "y": 3209.454410717184
       },
       "handleOut": {
-        "x": 18975.802649737067,
-        "y": 3495.6980185681095
+        "x": 19133.469429906596,
+        "y": 3469.1697854985528
       }
     },
     {
       "id": "route-krtj8x",
       "label": "Point 27",
-      "x": 21825.421371651733,
-      "y": 2247.182826015989,
+      "x": 22188.06770923627,
+      "y": 1835.9736970101603,
       "handleIn": {
-        "x": 21613.470426377975,
-        "y": 2135.876236823974
+        "x": 21976.116763962513,
+        "y": 1724.6671078181453
       },
       "handleOut": {
-        "x": 21984.384580607053,
-        "y": 2330.662767910001
+        "x": 22347.03091819159,
+        "y": 1919.4536389041723
       }
     },
     {
       "id": "route-r9tqne",
       "label": "Point 28",
-      "x": 20302.270844645154,
-      "y": 824.9079276090386,
+      "x": 20615.796394627425,
+      "y": 834.1829633612465,
       "handleIn": {
-        "x": 20143.30763568984,
-        "y": 741.4279857150275
+        "x": 20456.83318567211,
+        "y": 750.7030214672354
       },
       "handleOut": {
-        "x": 20458.445225373187,
-        "y": 906.9233091189451
+        "x": 20771.970775355458,
+        "y": 916.198344871153
       }
     },
     {
       "id": "route-59nvuf",
       "label": "Point 29",
-      "x": 19699.586557487877,
-      "y": 2427.784941656986,
+      "x": 19468.74100600188,
+      "y": 2250.0162894803934,
       "handleIn": {
-        "x": 19543.412176759844,
-        "y": 2345.7695601470805
+        "x": 19312.56662527385,
+        "y": 2168.000907970488
       },
       "handleOut": {
-        "x": 19855.76093821591,
-        "y": 2509.8003231668927
+        "x": 19624.915386729914,
+        "y": 2332.0316709903
       }
     },
     {
       "id": "route-txdvfq",
       "label": "Point 30",
-      "x": 20926.955811434087,
-      "y": 3023.3339184566134,
+      "x": 20937.54251057698,
+      "y": 2986.872822479957,
       "handleIn": {
-        "x": 20770.781430706054,
-        "y": 2941.3185369467064
+        "x": 20781.368129848946,
+        "y": 2904.85744097005
       },
       "handleOut": {
-        "x": 21083.13019216212,
-        "y": 3105.3492999665204
+        "x": 21093.71689130501,
+        "y": 3068.888203989864
       }
     },
     {
       "id": "route-6kwqpq",
       "label": "Point 31",
-      "x": 22428.978169133894,
-      "y": 2989.096770506345,
+      "x": 22551.317560300646,
+      "y": 2981.4088104144816,
       "handleIn": {
-        "x": 22272.80378840586,
-        "y": 2907.081388996438
+        "x": 22395.143179572613,
+        "y": 2899.3934289045746
       },
       "handleOut": {
-        "x": 22585.152549861927,
-        "y": 3071.1121520162524
+        "x": 22707.49194102868,
+        "y": 3063.424191924389
       }
     },
     {
       "id": "route-5h3wwy",
       "label": "Point 32",
-      "x": 24042.984995440256,
-      "y": 4045.171828054765,
+      "x": 23640.42157176514,
+      "y": 3527.098696119394,
       "handleIn": {
-        "x": 23886.810614712223,
-        "y": 3963.1564465448573
+        "x": 23484.247191037106,
+        "y": 3445.0833146094865
       },
       "handleOut": {
-        "x": 24335.074612315355,
-        "y": 3916.4383991648374
+        "x": 23932.511188640237,
+        "y": 3398.3652672294666
       }
     },
     {
       "id": "route-bjdog1",
       "label": "Point 33",
-      "x": 24332.6855063605,
-      "y": 2769.5693016624855,
+      "x": 24434.94228915611,
+      "y": 2841.55361260728,
       "handleIn": {
-        "x": 24040.5958894854,
-        "y": 2898.3027305524124
+        "x": 24142.852672281013,
+        "y": 2970.2870414972067
       },
       "handleOut": {
-        "x": 24551.752719016822,
-        "y": 2673.01922999504
+        "x": 24654.009501812434,
+        "y": 2745.0035409398342
       }
     },
     {
       "id": "route-jtw9mw",
       "label": "Point 42",
-      "x": 25255.088410775308,
-      "y": 3501.436920616165
+      "x": 25378.326496691687,
+      "y": 3055.3539745633775
     },
     {
       "id": "route-fdzkrq",
       "label": "Point 42",
-      "x": 25388.255719535933,
-      "y": 3615.3276513435985
+      "x": 25447.623131666656,
+      "y": 3789.185635509923
     },
     {
       "id": "route-vl6d4a",
@@ -502,89 +502,155 @@ export const defaultProjectData = {
     {
       "id": "route-0elfbb",
       "label": "Point 44",
-      "x": 27159.4901467814,
-      "y": 4040.9042072597144
+      "x": 27461.8916458702,
+      "y": 3956.1097884104424
     },
     {
       "id": "route-ljha8c",
       "label": "Point 35",
-      "x": 28409.67825198454,
-      "y": 3402.224632114883,
+      "x": 28088.53894230447,
+      "y": 3045.6976863695736,
       "handleIn": {
-        "x": 28245.377842492297,
-        "y": 3474.637185865467
+        "x": 27924.238532812225,
+        "y": 3118.1102401201574
       },
       "handleOut": {
-        "x": 28571.096198152358,
-        "y": 3331.0824740441335
+        "x": 28249.956888472287,
+        "y": 2974.555528298824
       }
     },
     {
       "id": "route-zm1dx1",
       "label": "Point 36",
-      "x": 25818.204357857696,
-      "y": 1954.7095745079848,
+      "x": 26017.845066685746,
+      "y": 1798.934786122306,
       "handleIn": {
-        "x": 25656.786411689878,
-        "y": 2025.8517325787343
+        "x": 25856.42712051793,
+        "y": 1870.0769441930554
       },
       "handleOut": {
-        "x": 25979.622304025514,
-        "y": 1883.5674164372354
+        "x": 26179.263012853564,
+        "y": 1727.7926280515564
       }
     },
     {
       "id": "route-0snaks",
       "label": "Point 37",
-      "x": 28900.32129717018,
-      "y": 660.2945682384395,
+      "x": 29043.864231462514,
+      "y": 1487.7684282936782,
       "handleIn": {
-        "x": 28738.903351002362,
-        "y": 731.436726309189
+        "x": 28882.446285294696,
+        "y": 1558.9105863644277
       },
       "handleOut": {
-        "x": 29181.12848099826,
-        "y": 508.5185308987385
+        "x": 29324.671415290595,
+        "y": 1335.992390953977
       }
     },
     {
       "id": "route-rl8e69",
       "label": "Point 45",
-      "x": 29059.569268131134,
-      "y": 508.6020764098061
+      "x": 30233.050138573442,
+      "y": 727.2560054450955
     },
     {
       "id": "route-wa7de3",
       "label": "Point 43",
-      "x": 28967.584680496733,
-      "y": -177.35020158393309
+      "x": 28693.226828624207,
+      "y": 284.2074193463083
     },
     {
       "id": "route-1ersu1",
       "label": "Point 38",
-      "x": 29947.73568780084,
-      "y": -101.91829010917672,
+      "x": 28475.15927070795,
+      "y": 836.9410393086838,
       "handleIn": {
-        "x": 29666.92850397276,
-        "y": 49.85774723052441
+        "x": 28194.35208687987,
+        "y": 988.7170766483849
       },
       "handleOut": {
-        "x": 30158.3410756719,
-        "y": -215.7503181139524
+        "x": 28685.76465857901,
+        "y": 723.1090113039081
       }
     },
     {
       "id": "route-4f25gc",
       "label": "Point 39",
-      "x": 29724.570708900916,
-      "y": -1033.0604382769316,
+      "x": 29435.765668174983,
+      "y": 935.5832539589321,
       "handleIn": {
-        "x": 29513.965321029853,
-        "y": -919.2284102721559
+        "x": 29225.16028030392,
+        "y": 1049.4152819637077
       },
       "handleOut": {
-        "x": 29882.52474980421,
-        "y": -1118.4344592805132
+        "x": 29593.71970907828,
+        "y": 850.2092329553504
+      }
+    },
+    {
+      "id": "route-9y6gbh",
+      "label": "Point 46",
+      "x": 30179.431782180352,
+      "y": 272.24531504542347,
+      "handleIn": {
+        "x": 29936.65768237215,
+        "y": 115.30578216164898
+      },
+      "handleOut": {
+        "x": 30403.914799204686,
+        "y": 45.31798071204477
+      }
+    },
+    {
+      "id": "route-mkifes",
+      "label": "Point 47",
+      "x": 29425.728880318904,
+      "y": -391.82545014621826,
+      "handleIn": {
+        "x": 29201.24586329457,
+        "y": -164.8981158128396
+      },
+      "handleOut": {
+        "x": 29437.035606062425,
+        "y": -581.2683838052702
+      }
+    },
+    {
+      "id": "route-g53ks7",
+      "label": "Point 48",
+      "x": 29330.548463499428,
+      "y": -809.3334354132775,
+      "handleIn": {
+        "x": 29319.241737755907,
+        "y": -619.8905017542254
+      },
+      "handleOut": {
+        "x": 29371.97195700664,
+        "y": -980.8007914483485
+      }
+    },
+    {
+      "id": "route-2kxvc4",
+      "label": "Point 49",
+      "x": 29643.7516128521,
+      "y": -1156.5015136488191,
+      "handleIn": {
+        "x": 29602.328119344886,
+        "y": -985.0341576137481
+      },
+      "handleOut": {
+        "x": 29685.17510635931,
+        "y": -1327.9688696838903
+      }
+    },
+    {
+      "id": "route-wvclh0",
+      "label": "Point 50",
+      "x": 29711.510828599075,
+      "y": -1574.7839822560045,
+      "handleIn": {
+        "x": 29670.087335091863,
+        "y": -1403.3166262209334
       }
     }
   ],
@@ -624,7 +690,10 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": false,
-      "zIndex": 11
+      "zIndex": 11,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "moon-1",
@@ -639,7 +708,10 @@ export const defaultProjectData = {
       "opacity": 0.12,
       "visible": true,
       "silhouette": false,
-      "zIndex": 12
+      "zIndex": 12,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "mist-1",
@@ -654,7 +726,10 @@ export const defaultProjectData = {
       "opacity": 0.04,
       "visible": true,
       "silhouette": false,
-      "zIndex": 5
+      "zIndex": 5,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-copy-hofuy3",
@@ -669,22 +744,28 @@ export const defaultProjectData = {
       "opacity": 0.08,
       "visible": true,
       "silhouette": false,
-      "zIndex": 2
+      "zIndex": 2,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-copy-z8nlrc",
       "name": "Foreground atmosphere: mist veil copy copy copy",
       "assetId": "foreground-mist",
       "layerId": "foreground",
-      "x": 29128.199416479878,
-      "y": 4633.695788002152,
+      "x": 29124.948025474805,
+      "y": 4633.870133253334,
       "width": 9151.31605602691,
       "height": 5152.894886932075,
       "rotation": 0,
       "opacity": 0.15,
       "visible": true,
       "silhouette": false,
-      "zIndex": 3
+      "zIndex": 3,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves-png-nqry4r",
@@ -699,7 +780,11 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true,
-      "zIndex": 8
+      "zIndex": 8,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f",
@@ -714,7 +799,10 @@ export const defaultProjectData = {
       "opacity": 0.88,
       "visible": true,
       "silhouette": false,
-      "zIndex": 13
+      "zIndex": 13,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-misty-conifer-grove-png-65t3ye",
@@ -729,7 +817,10 @@ export const defaultProjectData = {
       "opacity": 0.24,
       "visible": true,
       "silhouette": false,
-      "zIndex": 1
+      "zIndex": 1,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-misty-conifer-grove-png-stamp-yv5nex",
@@ -744,7 +835,10 @@ export const defaultProjectData = {
       "opacity": 0.32,
       "visible": true,
       "silhouette": false,
-      "zIndex": 2
+      "zIndex": 2,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-misty-conifer-grove-png-stamp-1eushl",
@@ -759,7 +853,10 @@ export const defaultProjectData = {
       "opacity": 0.32,
       "visible": true,
       "silhouette": false,
-      "zIndex": 14
+      "zIndex": 14,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk",
@@ -774,57 +871,67 @@ export const defaultProjectData = {
       "zIndex": 10,
       "opacity": 0.96,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc",
       "name": "Firefly Flower Patch",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/firefly_flower_patch.png",
       "layerId": "foreground",
-      "x": 6721.221655743881,
-      "y": 1300.312011833439,
+      "x": 6720.971655743881,
+      "y": 1300.319824333439,
       "width": 926.5872618920946,
       "height": 926.5872618920946,
       "rotation": 0,
       "zIndex": 11,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
-    ,
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "foreground-mist-paste-j2ia5o",
-      "name": "",
+      "name": "Foreground Mist",
       "assetId": "foreground-mist",
       "layerId": "background",
-      "x": 12522.547670277801,
-      "y": 230.3234282840191,
+      "x": 12515.125795277801,
+      "y": 232.1300689090191,
       "width": 33698.22653271148,
       "height": 18974.69370918831,
       "rotation": -4,
       "opacity": 0.05,
       "visible": true,
       "silhouette": false,
-      "zIndex": 3
+      "zIndex": 3,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb",
       "name": "Hanging Vine Lanterns",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/hanging_vine_lanterns.png",
       "layerId": "foreground",
-      "x": 3984.1337998621384,
-      "y": 2868.8120297053492,
+      "x": 3983.9107414287846,
+      "y": 2869.735855471335,
       "width": 1069.5266983931224,
       "height": 1242.0310045855615,
       "rotation": 0,
       "zIndex": 12,
       "opacity": 0.92,
       "visible": true,
-      "silhouette": false
-    ,
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr",
       "name": "Soft Moonlight Pool",
@@ -838,7 +945,10 @@ export const defaultProjectData = {
       "zIndex": 13,
       "opacity": 0.87,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha",
@@ -853,39 +963,48 @@ export const defaultProjectData = {
       "zIndex": 14,
       "opacity": 0.96,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Landmarks",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves-png-rvjqq1",
       "name": "Crescent Vine With Glowing Leaves",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/crescent_vine_with_glowing_leaves.png",
       "layerId": "foreground",
-      "x": 10163.881881958348,
-      "y": 3346.3121848859196,
-      "width": 701.1315246319023,
-      "height": 814.2172544112414,
+      "x": 10058.944381958348,
+      "y": 3461.9449973859196,
+      "width": 819.5065246319023,
+      "height": 951.6849963467253,
       "rotation": 0,
       "zIndex": 15,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-uf1d9a",
       "name": "Hanging Vine Lanterns",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/hanging_vine_lanterns.png",
       "layerId": "foreground",
-      "x": 10303.53000920815,
-      "y": 3708.515928764355,
+      "x": 10303.78000920815,
+      "y": 3708.265928764355,
       "width": 767.5073446007314,
       "height": 891.2988517943978,
       "rotation": 0,
       "zIndex": 16,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo",
@@ -900,7 +1019,11 @@ export const defaultProjectData = {
       "zIndex": 17,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-stamp-cmhvzs",
@@ -915,14 +1038,18 @@ export const defaultProjectData = {
       "zIndex": 19,
       "opacity": 0.62,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-stamp-d9cyfp",
       "name": "Pearl Fern Cluster copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
       "layerId": "foreground",
-      "x": 10099.499282531824,
+      "x": 10099.249282531824,
       "y": 4340.99379576251,
       "width": 1533.9860838264365,
       "height": 1533.9860838264365,
@@ -930,7 +1057,11 @@ export const defaultProjectData = {
       "zIndex": 20,
       "opacity": 0.62,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-stamp-vx0zxw",
@@ -945,59 +1076,69 @@ export const defaultProjectData = {
       "zIndex": 18,
       "opacity": 0.85,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-wdy46j",
       "name": "Enchanted Pastel Leaf Vine",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
       "layerId": "foreground",
-      "x": 9286.504314537575,
-      "y": 3641.154810879747,
+      "x": 9287.340252037575,
+      "y": 3641.162623379747,
       "width": 1255.6403442382812,
       "height": 1458.1629804057459,
       "rotation": 0,
       "zIndex": 21,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4",
       "name": "Magical Thicket With Glowing Foliage",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 4691.027181970262,
-      "y": 4504.568099930224,
+      "x": 4691.052688261141,
+      "y": 4508.065211371855,
       "width": 2681.7497985839836,
       "height": 2681.7497985839836,
       "rotation": 0,
       "zIndex": 9,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-emgfbf",
       "name": "2d Near Foliage Cluster A",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-near-foliage-cluster-a.png",
       "layerId": "foreground",
-      "x": 1287.4622956084565,
-      "y": 3981.910531279354,
+      "x": 1211.8026925187137,
+      "y": 3844.388689558585,
       "width": 3443.203045654297,
       "height": 3443.203045654297,
       "rotation": 0,
       "zIndex": 23,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z",
       "name": "Soft Moonlight Pool copy",
@@ -1011,7 +1152,10 @@ export const defaultProjectData = {
       "zIndex": 6,
       "opacity": 0.82,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn",
@@ -1026,7 +1170,10 @@ export const defaultProjectData = {
       "zIndex": 24,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-vapjs9",
@@ -1041,7 +1188,10 @@ export const defaultProjectData = {
       "zIndex": 25,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m",
@@ -1056,7 +1206,10 @@ export const defaultProjectData = {
       "zIndex": 26,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group-png-hqo0fw",
@@ -1071,59 +1224,68 @@ export const defaultProjectData = {
       "zIndex": 15,
       "opacity": 0.17,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u",
       "name": "Magical Thicket With Glowing Foliage",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 11426.183625634181,
-      "y": 3962.52080366778,
+      "x": 11424.844048359573,
+      "y": 3962.742961133797,
       "width": 1966.7986664826628,
       "height": 1966.7986664826628,
       "rotation": -7,
       "zIndex": 28,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51",
       "name": "Magical Moonlit Botanical Corner Element",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_moonlit_botanical_corner_element.png",
       "layerId": "foreground",
-      "x": 12960.540960427421,
-      "y": 3944.9744573907437,
+      "x": 12959.696087873002,
+      "y": 3944.330499168912,
       "width": 1800.4231907017138,
       "height": 1800.4231907017138,
       "rotation": 0,
       "zIndex": 29,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl",
       "name": "Low Cocoon Bud",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/low_cocoon_bud.png",
       "layerId": "foreground",
-      "x": 16538.911246955453,
-      "y": 3279.1223536692055,
+      "x": 16539.575309455453,
+      "y": 3278.3489161692055,
       "width": 739.6124389648437,
       "height": 739.6124389648437,
       "rotation": 0,
       "zIndex": 31,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
-    ,
+      "silhouette": false,
+      "role": "Landmarks",
+      "subLayer": "Mid",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm",
       "name": "Drooping Bellflower Cluster",
@@ -1137,22 +1299,28 @@ export const defaultProjectData = {
       "zIndex": 32,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa",
       "name": "Soft Moonlight Pool copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch7/soft_moonlight_pool.png",
       "layerId": "foreground",
-      "x": 15738.83556170323,
-      "y": 3660.8065527164845,
+      "x": 15739.06993670323,
+      "y": 3661.0409277164845,
       "width": 2100.5546986274803,
       "height": 1181.5620179779576,
       "rotation": 0,
       "zIndex": 30,
       "opacity": 0.94,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9",
@@ -1167,22 +1335,28 @@ export const defaultProjectData = {
       "zIndex": 27,
       "opacity": 0.81,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k",
       "name": "Soft Moonlight Pool copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch7/soft_moonlight_pool.png",
       "layerId": "foreground",
-      "x": 18250.333671980607,
-      "y": 3261.8035355511615,
+      "x": 18250.341484480607,
+      "y": 3262.0535355511615,
       "width": 4788.405775425672,
       "height": 2693.4782486769404,
       "rotation": 0,
       "zIndex": 22,
       "opacity": 0.96,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp",
@@ -1197,7 +1371,10 @@ export const defaultProjectData = {
       "zIndex": 33,
       "opacity": 0.9,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group-png-rk0i70",
@@ -1205,14 +1382,17 @@ export const defaultProjectData = {
       "assetId": "artwork:Moon Moth New Assets 1/moon-moth-scenery-b02-conifer-silhouette-group.png",
       "layerId": "background",
       "x": 25559.602450688184,
-      "y": -1368.9622765959903,
+      "y": -1367.3997765959903,
       "width": 9827.400565664931,
       "height": 9827.400565664931,
       "rotation": 0,
       "zIndex": 7,
       "opacity": 0.6,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e",
@@ -1227,7 +1407,10 @@ export const defaultProjectData = {
       "zIndex": 19,
       "opacity": 0.79,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy",
@@ -1242,7 +1425,10 @@ export const defaultProjectData = {
       "zIndex": 22,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu",
@@ -1257,7 +1443,10 @@ export const defaultProjectData = {
       "zIndex": 20,
       "opacity": 0.54,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58",
@@ -1272,22 +1461,28 @@ export const defaultProjectData = {
       "zIndex": 16,
       "opacity": 0.78,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv",
       "name": "Broken Moonstone Fragments",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch3/broken_moonstone_fragments.png",
       "layerId": "background",
-      "x": 13945.609415339792,
-      "y": 3358.884289545643,
+      "x": 13945.058063408387,
+      "y": 3358.902075091817,
       "width": 1910.1833880310485,
       "height": 1910.1833880310485,
       "rotation": 0,
       "zIndex": 23,
-      "opacity": 0.92,
+      "opacity": 0.81,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2",
@@ -1302,7 +1497,10 @@ export const defaultProjectData = {
       "zIndex": 9,
       "opacity": 0.54,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0",
@@ -1317,7 +1515,10 @@ export const defaultProjectData = {
       "zIndex": 24,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr",
@@ -1332,42 +1533,49 @@ export const defaultProjectData = {
       "zIndex": 28,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz",
       "name": "2d Foreground Vine Cluster B",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-foreground-vine-cluster-b.png",
       "layerId": "background",
-      "x": 25213.63928469037,
-      "y": 4854.676290976677,
+      "x": 25213.64917633554,
+      "y": 4855.30935626761,
       "width": 1878.3841854873003,
       "height": 2181.3493766949296,
       "rotation": 0,
       "zIndex": 29,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s",
       "name": "2d Near Foliage Cluster A",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-near-foliage-cluster-a.png",
       "layerId": "background",
-      "x": 24845.81832833508,
-      "y": 4759.8726197563665,
+      "x": 24845.56832833508,
+      "y": 4759.308795981628,
       "width": 3135.266424297687,
       "height": 3135.266424297687,
       "rotation": 0,
       "zIndex": 27,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo",
       "name": "Pearl Fern Cluster",
@@ -1381,7 +1589,11 @@ export const defaultProjectData = {
       "zIndex": 26,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-p1l3v9",
@@ -1396,10 +1608,12 @@ export const defaultProjectData = {
       "zIndex": 30,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-blush-violet-blossom-mound-png-p7t4gk",
       "name": "Blush Violet Blossom Mound",
@@ -1413,7 +1627,11 @@ export const defaultProjectData = {
       "zIndex": 25,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr",
@@ -1428,7 +1646,11 @@ export const defaultProjectData = {
       "zIndex": 18,
       "opacity": 0.96,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx",
@@ -1443,7 +1665,10 @@ export const defaultProjectData = {
       "zIndex": 31,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu",
@@ -1458,7 +1683,10 @@ export const defaultProjectData = {
       "zIndex": 32,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "moon-glow-paste-k8kc38",
@@ -1473,22 +1701,28 @@ export const defaultProjectData = {
       "opacity": 0.07,
       "visible": true,
       "silhouette": false,
-      "zIndex": 33
+      "zIndex": 33,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-moon-halo-ring-png-ojq76r",
       "name": "Moon Halo Ring",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch7/moon_halo_ring.png",
       "layerId": "background",
-      "x": 29349.593723076756,
-      "y": -1520.382543557751,
+      "x": 29349.287082076462,
+      "y": -1520.3726519125803,
       "width": 1436.2358539077295,
       "height": 1436.2358539077295,
       "rotation": 0,
       "zIndex": 34,
       "opacity": 0.1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-silver-light-trail-png-68d5dp",
@@ -1503,7 +1737,10 @@ export const defaultProjectData = {
       "zIndex": 35,
       "opacity": 0.66,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z",
@@ -1518,7 +1755,10 @@ export const defaultProjectData = {
       "zIndex": 36,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo",
@@ -1533,7 +1773,10 @@ export const defaultProjectData = {
       "zIndex": 38,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling-png-juo6sf",
@@ -1548,7 +1791,10 @@ export const defaultProjectData = {
       "zIndex": 39,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b",
@@ -1563,7 +1809,10 @@ export const defaultProjectData = {
       "zIndex": 40,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-silver-light-trail-png-paste-l7ukxx",
@@ -1578,7 +1827,10 @@ export const defaultProjectData = {
       "zIndex": 37,
       "opacity": 0.66,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx",
@@ -1593,7 +1845,10 @@ export const defaultProjectData = {
       "zIndex": 42,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh",
@@ -1608,7 +1863,11 @@ export const defaultProjectData = {
       "zIndex": 46,
       "opacity": 0.77,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt",
@@ -1623,7 +1882,11 @@ export const defaultProjectData = {
       "zIndex": 45,
       "opacity": 0.62,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7",
@@ -1638,7 +1901,10 @@ export const defaultProjectData = {
       "zIndex": 44,
       "opacity": 0.54,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves-png-80bkl8",
@@ -1653,25 +1919,31 @@ export const defaultProjectData = {
       "zIndex": 35,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-6hwibk",
       "name": "Glowing Botanical Vine",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/glowing_botanical_vine.png",
       "layerId": "foreground",
-      "x": 18416.825188178474,
-      "y": 3547.09708283075,
+      "x": 18416.481438178474,
+      "y": 3548.09708283075,
       "width": 909.3836873051418,
       "height": 1056.058475580165,
       "rotation": 0,
       "zIndex": 36,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-z1rbak",
       "name": "Magical Mossy Rock Garden",
@@ -1685,10 +1957,12 @@ export const defaultProjectData = {
       "zIndex": 37,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh",
       "name": "Glowing Enchanted Forest Floor Vignette copy",
@@ -1702,7 +1976,10 @@ export const defaultProjectData = {
       "zIndex": 10,
       "opacity": 0.56,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling-png-rb4lyb",
@@ -1717,7 +1994,10 @@ export const defaultProjectData = {
       "zIndex": 48,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w",
@@ -1732,7 +2012,10 @@ export const defaultProjectData = {
       "zIndex": 50,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul",
@@ -1747,7 +2030,11 @@ export const defaultProjectData = {
       "zIndex": 51,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk",
@@ -1762,7 +2049,10 @@ export const defaultProjectData = {
       "zIndex": 47,
       "opacity": 0.7,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2",
@@ -1777,7 +2067,10 @@ export const defaultProjectData = {
       "zIndex": 49,
       "opacity": 0.61,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf",
@@ -1790,9 +2083,12 @@ export const defaultProjectData = {
       "height": 1014.4456106734896,
       "rotation": 0,
       "zIndex": 17,
-      "opacity": 0.64,
+      "opacity": 0.46,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-silver-light-trail-png-w3q2ec",
@@ -1807,7 +2103,10 @@ export const defaultProjectData = {
       "zIndex": 41,
       "opacity": 0.8,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1",
@@ -1822,7 +2121,10 @@ export const defaultProjectData = {
       "zIndex": 7,
       "opacity": 0.91,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-soft-pastel-mist-veil-png-4q3xc8",
@@ -1837,7 +2139,10 @@ export const defaultProjectData = {
       "zIndex": 4,
       "opacity": 0.23,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-paste-drfopu",
@@ -1852,7 +2157,11 @@ export const defaultProjectData = {
       "zIndex": 38,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-paste-mwlydk",
@@ -1860,17 +2169,19 @@ export const defaultProjectData = {
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
       "layerId": "foreground",
       "x": 18272.981412694236,
-      "y": 5074.896777111011,
+      "y": 5075.490527111011,
       "width": 1533.9860838264365,
       "height": 1533.9860838264365,
       "rotation": 0,
       "zIndex": 40,
       "opacity": 0.62,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "foreground-mist-paste-t0zo6f",
       "name": "Foreground atmosphere: mist veil copy",
@@ -1884,22 +2195,28 @@ export const defaultProjectData = {
       "opacity": 0.04,
       "visible": true,
       "silhouette": false,
-      "zIndex": 1
+      "zIndex": 1,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-paste-d60bie",
       "name": "Foreground atmosphere: mist veil copy",
       "assetId": "foreground-mist",
       "layerId": "foreground",
-      "x": 13781.443681081013,
-      "y": 5717.259310692935,
+      "x": 13780.220302124126,
+      "y": 5723.138101223884,
       "width": 15360.641564461554,
       "height": 8649.222788604506,
       "rotation": 0,
       "opacity": 0.07,
       "visible": true,
       "silhouette": false,
-      "zIndex": 0
+      "zIndex": 0,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-paste-myz4sz",
@@ -1914,22 +2231,28 @@ export const defaultProjectData = {
       "opacity": 0.05,
       "visible": true,
       "silhouette": false,
-      "zIndex": 4
+      "zIndex": 4,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-paste-gmn127",
       "name": " copy",
       "assetId": "foreground-mist",
       "layerId": "background",
-      "x": 28143.07771986607,
-      "y": 3439.690512686211,
+      "x": 28139.36678236607,
+      "y": 3443.401450186211,
       "width": 30591.53707958648,
       "height": 17225.388570967156,
       "rotation": 180,
       "opacity": 0.05,
       "visible": true,
       "silhouette": false,
-      "zIndex": 0
+      "zIndex": 0,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "foreground-mist-paste-uqz3aw",
@@ -1944,71 +2267,66 @@ export const defaultProjectData = {
       "opacity": 0.16,
       "visible": true,
       "silhouette": false,
-      "zIndex": 5
-    },
-    {
-      "id": "artwork-moon-moth-new-assets-3-3d-batch8-upper-canopy-light-gap-png-x3773i",
-      "name": "Upper Canopy Light Gap",
-      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch8/upper_canopy_light_gap.png",
-      "layerId": "background",
-      "x": 29373.30821424495,
-      "y": -1009.7404405450055,
-      "width": 4623.7445721318,
-      "height": 2600.8563218241375,
-      "rotation": -10,
-      "zIndex": 8,
-      "opacity": 0.39,
-      "visible": true,
-      "silhouette": false
+      "zIndex": 5,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-vonl8d",
       "name": "Magical Mossy Rock Garden copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
       "layerId": "foreground",
-      "x": 30799.12883350232,
-      "y": 1051.781214471659,
-      "width": 964.9263010890106,
-      "height": 964.9263010890106,
+      "x": 30991.794874703966,
+      "y": 1446.9257334477932,
+      "width": 1586.3627792561608,
+      "height": 1586.3627792561608,
       "rotation": 0,
       "zIndex": 42,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi",
       "name": "Glowing Botanical Vine copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/glowing_botanical_vine.png",
       "layerId": "foreground",
-      "x": 30405.591984512106,
-      "y": 373.5449051405194,
-      "width": 1408.3273826676245,
-      "height": 1635.4769605172414,
+      "x": 30377.243243501645,
+      "y": 400.3901892744816,
+      "width": 1560.4412263451318,
+      "height": 1812.1252951104757,
       "rotation": 0,
       "zIndex": 43,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf",
       "name": "Landmark Cocoon Shrine",
       "assetId": "artwork:Moon Moth/moon-moth-landmark-cocoon-shrine.png",
       "layerId": "foreground",
-      "x": 29531.849803819234,
-      "y": 327.9744283304731,
-      "width": 604.8723568463909,
-      "height": 604.8723568463909,
+      "x": 29531.125715977592,
+      "y": 327.73571063186705,
+      "width": 678.2555203616546,
+      "height": 678.2555203616546,
       "rotation": 0,
       "zIndex": 41,
       "opacity": 1,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Landmarks",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x",
@@ -2023,7 +2341,10 @@ export const defaultProjectData = {
       "zIndex": 39,
       "opacity": 0.96,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-c6wynj",
@@ -2038,7 +2359,10 @@ export const defaultProjectData = {
       "zIndex": 54,
       "opacity": 0.07,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx",
@@ -2053,7 +2377,10 @@ export const defaultProjectData = {
       "zIndex": 53,
       "opacity": 0.6,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Light FX",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s",
@@ -2068,7 +2395,10 @@ export const defaultProjectData = {
       "zIndex": 6,
       "opacity": 0.89,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1",
@@ -2083,91 +2413,105 @@ export const defaultProjectData = {
       "zIndex": 55,
       "opacity": 0.75,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze-png-52uvgn",
       "name": "Predawn Treetop Haze",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch4/predawn_treetop_haze.png",
       "layerId": "background",
-      "x": 12887.543631836355,
-      "y": 2466.689663864725,
+      "x": 12887.561417382529,
+      "y": 2467.2232302499547,
       "width": 775.046875,
       "height": 435.9638671875,
       "rotation": 0,
       "zIndex": 52,
-      "opacity": 0.98,
+      "opacity": 0.59,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-paste-fywfqn",
       "name": "Enchanted Pastel Leaf Vine copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
       "layerId": "foreground",
-      "x": 10636.01792105432,
-      "y": 3859.7296126688743,
+      "x": 10479.63510855432,
+      "y": 3692.3702376688743,
       "width": 1255.6403442382812,
       "height": 1458.1629804057459,
       "rotation": 0,
       "zIndex": 44,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-paste-rktb8o",
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 1148.56415698639,
-      "y": 3329.8709902702935,
+      "x": 1148.5881359981158,
+      "y": 3330.3107087673584,
       "width": 2848.310989423941,
       "height": 2848.310989423941,
       "rotation": 14,
       "zIndex": 45,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-stamp-9xqyj9",
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": -399.5674479209003,
-      "y": 2195.8761655619783,
+      "x": -401.581546010125,
+      "y": 2196.1210818047853,
       "width": 5761.642859232012,
       "height": 5761.642859232012,
       "rotation": -180,
       "zIndex": 34,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-stamp-7nzu6u",
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 17658.43454805184,
-      "y": 566.4199814421892,
+      "x": 17657.647454091453,
+      "y": 563.8457935214184,
       "width": 3454.3547366730345,
       "height": 3454.3547366730345,
       "rotation": -180,
       "zIndex": 46,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-paste-5zs4ak",
       "name": "Enchanted Pastel Leaf Vine copy",
@@ -2181,10 +2525,12 @@ export const defaultProjectData = {
       "zIndex": 47,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-paste-niox4g",
       "name": "Pearl Fern Cluster copy",
@@ -2198,25 +2544,31 @@ export const defaultProjectData = {
       "zIndex": 48,
       "opacity": 0.62,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q",
       "name": "Magical Mossy Rock Garden copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
       "layerId": "foreground",
-      "x": 13968.81815555249,
-      "y": 4709.820310089438,
+      "x": 13968.82596805249,
+      "y": 4710.078122589438,
       "width": 964.9263010890106,
       "height": 964.9263010890106,
       "rotation": 0,
       "zIndex": 49,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-stamp-f2c1lw",
       "name": "Enchanted Pastel Leaf Vine copy",
@@ -2230,25 +2582,31 @@ export const defaultProjectData = {
       "zIndex": 50,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z",
       "name": "Glowing Botanical Vine copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/glowing_botanical_vine.png",
       "layerId": "foreground",
-      "x": 13887.872455348903,
-      "y": 4110.961437692506,
+      "x": 13886.490118817515,
+      "y": 4110.995514178306,
       "width": 1408.3273826676245,
       "height": 1635.4769605172414,
       "rotation": 0,
       "zIndex": 51,
       "opacity": 1,
       "visible": true,
-      "silhouette": true
-    ,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
       "notes": "in front path",
-      "renderBand": "frontOccluder"},
+      "renderBand": "frontOccluder"
+    },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze-png-stamp-ze74s2",
       "name": "Predawn Treetop Haze copy",
@@ -2262,7 +2620,10 @@ export const defaultProjectData = {
       "zIndex": 56,
       "opacity": 0.57,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Atmosphere",
+      "subLayer": "Far",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-mnnedu",
@@ -2277,7 +2638,10 @@ export const defaultProjectData = {
       "zIndex": 21,
       "opacity": 0.78,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-lmzc9m",
@@ -2285,19 +2649,41 @@ export const defaultProjectData = {
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch7/soft_moonlight_pool.png",
       "layerId": "background",
       "x": 20839.941439605904,
-      "y": 5741.09630251657,
+      "y": 5744.80724001657,
       "width": 4788.405775425672,
       "height": 2693.4782486769404,
       "rotation": -180,
       "zIndex": 43,
       "opacity": 0.78,
       "visible": true,
-      "silhouette": false
+      "silhouette": false,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": ""
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg",
+      "name": "Hanging Vine Lanterns copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/hanging_vine_lanterns.png",
+      "layerId": "foreground",
+      "x": 28771.185400668033,
+      "y": 3851.908692945587,
+      "width": 1069.5266983931224,
+      "height": 1242.0310045855615,
+      "rotation": 0,
+      "zIndex": 2000,
+      "opacity": 0.92,
+      "visible": true,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
     }
   ],
   "gameplay": {
     "mothSpeed": 0.18,
-    "mothSize": 2.45,
+    "mothSize": 2.35,
     "mothGlow": 1.95,
     "mothManualSpeedMin": 0.006,
     "mothManualSpeedMax": 0.055,
@@ -2307,32 +2693,34 @@ export const defaultProjectData = {
     "mothManualSwellPeriodMs": 2200,
     "mothForwardReleaseCarryMs": 2300,
     "mothForwardReleasePushScale": 0.4,
-    "mothGlowPulseSpeed": 0.55,
-    "mothFlutterSpeed": 0.9,
-    "mothFlutterAmount": 0.072,
-    "mothBobAmount": 5.5,
+    "mothGlowPulseSpeed": 0.6,
+    "mothFlutterSpeed": 0.8,
+    "mothFlutterAmount": 0.07,
+    "mothBobAmount": 8,
     "mothLeanForwardAmount": 0.08,
-    "mothLeanBackwardAmount": 0.02,
-    "mothStretchAmount": 0.015,
+    "mothLeanBackwardAmount": 0.04,
+    "mothStretchAmount": 0.12,
     "mothTrailEnabled": true,
     "mothTrailStyle": "mist",
     "mothTrailAmount": 0.5,
     "mothTrailWaveAmount": 10,
-    "mothTrailSparkle": 0.25,
+    "mothTrailSparkle": 1,
     "mothHeadingMode": "north",
-    "routePathVisible": true,
+    "routePathVisible": false,
     "cameraExtensionEnabled": true,
-    "cameraExtensionZoomScale": 0.95,
+    "cameraExtensionZoomScale": 0.93,
     "cameraExtensionInnerScale": 0.9,
-    "cameraExtensionRoundness": 0.65,
-    "cameraExtensionDensity": 1,
-    "cameraExtensionBlurAmount": 6,
+    "cameraExtensionRoundness": 0.8,
+    "cameraExtensionDensity": 2.5,
+    "cameraExtensionBlurAmount": 5.5,
     "musicEnabled": true,
-    "musicVolume": 0.56
+    "musicVolume": 0.56,
+    "musicMuted": false
   },
   "camera": {
-    "x": 13487,
-    "y": 4738,
-    "zoom": 0.08
-  }
+    "x": 29711.510828599072,
+    "y": 0,
+    "zoom": 0.46399999999999997
+  },
+  "routeGroups": []
 } satisfies EditorProject

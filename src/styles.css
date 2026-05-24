@@ -253,6 +253,17 @@ canvas {
     blur(var(--camera-extension-blur))
     brightness(var(--camera-extension-brightness))
     saturate(0.94);
+  transition:
+    background-color 180ms ease,
+    backdrop-filter 180ms ease,
+    -webkit-backdrop-filter 180ms ease;
+  will-change: auto;
+}
+
+.camera-extension-overlay.moving .camera-extension-vignette {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: none;
 }
 
 .camera-extension-frame {

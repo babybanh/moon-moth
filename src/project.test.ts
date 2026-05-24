@@ -16,7 +16,7 @@ import {
 
 const defaultGameplay = {
   mothSpeed: 0.18,
-  mothSize: 2.45,
+  mothSize: 2.35,
   mothGlow: 1.95,
   mothManualSpeedMin: 0.006,
   mothManualSpeedMax: 0.055,
@@ -26,40 +26,41 @@ const defaultGameplay = {
   mothManualSwellPeriodMs: 2200,
   mothForwardReleaseCarryMs: 2300,
   mothForwardReleasePushScale: 0.4,
-  mothGlowPulseSpeed: 0.55,
-  mothFlutterSpeed: 0.9,
-  mothFlutterAmount: 0.072,
-  mothBobAmount: 5.5,
+  mothGlowPulseSpeed: 0.6,
+  mothFlutterSpeed: 0.8,
+  mothFlutterAmount: 0.07,
+  mothBobAmount: 8,
   mothLeanForwardAmount: 0.08,
-  mothLeanBackwardAmount: 0.02,
-  mothStretchAmount: 0.015,
+  mothLeanBackwardAmount: 0.04,
+  mothStretchAmount: 0.12,
   mothTrailEnabled: true,
   mothTrailStyle: 'mist',
   mothTrailAmount: 0.5,
   mothTrailWaveAmount: 10,
-  mothTrailSparkle: 0.25,
+  mothTrailSparkle: 1,
   mothHeadingMode: 'north',
-  routePathVisible: true,
+  routePathVisible: false,
   cameraExtensionEnabled: true,
-  cameraExtensionZoomScale: 0.95,
+  cameraExtensionZoomScale: 0.93,
   cameraExtensionInnerScale: 0.9,
-  cameraExtensionRoundness: 0.65,
-  cameraExtensionDensity: 1,
-  cameraExtensionBlurAmount: 6,
+  cameraExtensionRoundness: 0.8,
+  cameraExtensionDensity: 2.5,
+  cameraExtensionBlurAmount: 5.5,
   musicEnabled: true,
   musicVolume: 0.56,
+  musicMuted: false,
 }
 
 describe('project helpers', () => {
   it('uses the Moonlit Jungle Drift MVP defaults', () => {
     const project = createDefaultProject()
     expect(project.title).toBe('Moonlit Jungle Drift')
-    expect(project.route).toHaveLength(45)
+    expect(project.route).toHaveLength(50)
     expect(project.items).toHaveLength(109)
     expect(project.layers.background.parallax).toBe(0.51)
     expect(project.layers.foreground.parallax).toBe(0.87)
     expect(project.gameplay).toEqual(defaultGameplay)
-    expect(project.camera).toEqual({ x: 13487, y: 4738, zoom: 0.08 })
+    expect(project.camera).toEqual({ x: 29711.510828599072, y: 0, zoom: 0.46399999999999997 })
   })
 
   it('resolves every default project asset through the approved manifest', () => {
@@ -117,26 +118,26 @@ describe('project helpers', () => {
       mothManualSwellPeriodMs: 2200,
       mothForwardReleaseCarryMs: 2300,
       mothForwardReleasePushScale: 0.4,
-      mothGlowPulseSpeed: 0.55,
-      mothFlutterSpeed: 0.9,
-      mothFlutterAmount: 0.072,
-      mothBobAmount: 5.5,
+      mothGlowPulseSpeed: 0.6,
+      mothFlutterSpeed: 0.8,
+      mothFlutterAmount: 0.07,
+      mothBobAmount: 8,
       mothLeanForwardAmount: 0.08,
-      mothLeanBackwardAmount: 0.02,
-      mothStretchAmount: 0.015,
+      mothLeanBackwardAmount: 0.04,
+      mothStretchAmount: 0.12,
       mothTrailEnabled: true,
       mothTrailStyle: 'mist',
       mothTrailAmount: 0.5,
       mothTrailWaveAmount: 10,
-      mothTrailSparkle: 0.25,
+      mothTrailSparkle: 1,
       mothHeadingMode: 'north',
-      routePathVisible: true,
+      routePathVisible: false,
       cameraExtensionEnabled: true,
-      cameraExtensionZoomScale: 0.95,
+      cameraExtensionZoomScale: 0.93,
       cameraExtensionInnerScale: 0.9,
-      cameraExtensionRoundness: 0.65,
-      cameraExtensionDensity: 1,
-      cameraExtensionBlurAmount: 6,
+      cameraExtensionRoundness: 0.8,
+      cameraExtensionDensity: 2.5,
+      cameraExtensionBlurAmount: 5.5,
       musicEnabled: false,
       musicVolume: 0.2,
     })
@@ -158,14 +159,14 @@ describe('project helpers', () => {
     })
     expect(project.gameplay).toMatchObject({
       mothSpeed: 0.18,
-      mothSize: 2.45,
+      mothSize: 2.35,
       mothGlow: 1.95,
-      mothGlowPulseSpeed: 0.55,
-      mothFlutterSpeed: 0.9,
-      mothFlutterAmount: 0.072,
-      mothBobAmount: 5.5,
+      mothGlowPulseSpeed: 0.6,
+      mothFlutterSpeed: 0.8,
+      mothFlutterAmount: 0.07,
+      mothBobAmount: 8,
       mothLeanForwardAmount: 0.08,
-      mothStretchAmount: 0.015,
+      mothStretchAmount: 0.12,
     })
   })
 
@@ -215,7 +216,7 @@ describe('project helpers', () => {
     expect(project.gameplay.mothTrailEnabled).toBe(false)
     expect(project.gameplay.mothTrailStyle).toBe('mist')
     expect(project.gameplay.mothTrailAmount).toBe(0.5)
-    expect(project.gameplay.mothTrailSparkle).toBe(0.25)
+    expect(project.gameplay.mothTrailSparkle).toBe(1)
   })
 
   it('preserves selected moth trail styles through migration', () => {
