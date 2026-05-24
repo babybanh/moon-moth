@@ -21,6 +21,38 @@ export type SandboxId = 'a' | 'b' | 'c'
 export type CanvasEditTarget = 'none' | 'path' | LayerId
 export type CanvasTarget = 'path' | LayerId
 
+export type AssetRole =
+  | 'Atmosphere'
+  | 'Light FX'
+  | 'Ground & Pools'
+  | 'Foliage'
+  | 'Landmarks'
+  | 'Foreground Masks'
+  | 'Decorations'
+  | 'Special Cues'
+  | 'Other'
+
+export type SubLayer = 'Far' | 'Mid' | 'Near' | 'Overlay/Mask'
+
+export type RenderBand = 'normal' | 'frontOccluder'
+
+export type MusicCueAction = 'none' | 'start' | 'pause' | 'mute' | 'unmute'
+
+export type MothHeadingMode = 'north' | 'path'
+
+export type MothTrailStyle = 'mist' | 'bubble' | 'sparkle'
+
+export type RouteGroup = {
+  id: string
+  name: string
+  routePointIds: string[]
+  speedMultiplier: number
+  holdMs: number
+  cameraZoom?: number
+  musicCue: MusicCueAction
+  notes: string
+}
+
 export type Camera = Point & {
   zoom: number
 }
@@ -28,6 +60,7 @@ export type Camera = Point & {
 export type RoutePoint = Point & {
   id: string
   label: string
+  notes?: string
   handleIn?: Point
   handleOut?: Point
 }
@@ -46,6 +79,10 @@ export type EditorItem = Point & {
   name: string
   assetId: string
   layerId: LayerId
+  role?: AssetRole
+  subLayer?: SubLayer
+  renderBand?: RenderBand
+  notes?: string
   width: number
   height: number
   rotation: number
@@ -59,8 +96,29 @@ export type GameplaySettings = {
   mothSpeed: number
   mothSize: number
   mothGlow: number
+  mothManualSpeedMin?: number
+  mothManualSpeedMax?: number
+  mothManualRampMs?: number
+  mothManualSwellPeak?: number
+  mothManualSwellCruise?: number
+  mothManualSwellPeriodMs?: number
+  mothGlowPulseSpeed?: number
+  mothFlutterSpeed?: number
+  mothFlutterAmount?: number
+  mothBobAmount?: number
+  mothLeanForwardAmount?: number
+  mothLeanBackwardAmount?: number
+  mothStretchAmount?: number
+  mothTrailEnabled?: boolean
+  mothTrailStyle?: MothTrailStyle
+  mothTrailAmount?: number
+  mothTrailWaveAmount?: number
+  mothTrailSparkle?: number
+  mothHeadingMode?: MothHeadingMode
   musicEnabled: boolean
   musicVolume: number
+  musicTrackId?: string
+  musicMuted?: boolean
 }
 
 export type EditorProject = {
@@ -69,6 +127,7 @@ export type EditorProject = {
   world: Size
   routeRenderMode: RouteRenderMode
   route: RoutePoint[]
+  routeGroups?: RouteGroup[]
   layerOrder: LayerId[]
   layers: Record<LayerId, EditorLayer>
   items: EditorItem[]
@@ -83,6 +142,12 @@ export type AssetDefinition = {
   layerIds: LayerId[]
   naturalWidth: number
   naturalHeight: number
+  sourcePath?: string
+  role?: AssetRole
+  defaultSubLayer?: SubLayer
+  group?: string
+  tags?: string[]
+  aliases?: string[]
   folderPath?: string
   fileName?: string
 }
@@ -97,7 +162,7 @@ export type DragState = {
   pointerId: number
   selection: Selection | null
   selectedItemIds: string[]
-  mode: 'pan' | 'move' | 'resize'
+  mode: 'pan' | 'move' | 'resize' | 'select-box'
   startScreen: Point
   startWorld: Point
   startCamera: Camera

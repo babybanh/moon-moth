@@ -790,7 +790,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": false
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "foreground-mist-paste-j2ia5o",
       "name": "",
@@ -820,7 +822,9 @@ export const defaultProjectData = {
       "opacity": 0.92,
       "visible": true,
       "silhouette": false
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr",
       "name": "Soft Moonlight Pool",
@@ -865,7 +869,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-uf1d9a",
       "name": "Hanging Vine Lanterns",
@@ -955,7 +961,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4",
       "name": "Magical Thicket With Glowing Foliage",
@@ -970,7 +978,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-emgfbf",
       "name": "2d Near Foliage Cluster A",
@@ -985,7 +995,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z",
       "name": "Soft Moonlight Pool copy",
@@ -1075,7 +1087,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51",
       "name": "Magical Moonlit Botanical Corner Element",
@@ -1090,7 +1104,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl",
       "name": "Low Cocoon Bud",
@@ -1105,7 +1121,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": false
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm",
       "name": "Drooping Bellflower Cluster",
@@ -1330,7 +1348,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s",
       "name": "2d Near Foliage Cluster A",
@@ -1345,7 +1365,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo",
       "name": "Pearl Fern Cluster",
@@ -1375,7 +1397,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-blush-violet-blossom-mound-png-p7t4gk",
       "name": "Blush Violet Blossom Mound",
@@ -1645,7 +1669,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-z1rbak",
       "name": "Magical Mossy Rock Garden",
@@ -1660,7 +1686,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh",
       "name": "Glowing Enchanted Forest Floor Vignette copy",
@@ -1840,7 +1868,9 @@ export const defaultProjectData = {
       "opacity": 0.62,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "foreground-mist-paste-t0zo6f",
       "name": "Foreground atmosphere: mist veil copy",
@@ -1945,7 +1975,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi",
       "name": "Glowing Botanical Vine copy",
@@ -1960,7 +1992,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf",
       "name": "Landmark Cocoon Shrine",
@@ -2080,7 +2114,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-paste-rktb8o",
       "name": "Magical Thicket With Glowing Foliage copy",
@@ -2095,7 +2131,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-stamp-9xqyj9",
       "name": "Magical Thicket With Glowing Foliage copy",
@@ -2110,7 +2148,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-stamp-7nzu6u",
       "name": "Magical Thicket With Glowing Foliage copy",
@@ -2125,7 +2165,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-paste-5zs4ak",
       "name": "Enchanted Pastel Leaf Vine copy",
@@ -2140,7 +2182,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-paste-niox4g",
       "name": "Pearl Fern Cluster copy",
@@ -2170,7 +2214,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-stamp-f2c1lw",
       "name": "Enchanted Pastel Leaf Vine copy",
@@ -2200,7 +2246,9 @@ export const defaultProjectData = {
       "opacity": 1,
       "visible": true,
       "silhouette": true
-    },
+    ,
+      "notes": "in front path",
+      "renderBand": "frontOccluder"},
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze-png-stamp-ze74s2",
       "name": "Predawn Treetop Haze copy",
@@ -2251,6 +2299,25 @@ export const defaultProjectData = {
     "mothSpeed": 0.25,
     "mothSize": 2.25,
     "mothGlow": 1.85,
+    "mothManualSpeedMin": 0.006,
+    "mothManualSpeedMax": 0.055,
+    "mothManualRampMs": 1200,
+    "mothManualSwellPeak": 0.038,
+    "mothManualSwellCruise": 0.014,
+    "mothManualSwellPeriodMs": 2200,
+    "mothGlowPulseSpeed": 0.35,
+    "mothFlutterSpeed": 0.6,
+    "mothFlutterAmount": 0.044,
+    "mothBobAmount": 2.5,
+    "mothLeanForwardAmount": 0.02,
+    "mothLeanBackwardAmount": 0.02,
+    "mothStretchAmount": 0,
+    "mothTrailEnabled": true,
+    "mothTrailStyle": "mist",
+    "mothTrailAmount": 0.5,
+    "mothTrailWaveAmount": 10,
+    "mothTrailSparkle": 0.25,
+    "mothHeadingMode": "north",
     "musicEnabled": true,
     "musicVolume": 0.56
   },

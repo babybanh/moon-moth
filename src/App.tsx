@@ -1,27 +1,36 @@
-import { Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Play, Plus, RotateCcw, Save, Trash2, ZoomIn } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { assetById, assetLibrary, artworkGroups, mothAsset } from './assets'
+import { ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
   addAssetItem,
   clearProjectStorage,
   createDefaultProject,
   createId,
+  formatProjectCommentsSummary,
+  isFrontOccluder,
   migrateProject,
+  moveItemsToLayerSubLayer,
   nextLayerZIndex,
+  nextSubLayerZIndex,
   readProjectFromStorage,
+  resolveItemRole,
+  resolveItemSubLayer,
   sandboxIds,
   saveProjectToStorage,
 } from './project'
 import {
+  buildRouteSampleData,
   clamp,
   appendRoutePoint,
   distance,
   fitCameraToWorld,
   insertRoutePoint,
+  manualScrubSpeed,
   nearestRouteProgress,
-  sampleRoute,
+  sampleRouteData,
   screenToWorld,
   worldToScreen,
+  type RouteSampleData,
 } from './routeMath'
 import { itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderScene, resizeHandles, type ImageMap } from './renderer'
 import type {
@@ -33,16 +42,34 @@ import type {
   EditorItem,
   EditorProject,
   LayerId,
+  MothTrailStyle,
+  MusicCueAction,
   Point,
+  RouteGroup,
   RoutePoint,
   RouteRenderMode,
   SandboxId,
   Selection,
   Size,
+  SubLayer,
 } from './types'
 
 const defaultViewport: Size = { width: 900, height: 620 }
-const moonMothMusicSrc = '/assets/audio/moon-moth-theme.m4a'
+const editorViewStorageKey = 'moonMothRouteEditor.editorView'
+
+type EditorView = 'compact' | 'classic'
+type SelectionBox = { start: Point; current: Point } | null
+type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
+type ForwardControlState = {
+  pressed: boolean
+  startedAt: number
+}
+type MothMotionState = {
+  velocity: number
+}
+
+const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const maxOpenEditorPanels = 3
 
 function App() {
   const [project, setProject] = useState<EditorProject>(() => readProjectFromStorage('a'))
@@ -54,30 +81,59 @@ function App() {
   const [selectedAssetId, setSelectedAssetId] = useState(assetLibrary[0].id)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
+  const [selectedRoutePointIds, setSelectedRoutePointIds] = useState<string[]>([])
+  const [selectedRouteGroupId, setSelectedRouteGroupId] = useState<string | null>(null)
+  const [selectionBox, setSelectionBox] = useState<SelectionBox>(null)
+  const [editorView, setEditorView] = useState<EditorView>(() => (
+    window.localStorage.getItem(editorViewStorageKey) === 'classic' ? 'classic' : 'compact'
+  ))
+  const [openEditorPanels, setOpenEditorPanels] = useState<EditorPanelTitle[]>(['Moth', 'Route', 'Layers'])
   const [images, setImages] = useState<ImageMap>(() => new Map())
   const [viewport, setViewport] = useState(defaultViewport)
   const [message, setMessage] = useState('Sandbox A loaded')
   const [jsonDraft, setJsonDraft] = useState('')
   const [playProgress, setPlayProgress] = useState(0.06)
   const [playPaused, setPlayPaused] = useState(false)
+  const [forwardPressed, setForwardPressed] = useState(false)
+  const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const jsonTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const historyRef = useRef<{ past: EditorProject[]; future: EditorProject[] }>({ past: [], future: [] })
   const projectRef = useRef(project)
   const selectionRef = useRef(selection)
   const selectedItemIdsRef = useRef(selectedItemIds)
+  const selectedRoutePointIdsRef = useRef(selectedRoutePointIds)
   const playProgressRef = useRef(playProgress)
+  const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 30))
+  const forwardControlRef = useRef<ForwardControlState>({ pressed: false, startedAt: 0 })
+  const mothMotionRef = useRef<MothMotionState>({ velocity: 0 })
+  const tourHoldUntilRef = useRef(0)
+  const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
   const cameraRef = useRef<Camera>(project.camera)
   const copiedItemsRef = useRef<EditorItem[]>([])
   const musicRef = useRef<HTMLAudioElement | null>(null)
+  const failedImageSourcesRef = useRef<Set<string>>(new Set())
+  const selectedMusicTrack = useMemo(
+    () => musicTracks.find((track) => track.id === (project.gameplay.musicTrackId ?? musicTracks[0].id)) ?? musicTracks[0],
+    [project.gameplay.musicTrackId],
+  )
+  const routeSampleData = useMemo(
+    () => buildRouteSampleData(project.route, project.routeRenderMode, 30),
+    [project.route, project.routeRenderMode],
+  )
 
   useEffect(() => {
     projectRef.current = project
     cameraRef.current = project.camera
     setJsonDraft(JSON.stringify(project, null, 2))
   }, [project])
+
+  useEffect(() => {
+    routeSampleDataRef.current = routeSampleData
+  }, [routeSampleData])
 
   useEffect(() => {
     selectionRef.current = selection
@@ -88,6 +144,19 @@ function App() {
   }, [selectedItemIds])
 
   useEffect(() => {
+    selectedRoutePointIdsRef.current = selectedRoutePointIds
+  }, [selectedRoutePointIds])
+
+  useEffect(() => {
+    window.localStorage.setItem(editorViewStorageKey, editorView)
+  }, [editorView])
+
+  useEffect(() => {
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+  }, [project.route, project.routeGroups])
+
+  useEffect(() => {
     playProgressRef.current = playProgress
   }, [playProgress])
 
@@ -95,7 +164,20 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
+      if (event.key === 'Escape' && target?.closest('.canvas-popover')) {
+        event.preventDefault()
+        clearSelection('Closed mini panel')
+        return
+      }
       if (isTyping) {
+        if (event.key === 'Escape') {
+          ;(target as HTMLElement).blur()
+        }
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        clearSelection('Selection cleared')
         return
       }
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -134,76 +216,131 @@ function App() {
       if (event.key === ' ' && appMode === 'play') {
         event.preventDefault()
         if (!event.repeat) {
-          setPlayPaused((current) => {
-            const next = !current
-            setMessage(next ? 'Play paused: use arrow keys to scrub the moth' : 'Play resumed')
-            return next
-          })
+          togglePlayPaused()
         }
       }
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (appMode === 'play' && event.key === 'ArrowRight') {
         event.preventDefault()
-        const direction = event.key === 'ArrowRight' ? 1 : -1
-        const step = event.shiftKey ? 0.04 : 0.012
-        setPlayProgress((current) => clamp(current + direction * step, 0, 1))
-        if (appMode === 'edit') {
-          setMessage('Moved moth along route')
+        if (!event.repeat || !forwardControlRef.current.pressed) {
+          startForwardControl()
+        }
+      }
+      if (appMode === 'play' && event.key === 'ArrowLeft') {
+        event.preventDefault()
+        if (!event.repeat) {
+          setMessage('Backward control is disabled for now')
         }
       }
     }
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowRight') {
+        return
+      }
+      if (forwardControlRef.current.pressed) {
+        stopForwardControl()
+      }
+    }
+    const handleBlur = () => {
+      stopForwardControl()
+    }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleBlur)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleBlur)
+    }
   })
 
   useEffect(() => {
-    const sources = [mothAsset.src, ...assetLibrary.map((asset) => asset.src)]
-    const loaded = new Map<string, HTMLImageElement>()
+    const sources = new Set<string>([mothAsset.src])
+    for (const item of project.items) {
+      const asset = assetById.get(item.assetId)
+      if (asset) {
+        sources.add(asset.src)
+      }
+    }
+    const selectedAsset = assetById.get(selectedAssetId)
+    if (selectedAsset) {
+      sources.add(selectedAsset.src)
+    }
+
+    const missingSources = Array.from(sources).filter((src) => (
+      !failedImageSourcesRef.current.has(src) && !images.has(src)
+    ))
+    if (missingSources.length === 0) {
+      return
+    }
+
     let cancelled = false
-    Promise.all(sources.map((src) => new Promise<void>((resolve) => {
+    Promise.all(missingSources.map((src) => new Promise<[string, HTMLImageElement | null]>((resolve) => {
       const image = new window.Image()
-      image.onload = () => {
-        loaded.set(src, image)
-        resolve()
-      }
-      image.onerror = () => resolve()
+      image.onload = () => resolve([src, image])
+      image.onerror = () => resolve([src, null])
       image.src = src
-    }))).then(() => {
-      if (!cancelled) {
-        setImages(loaded)
+    }))).then((loadedImages) => {
+      if (cancelled) {
+        return
       }
+      const successfulImages: [string, HTMLImageElement][] = []
+      for (const [src, image] of loadedImages) {
+        if (!image || image.naturalWidth === 0) {
+          failedImageSourcesRef.current.add(src)
+        } else {
+          successfulImages.push([src, image])
+        }
+      }
+      if (successfulImages.length === 0) {
+        return
+      }
+      setImages((current) => {
+        const next = new Map(current)
+        for (const [src, image] of successfulImages) {
+          next.set(src, image)
+        }
+        return next
+      })
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [images, project.items, selectedAssetId])
 
   useEffect(() => {
-    const music = new Audio(moonMothMusicSrc)
+    const music = new Audio(selectedMusicTrack.src)
     music.loop = true
     music.preload = 'auto'
-    music.volume = projectRef.current.gameplay.musicVolume
+    music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
     musicRef.current = music
+    if (projectRef.current.gameplay.musicEnabled && !projectRef.current.gameplay.musicMuted) {
+      void music.play().catch(() => {
+        setMessage('Music is ready; press Play Music when the browser allows it')
+      })
+    }
     return () => {
       music.pause()
       musicRef.current = null
     }
-  }, [])
+  }, [selectedMusicTrack.src])
 
   useEffect(() => {
     const music = musicRef.current
     if (!music) {
       return
     }
-    music.volume = project.gameplay.musicVolume
+    music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
     if (!project.gameplay.musicEnabled) {
       music.pause()
       return
     }
-    void music.play().catch(() => {
-      setMessage('Music is ready; press Music On again if the browser blocks it')
-    })
-  }, [project.gameplay.musicEnabled, project.gameplay.musicVolume])
+    if (!project.gameplay.musicMuted && music.paused) {
+      void music.play().catch(() => {
+        setMessage('Music is ready; press Play Music when the browser allows it')
+      })
+    }
+  }, [project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
 
   useEffect(() => {
     const shell = shellRef.current
@@ -229,8 +366,51 @@ function App() {
     const tick = (time: number) => {
       const delta = Math.min(0.05, (time - previous) / 1000)
       previous = time
+      const forwardControl = forwardControlRef.current
+      let targetVelocity = 0
+      let shouldAnimate = appMode === 'play' && !playPaused
       if (appMode === 'play' && !playPaused) {
-        setPlayProgress((current) => (current + delta * 0.055 * projectRef.current.gameplay.mothSpeed) % 1)
+        const current = playProgressRef.current
+        if (tourHoldUntilRef.current > time) {
+          mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 1.8))
+          if (Math.abs(mothMotionRef.current.velocity) > 0.0001) {
+            setAnimationTime(time)
+          }
+          frame = requestAnimationFrame(tick)
+          return
+        }
+        if (forwardControl.pressed && current < 1) {
+          const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
+          const speedMultiplier = activeGroup?.speedMultiplier ?? 1
+          targetVelocity = manualScrubSpeed(time - forwardControl.startedAt, projectRef.current.gameplay, false, 1) * speedMultiplier
+        }
+
+        const response = forwardControl.pressed ? 2.8 : 1.35
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+        if (next !== current) {
+          const crossedGroup = findCrossedRouteGroup(projectRef.current, current, next, triggeredTourCueIdsRef.current)
+          if (crossedGroup) {
+            triggeredTourCueIdsRef.current.add(crossedGroup.id)
+            if (crossedGroup.holdMs > 0) {
+              tourHoldUntilRef.current = time + crossedGroup.holdMs
+            }
+            applyMusicCue(crossedGroup.musicCue)
+            if (crossedGroup.notes) {
+              setMessage(crossedGroup.notes)
+            }
+          }
+          playProgressRef.current = next
+          setPlayProgress(next)
+        } else if (next >= 1) {
+          mothMotionRef.current.velocity = 0
+          stopForwardControl()
+        }
+      } else {
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
+      }
+      if (shouldAnimate || forwardControl.pressed || Math.abs(mothMotionRef.current.velocity) > 0.0001) {
+        setAnimationTime(time)
       }
       frame = requestAnimationFrame(tick)
     }
@@ -242,13 +422,15 @@ function App() {
     if (appMode === 'edit') {
       return project.camera
     }
-    const moth = sampleRoute(project.route, project.routeRenderMode, playProgress)
+    const moth = sampleRouteData(routeSampleData, playProgress)
+    const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
+    const tourZoom = activeGroup?.cameraZoom
     return {
       x: moth.x,
       y: moth.y,
-      zoom: Math.max(project.camera.zoom, 0.58),
+      zoom: Math.max(project.camera.zoom, tourZoom ?? 0.58),
     }
-  }, [appMode, playProgress, project])
+  }, [appMode, playProgress, project, routeSampleData])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -268,12 +450,16 @@ function App() {
       camera: renderCamera,
       images,
       playProgress,
+      routeSampleData,
+      animationTime,
+      mothMotionVelocity: mothMotionRef.current.velocity,
+      mothForwardActive: forwardPressed,
       selection,
       selectedItemIds,
       canvasTargets,
       viewport,
     })
-  }, [appMode, artworkMode, canvasTargets, images, playProgress, project, renderCamera, selectedItemIds, selection, viewport])
+  }, [animationTime, appMode, artworkMode, canvasTargets, forwardPressed, images, playProgress, project, renderCamera, routeSampleData, selectedItemIds, selection, viewport])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -285,6 +471,9 @@ function App() {
   const selectedRoutePoint = selection?.type === 'route-point'
     ? project.route.find((point) => point.id === selection.id) ?? null
     : null
+  const selectedRouteGroup = selectedRouteGroupId
+    ? (project.routeGroups ?? []).find((group) => group.id === selectedRouteGroupId) ?? null
+    : null
   const assetsForLayer = useMemo(
     () => assetLibrary.filter((asset) => asset.layerIds.includes(activeLayerId)),
     [activeLayerId],
@@ -294,6 +483,25 @@ function App() {
     [project],
   )
   const allCanvasTargetsSelected = allCanvasTargets.every((target) => canvasTargets.includes(target))
+  const estimatedLoopSeconds = Math.round(1 / Math.max(0.0001, 0.055 * project.gameplay.mothSpeed))
+  const quickEditorBounds = selectedItem
+    ? itemScreenBounds(selectedItem, project, project.camera, viewport)
+    : null
+  const quickEditorStyle = quickEditorBounds
+    ? {
+      left: clamp(quickEditorBounds.x + quickEditorBounds.width + 12, 12, Math.max(12, viewport.width - 276)),
+      top: clamp(quickEditorBounds.y, 12, Math.max(12, viewport.height - 270)),
+    }
+    : undefined
+  const routeQuickEditorStyle = selectedRoutePoint
+    ? (() => {
+      const screen = worldToScreen(selectedRoutePoint, project.camera, viewport)
+      return {
+        left: clamp(screen.x + 14, 12, Math.max(12, viewport.width - 276)),
+        top: clamp(screen.y + 14, 12, Math.max(12, viewport.height - 190)),
+      }
+    })()
+    : undefined
 
   useEffect(() => {
     if (!assetsForLayer.some((asset) => asset.id === selectedAssetId)) {
@@ -331,6 +539,10 @@ function App() {
     setProject(previous)
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setMessage('Undid last edit')
   }
 
@@ -344,7 +556,60 @@ function App() {
     setProject(next)
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setMessage('Redid edit')
+  }
+
+  function togglePlayPaused() {
+    setPlayPaused((current) => {
+      const next = !current
+      if (next) {
+        stopForwardControl()
+      }
+      setMessage(next ? 'Play paused' : 'Play resumed: hold Forward to move')
+      return next
+    })
+  }
+
+  function startForwardControl() {
+    setAppMode('play')
+    setPlayPaused(false)
+    if (!forwardControlRef.current.pressed) {
+      forwardControlRef.current = { pressed: true, startedAt: performance.now() }
+      setForwardPressed(true)
+      setMessage('Forward held: moth easing ahead')
+    }
+  }
+
+  function stopForwardControl() {
+    const currentControl = forwardControlRef.current
+    if (!currentControl.pressed) {
+      return
+    }
+    const heldMs = performance.now() - currentControl.startedAt
+    forwardControlRef.current = { pressed: false, startedAt: 0 }
+    setForwardPressed(false)
+    if (appMode === 'play' && !playPaused && heldMs < 180) {
+      mothMotionRef.current.velocity = Math.max(mothMotionRef.current.velocity, 0.01)
+      setMessage('Forward tap: small drift')
+      return
+    }
+    setMessage('Forward released: moth drifting')
+  }
+
+  function handleForwardPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    startForwardControl()
+  }
+
+  function handleForwardPointerEnd(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    stopForwardControl()
   }
 
   const setCamera = (camera: Camera, history = true) => {
@@ -359,7 +624,7 @@ function App() {
   }
 
   const cameraAtMoth = (zoom = projectRef.current.camera.zoom): Camera => {
-    const moth = sampleRoute(projectRef.current.route, projectRef.current.routeRenderMode, playProgressRef.current)
+    const moth = sampleRouteData(routeSampleDataRef.current, playProgressRef.current)
     return { x: moth.x, y: moth.y, zoom }
   }
 
@@ -369,7 +634,27 @@ function App() {
       setMessage('Zoomed from moth view')
       return
     }
-    setCamera({ ...project.camera, zoom })
+    setCamera(cameraForZoom(zoom))
+  }
+
+  const cameraForZoom = (zoom: number): Camera => {
+    const selectedZoomItem = selection?.type === 'item'
+      ? project.items.find((item) => item.id === selection.id)
+      : selectedItems[0]
+    if (!selectedZoomItem) {
+      return { ...project.camera, zoom }
+    }
+    const bounds = itemScreenBounds(selectedZoomItem, project, project.camera, viewport)
+    const anchorScreen = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+    }
+    const parallax = project.layers[selectedZoomItem.layerId].parallax
+    return {
+      x: selectedZoomItem.x - (anchorScreen.x - viewport.width / 2) / (zoom * parallax),
+      y: selectedZoomItem.y - (anchorScreen.y - viewport.height / 2) / (zoom * parallax),
+      zoom,
+    }
   }
 
   const handleMothViewToggle = () => {
@@ -386,6 +671,8 @@ function App() {
   }
 
   const handleSandboxChange = (nextSandboxId: SandboxId) => {
+    stopForwardControl()
+    mothMotionRef.current.velocity = 0
     setSandboxId(nextSandboxId)
     const next = readProjectFromStorage(nextSandboxId)
     setProject(next)
@@ -393,26 +680,38 @@ function App() {
     historyRef.current = { past: [], future: [] }
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+    setPlayProgress(0.06)
+    playProgressRef.current = 0.06
     setMessage(`Sandbox ${nextSandboxId.toUpperCase()} loaded`)
   }
 
   const handleSave = () => {
-    saveProjectToStorage(sandboxId, project)
+    const normalized = migrateProject(project)
+    saveProjectToStorage(sandboxId, normalized)
     setMessage(`Saved Sandbox ${sandboxId.toUpperCase()}`)
   }
 
   const handleReset = () => {
+    stopForwardControl()
+    mothMotionRef.current.velocity = 0
     const next = createDefaultProject()
     setProject(next)
     projectRef.current = next
     historyRef.current = { past: [], future: [] }
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setPlayProgress(0.06)
+    playProgressRef.current = 0.06
     setMessage(`Reset Sandbox ${sandboxId.toUpperCase()} to defaults`)
   }
 
   const handleClear = () => {
+    stopForwardControl()
+    mothMotionRef.current.velocity = 0
     clearProjectStorage(sandboxId)
     const next = createDefaultProject()
     setProject(next)
@@ -420,23 +719,51 @@ function App() {
     historyRef.current = { past: [], future: [] }
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+    setPlayProgress(0.06)
+    playProgressRef.current = 0.06
     setMessage(`Cleared Sandbox ${sandboxId.toUpperCase()}`)
   }
 
   const handleCopyJson = async () => {
-    await navigator.clipboard.writeText(JSON.stringify(project, null, 2))
-    setMessage('Project JSON copied')
+    const jsonText = JSON.stringify(migrateProject(project), null, 2)
+    const copied = await copyTextToClipboard(jsonText)
+    if (copied) {
+      setMessage('Project JSON copied')
+      return
+    }
+    setJsonDraft(jsonText)
+    setOpenEditorPanels((current) => [...current.filter((title) => title !== 'JSON'), 'JSON' as EditorPanelTitle].slice(-maxOpenEditorPanels))
+    window.setTimeout(() => {
+      jsonTextareaRef.current?.focus()
+      jsonTextareaRef.current?.select()
+    }, 0)
+    setMessage('Copy blocked; JSON opened and selected for manual copy')
+  }
+
+  const handleCopyComments = async () => {
+    const copied = await copyTextToClipboard(formatProjectCommentsSummary(project))
+    const commentCount = project.items.filter((item) => item.notes?.trim()).length
+      + project.route.filter((point) => point.notes?.trim()).length
+      + (project.routeGroups ?? []).filter((group) => group.notes.trim()).length
+    setMessage(copied ? `Copied ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Copy failed: select comments manually')
   }
 
   const handleApplyJson = () => {
     try {
+      stopForwardControl()
+      mothMotionRef.current.velocity = 0
       const next = migrateProject(JSON.parse(jsonDraft))
       pushHistory(projectRef.current)
       setProject(next)
       projectRef.current = next
       setSelection(null)
       setSelectedItemIds([])
+      setSelectedRoutePointIds([])
+      setSelectedRouteGroupId(null)
       setPlayProgress(0.06)
+      playProgressRef.current = 0.06
       saveProjectToStorage(sandboxId, next)
       setMessage(`Loaded JSON into Sandbox ${sandboxId.toUpperCase()}`)
     } catch {
@@ -461,6 +788,21 @@ function App() {
     setMessage(target === 'path' ? 'Toggled Path canvas layer' : `Toggled ${project.layers[target].label} canvas layer`)
   }
 
+  const toggleEditorPanel = (title: EditorPanelTitle) => {
+    setOpenEditorPanels((current) => {
+      if (current.includes(title)) {
+        return current.filter((panelTitle) => panelTitle !== title)
+      }
+      return [...current, title].slice(-maxOpenEditorPanels)
+    })
+  }
+
+  const panelSectionProps = (title: EditorPanelTitle) => ({
+    editorView,
+    isOpen: editorView === 'classic' || openEditorPanels.includes(title),
+    onToggle: () => toggleEditorPanel(title),
+  })
+
   const handleAddAsset = () => {
     const layerId = activeLayerId
     setActiveLayerId(layerId)
@@ -470,6 +812,8 @@ function App() {
       queueMicrotask(() => {
         setSelection({ type: 'item', id: created.id })
         setSelectedItemIds([created.id])
+        setSelectedRoutePointIds([])
+        setSelectedRouteGroupId(null)
       })
       return next
     })
@@ -499,6 +843,8 @@ function App() {
     projectRef.current = next
     setSelectedItemIds(createdItems.map((item) => item.id))
     setSelection({ type: 'item', id: createdItems[createdItems.length - 1].id })
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setActiveLayerId(createdItems[createdItems.length - 1].layerId)
     setMessage(createdItems.length === 1 ? 'Duplicated item' : `Duplicated ${createdItems.length} items`)
   }
@@ -535,6 +881,8 @@ function App() {
     copiedItemsRef.current = nextItems.map(cloneProjectItem)
     setSelectedItemIds(nextItems.map((item) => item.id))
     setSelection({ type: 'item', id: nextItems[nextItems.length - 1].id })
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setActiveLayerId(nextItems[nextItems.length - 1].layerId)
     return true
   }
@@ -562,6 +910,8 @@ function App() {
     }), { message: createdItems.length === 1 ? `Stamped ${getItemDisplayName(createdItems[0])}` : `Stamped ${createdItems.length} items` })
     setSelectedItemIds(createdItems.map((item) => item.id))
     setSelection({ type: 'item', id: createdItems[createdItems.length - 1].id })
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     setActiveLayerId(createdItems[createdItems.length - 1].layerId)
     return true
   }
@@ -576,12 +926,20 @@ function App() {
         return { ...current, items: current.items.filter((item) => !selectedIds.includes(item.id)) }
       }
       if (targetSelection?.type === 'route-point' && current.route.length > 2) {
-        return { ...current, route: current.route.filter((point) => point.id !== targetSelection.id) }
+        return {
+          ...current,
+          route: current.route.filter((point) => point.id !== targetSelection.id),
+          routeGroups: (current.routeGroups ?? [])
+            .map((group) => ({ ...group, routePointIds: group.routePointIds.filter((id) => id !== targetSelection.id) }))
+            .filter((group) => group.routePointIds.length > 0),
+        }
       }
       return current
     }, { message: selectedIds.length > 1 ? `Deleted ${selectedIds.length} artwork items` : selectedIds.length === 1 ? 'Deleted artwork item' : 'Deleted route point' })
     setSelection(null)
     setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
     return true
   }
 
@@ -611,10 +969,44 @@ function App() {
         queueMicrotask(() => {
           setSelection({ type: 'route-point', id: endPoint.id })
           setSelectedItemIds([])
+          setSelectedRoutePointIds([endPoint.id])
+          setSelectedRouteGroupId(null)
         })
       }
       return expandWorldForRoute({ ...current, route })
     }, { message: 'Added route point at end' })
+  }
+
+  const handleInsertMiddleRoutePoint = () => {
+    if (!selectedRoutePoint) {
+      setMessage('Select a route point first')
+      return
+    }
+    const selectedIndex = project.route.findIndex((point) => point.id === selectedRoutePoint.id)
+    if (selectedIndex < 0 || selectedIndex >= project.route.length - 1) {
+      setMessage('Select a route point with another point after it')
+      return
+    }
+    const nextPoint = project.route[selectedIndex + 1]
+    const startProgress = nearestRouteProgress(project.route, project.routeRenderMode, selectedRoutePoint)
+    const endProgress = nearestRouteProgress(project.route, project.routeRenderMode, nextPoint)
+    const progress = startProgress <= endProgress
+      ? (startProgress + endProgress) / 2
+      : ((startProgress + endProgress + 1) / 2) % 1
+    const existingIds = new Set(project.route.map((point) => point.id))
+    updateProject((current) => {
+      const route = insertRoutePoint(current.route, current.routeRenderMode, progress)
+      const created = route.find((point) => !existingIds.has(point.id))
+      if (created) {
+        queueMicrotask(() => {
+          setSelection({ type: 'route-point', id: created.id })
+          setSelectedItemIds([])
+          setSelectedRoutePointIds([created.id])
+          setSelectedRouteGroupId(null)
+        })
+      }
+      return expandWorldForRoute({ ...current, route })
+    }, { message: 'Added middle route point' })
   }
 
   const handleFit = () => {
@@ -630,8 +1022,19 @@ function App() {
     const resizeCorner = findResizeHandle(screen)
     const hit = resizeCorner ? selectionRef.current : hitTest(screen, world)
 
-    if (event.shiftKey && !resizeCorner && selectedItemIdsRef.current.length > 0) {
-      stampSelectedItemsAt(world)
+    if (event.shiftKey && !resizeCorner) {
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setSelectionBox({ start: screen, current: screen })
+      dragRef.current = {
+        pointerId: event.pointerId,
+        selection: null,
+        selectedItemIds: selectedItemIdsRef.current,
+        mode: 'select-box',
+        startScreen: screen,
+        startWorld: world,
+        startCamera: projectRef.current.camera,
+        startProject: cloneProject(projectRef.current),
+      }
       return
     }
 
@@ -644,6 +1047,19 @@ function App() {
         setSelectedItemIds(nextIds)
         setSelection(nextIds.length > 0 ? { type: 'item', id: nextIds[nextIds.length - 1] } : null)
         setMessage(nextIds.length === 0 ? 'Selection cleared' : `Selected ${nextIds.length} item${nextIds.length === 1 ? '' : 's'}`)
+        setSelectedRoutePointIds([])
+        setSelectedRouteGroupId(null)
+      }
+      if (hit?.type === 'route-point') {
+        const currentIds = selectedRoutePointIdsRef.current
+        const nextIds = currentIds.includes(hit.id)
+          ? currentIds.filter((id) => id !== hit.id)
+          : [...currentIds, hit.id]
+        setSelectedRoutePointIds(nextIds)
+        setSelection(nextIds.length > 0 ? { type: 'route-point', id: nextIds[nextIds.length - 1] } : null)
+        setSelectedItemIds([])
+        setSelectedRouteGroupId(null)
+        setMessage(nextIds.length === 0 ? 'Route selection cleared' : `Selected ${nextIds.length} route checkpoint${nextIds.length === 1 ? '' : 's'}`)
       }
       return
     }
@@ -655,6 +1071,16 @@ function App() {
     event.currentTarget.setPointerCapture(event.pointerId)
     setSelection(hit)
     setSelectedItemIds(dragItemIds)
+    if (hit?.type === 'route-point' || hit?.type === 'route-handle-in' || hit?.type === 'route-handle-out') {
+      setSelectedRoutePointIds([hit.id])
+      setSelectedRouteGroupId(null)
+    } else if (hit?.type === 'item') {
+      setSelectedRoutePointIds([])
+      setSelectedRouteGroupId(null)
+    } else {
+      setSelectedRoutePointIds([])
+      setSelectedRouteGroupId(null)
+    }
     const dragMode = resizeCorner && hit?.type === 'item' ? 'resize' : hit ? 'move' : 'pan'
     if (dragMode === 'move' || dragMode === 'resize') {
       pushHistory(projectRef.current)
@@ -681,6 +1107,11 @@ function App() {
     const world = screenToWorld(screen, drag.startCamera, viewport)
     const dx = world.x - drag.startWorld.x
     const dy = world.y - drag.startWorld.y
+
+    if (drag.mode === 'select-box') {
+      setSelectionBox((current) => current ? { ...current, current: screen } : { start: drag.startScreen, current: screen })
+      return
+    }
 
     if (drag.mode === 'pan') {
       setCamera({
@@ -720,7 +1151,26 @@ function App() {
   }
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) {
+    const drag = dragRef.current
+    if (drag?.pointerId === event.pointerId) {
+      if (drag.mode === 'select-box') {
+        const end = eventToCanvasPoint(event)
+        const rect = makeScreenRect(drag.startScreen, end)
+        if (rect.width < 5 && rect.height < 5 && drag.selectedItemIds.length > 0) {
+          const stampPoint = screenToWorld(end, drag.startCamera, viewport)
+          setSelectionBox(null)
+          stampSelectedItemsAt(stampPoint)
+          dragRef.current = null
+          return
+        }
+        const selectedIds = selectVisibleItemsInRect(projectRef.current, rect, projectRef.current.camera, viewport, canvasTargets)
+        setSelectedItemIds(selectedIds)
+        setSelection(selectedIds.length > 0 ? { type: 'item', id: selectedIds[selectedIds.length - 1] } : null)
+        setSelectedRoutePointIds([])
+        setSelectedRouteGroupId(null)
+        setSelectionBox(null)
+        setMessage(selectedIds.length === 0 ? 'No artwork in selection box' : `Selected ${selectedIds.length} artwork item${selectedIds.length === 1 ? '' : 's'}`)
+      }
       dragRef.current = null
     }
   }
@@ -744,20 +1194,12 @@ function App() {
     }
     event.preventDefault()
     if (event.ctrlKey || event.metaKey || event.altKey) {
-      const screen = eventToCanvasPoint(event)
-      const before = screenToWorld(screen, project.camera, viewport)
       const nextZoom = clamp(project.camera.zoom * Math.exp(-event.deltaY * 0.002), 0.08, 1.7)
       if (zoomFromMothView) {
         setCamera(cameraAtMoth(nextZoom))
         return
       }
-      const nextCamera = { ...project.camera, zoom: nextZoom }
-      const after = screenToWorld(screen, nextCamera, viewport)
-      setCamera({
-        x: project.camera.x + before.x - after.x,
-        y: project.camera.y + before.y - after.y,
-        zoom: nextZoom,
-      })
+      setCamera(cameraForZoom(nextZoom))
     } else {
       setCamera({
         ...project.camera,
@@ -794,23 +1236,21 @@ function App() {
       queueMicrotask(() => {
         setSelection({ type: 'item', id: created.id })
         setSelectedItemIds([created.id])
+        setSelectedRoutePointIds([])
+        setSelectedRouteGroupId(null)
       })
       return next
     }, { message: 'Dropped artwork onto canvas' })
   }
 
   const hitTest = (screen: Point, world: Point): Selection | null => {
-    for (const layerId of [...orderedLayerIds(project)].reverse().filter((layerId) => canvasTargets.includes(layerId))) {
-      if (!project.layers[layerId].visible) {
-        continue
-      }
-      const layerItems = orderItemsByLayerZ(project.items.filter((candidate) => candidate.layerId === layerId && candidate.visible)).reverse()
-      for (const item of layerItems) {
-        const bounds = itemScreenBounds(item, project, project.camera, viewport)
-        if (screen.x >= bounds.x && screen.x <= bounds.x + bounds.width && screen.y >= bounds.y && screen.y <= bounds.y + bounds.height) {
-          return { type: 'item', id: item.id }
-        }
-      }
+    const frontHit = hitTestItems(screen, (item) => isFrontOccluder(item), true)
+    if (frontHit) {
+      return frontHit
+    }
+    const normalHit = hitTestItems(screen, (item) => !isFrontOccluder(item))
+    if (normalHit) {
+      return normalHit
     }
 
     if (!canvasTargets.includes('path')) {
@@ -835,6 +1275,24 @@ function App() {
     return null
   }
 
+  const hitTestItems = (screen: Point, filterItem: (item: EditorItem) => boolean, includeAllLayers = false): Selection | null => {
+    for (const layerId of [...orderedLayerIds(project)].reverse().filter((layerId) => includeAllLayers || canvasTargets.includes(layerId))) {
+      if (!project.layers[layerId].visible) {
+        continue
+      }
+      const layerItems = orderItemsByLayerZ(project.items.filter((candidate) => (
+        candidate.layerId === layerId && candidate.visible && filterItem(candidate)
+      ))).reverse()
+      for (const item of layerItems) {
+        const bounds = itemScreenBounds(item, project, project.camera, viewport)
+        if (screen.x >= bounds.x && screen.x <= bounds.x + bounds.width && screen.y >= bounds.y && screen.y <= bounds.y + bounds.height) {
+          return { type: 'item', id: item.id }
+        }
+      }
+    }
+    return null
+  }
+
   const findResizeHandle = (screen: Point) => {
     if (selection?.type !== 'item') {
       return undefined
@@ -848,22 +1306,8 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}`}>
       <section className="stage-panel">
-        <div className="stage-topbar">
-          <div className="segmented" aria-label="Mode">
-            <button className={appMode === 'play' ? 'active' : ''} type="button" onClick={() => {
-              setAppMode('play')
-              setPlayPaused(false)
-            }}><Play size={15} /> Play</button>
-            <button className={appMode === 'edit' ? 'active' : ''} type="button" onClick={() => setAppMode('edit')}><MousePointer2 size={15} /> Edit</button>
-          </div>
-          <div className="segmented" aria-label="Artwork mode">
-            <button className={artworkMode === 'art' ? 'active' : ''} type="button" onClick={() => setArtworkMode('art')}><Image size={15} /> Art</button>
-            <button className={artworkMode === 'blockout' ? 'active' : ''} type="button" onClick={() => setArtworkMode('blockout')}>No Artwork</button>
-          </div>
-          <div className="toolbar-readout">{message}</div>
-        </div>
         <div className="canvas-shell" ref={shellRef}>
           <canvas
             ref={canvasRef}
@@ -876,12 +1320,114 @@ function App() {
             onDragOver={handleCanvasDragOver}
             onDrop={handleCanvasDrop}
           />
+          {selectionBox && (
+            <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
+          )}
+          {selectedItems.length > 1 && quickEditorStyle && (
+            <CanvasMultiQuickEditor
+              items={selectedItems}
+              style={quickEditorStyle}
+              onChange={(patch) => updateSelectedItems(patch)}
+              onSendWayBack={() => moveItemsToLayerBack(selectedItems.map((item) => item.id))}
+              onDelete={handleDelete}
+              onClose={() => clearSelection('Closed mini panel')}
+              onOpenDetails={() => setEditorView('compact')}
+            />
+          )}
+          {selectedItem && selectedItems.length <= 1 && quickEditorStyle && (
+            <CanvasItemQuickEditor
+              item={selectedItem}
+              style={quickEditorStyle}
+              onChange={(patch) => updateItem(selectedItem.id, patch)}
+              onDuplicate={handleDuplicate}
+              onSendWayBack={() => moveItemsToLayerBack([selectedItem.id])}
+              onDelete={handleDelete}
+              onClose={() => clearSelection('Closed mini panel')}
+              onOpenDetails={() => setEditorView('compact')}
+            />
+          )}
+          {selectedRoutePoint && selectedItems.length === 0 && routeQuickEditorStyle && (
+            <CanvasRouteQuickEditor
+              point={selectedRoutePoint}
+              selectedCount={selectedRoutePointIds.length}
+              style={routeQuickEditorStyle}
+              onChange={(patch) => updateRoutePoint(selectedRoutePoint.id, patch)}
+              onCreateGroup={createRouteGroupFromSelection}
+              onDelete={handleDelete}
+              onClose={() => clearSelection('Closed route mini panel')}
+            />
+          )}
         </div>
+        <div className="stage-topbar">
+          <div className="segmented" aria-label="Mode">
+            <button className={appMode === 'play' ? 'active' : ''} type="button" onClick={() => {
+              setAppMode('play')
+              setPlayPaused(false)
+              setMessage('Play ready: hold Forward to move')
+            }}><Play size={15} /> Play</button>
+            {appMode === 'play' && (
+              <button className={playPaused ? 'active' : ''} type="button" onClick={togglePlayPaused}>
+                {playPaused ? <Play size={15} /> : <Pause size={15} />} {playPaused ? 'Resume' : 'Pause'}
+              </button>
+            )}
+            {appMode === 'play' && (
+              <button
+                className={forwardPressed ? 'active forward-hold-button' : 'forward-hold-button'}
+                type="button"
+                onPointerDown={handleForwardPointerDown}
+                onPointerUp={handleForwardPointerEnd}
+                onPointerCancel={handleForwardPointerEnd}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <ChevronRight size={16} /> Forward
+              </button>
+            )}
+            <button className={appMode === 'edit' ? 'active' : ''} type="button" onClick={() => setAppMode('edit')}><MousePointer2 size={15} /> Edit</button>
+          </div>
+          <div className="segmented" aria-label="Artwork mode">
+            <button className={artworkMode === 'art' ? 'active' : ''} type="button" onClick={() => setArtworkMode('art')}><Image size={15} /> Art</button>
+            <button className={artworkMode === 'blockout' ? 'active' : ''} type="button" onClick={() => setArtworkMode('blockout')}>No Artwork</button>
+          </div>
+          <div className="target-bar top-targets" aria-label="Canvas layer isolation">
+            <button className={allCanvasTargetsSelected ? 'active' : ''} type="button" onClick={() => handleCanvasTargetToggle('all')}>
+              All
+            </button>
+            <button className={canvasTargets.includes('path') ? 'active' : ''} type="button" onClick={() => handleCanvasTargetToggle('path')}>
+              Path
+            </button>
+            {orderedLayerIds(project).map((layerId) => (
+              <button key={layerId} className={canvasTargets.includes(layerId) ? 'active' : ''} type="button" onClick={() => handleCanvasTargetToggle(layerId)}>
+                {project.layers[layerId].label}
+              </button>
+            ))}
+          </div>
+          <button
+            className={editorView === 'classic' ? 'active view-toggle' : 'view-toggle'}
+            type="button"
+            onClick={() => setEditorView((current) => current === 'classic' ? 'compact' : 'classic')}
+          >
+            {editorView === 'classic' ? 'Classic' : 'Compact'}
+          </button>
+          <div className="toolbar-readout">{message}</div>
+        </div>
+        {editorView === 'compact' && (
+          <div className="panel-dock" aria-label="Editor panels">
+            {editorPanelTitles.map((title) => (
+              <button
+                key={title}
+                className={openEditorPanels.includes(title) ? 'active' : ''}
+                type="button"
+                onClick={() => toggleEditorPanel(title)}
+              >
+                {title}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <aside className="editor-panel">
-        <section className="panel-section">
-          <h2>Sandbox</h2>
+        <EditorSection title="Scene" {...panelSectionProps('Scene')}>
           <div className="segmented three">
             {sandboxIds.map((id) => (
               <button key={id} className={sandboxId === id ? 'active' : ''} type="button" onClick={() => handleSandboxChange(id)}>
@@ -894,25 +1440,13 @@ function App() {
             <button type="button" onClick={handleReset}><RotateCcw size={15} /> Reset</button>
             <button type="button" onClick={handleClear}><Trash2 size={15} /> Clear</button>
             <button type="button" onClick={handleCopyJson}><Copy size={15} /> Copy JSON</button>
+            <button type="button" onClick={handleCopyComments}><Copy size={15} /> Copy Comments</button>
             <button type="button" onClick={undo} disabled={historyRef.current.past.length === 0}>Undo</button>
             <button type="button" onClick={redo} disabled={historyRef.current.future.length === 0}>Redo</button>
           </div>
-          <label className="json-scratchpad">
-            Quick Save JSON
-            <textarea
-              spellCheck={false}
-              value={jsonDraft}
-              onChange={(event) => setJsonDraft(event.target.value)}
-            />
-          </label>
-          <div className="button-grid">
-            <button type="button" onClick={handleApplyJson}>Load JSON</button>
-            <button type="button" onClick={() => setJsonDraft(JSON.stringify(project, null, 2))}>Refresh JSON</button>
-          </div>
-        </section>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>Route</h2>
+        <EditorSection title="Route" {...panelSectionProps('Route')}>
           <div className="segmented route-mode">
             {(['polyline', 'smooth', 'bezier'] satisfies RouteRenderMode[]).map((mode) => (
               <button
@@ -927,18 +1461,285 @@ function App() {
           </div>
           <div className="button-grid">
             <button type="button" onClick={handleInsertRoutePoint}><Plus size={15} /> Add End Point</button>
+            <button
+              type="button"
+              onClick={handleInsertMiddleRoutePoint}
+              disabled={!selectedRoutePoint || project.route.findIndex((point) => point.id === selectedRoutePoint.id) >= project.route.length - 1}
+            >
+              <Plus size={15} /> Add Middle Point
+            </button>
             <button type="button" onClick={handleDelete} disabled={!selection || (selection.type === 'route-point' && project.route.length <= 2)}><Trash2 size={15} /> Delete</button>
           </div>
           {selectedRoutePoint && (
-            <div className="inspector-grid">
-              <label>X <input type="number" value={Math.round(selectedRoutePoint.x)} onChange={(event) => updateRoutePoint(selectedRoutePoint.id, { x: Number(event.target.value) })} /></label>
-              <label>Y <input type="number" value={Math.round(selectedRoutePoint.y)} onChange={(event) => updateRoutePoint(selectedRoutePoint.id, { y: Number(event.target.value) })} /></label>
+            <div className="selected-editor">
+              <div className="inspector-grid">
+                <label>X <input type="number" value={Math.round(selectedRoutePoint.x)} onChange={(event) => updateRoutePoint(selectedRoutePoint.id, { x: Number(event.target.value) })} /></label>
+                <label>Y <input type="number" value={Math.round(selectedRoutePoint.y)} onChange={(event) => updateRoutePoint(selectedRoutePoint.id, { y: Number(event.target.value) })} /></label>
+              </div>
+              <label>
+                Path comment
+                <textarea rows={2} value={selectedRoutePoint.notes ?? ''} onChange={(event) => updateRoutePoint(selectedRoutePoint.id, { notes: event.target.value })} />
+              </label>
             </div>
           )}
-        </section>
+          <div className="route-selection-tools">
+            <p className="target-hint">
+              {selectedRoutePointIds.length === 0
+                ? 'Cmd/Ctrl-click checkpoints to build a tour cue group.'
+                : `${selectedRoutePointIds.length} checkpoint${selectedRoutePointIds.length === 1 ? '' : 's'} selected`}
+            </p>
+            <button type="button" onClick={createRouteGroupFromSelection} disabled={selectedRoutePointIds.length === 0}>
+              <Plus size={15} /> Create Tour Cue
+            </button>
+          </div>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>View</h2>
+        <EditorSection title="Tour" {...panelSectionProps('Tour')}>
+          <RouteGroupEditor
+            project={project}
+            selectedRoutePointIds={selectedRoutePointIds}
+            selectedRouteGroupId={selectedRouteGroupId}
+            onSelectGroup={(group) => {
+              setSelectedRouteGroupId(group.id)
+              setSelectedRoutePointIds(group.routePointIds)
+              setSelection(group.routePointIds.length > 0 ? { type: 'route-point', id: group.routePointIds[group.routePointIds.length - 1] } : null)
+              setSelectedItemIds([])
+            }}
+            onCreate={createRouteGroupFromSelection}
+            onChange={updateRouteGroup}
+            onDelete={deleteRouteGroup}
+          />
+        </EditorSection>
+
+        <EditorSection title="Moth" {...panelSectionProps('Moth')}>
+          <div className="moth-panel-preview">
+            <img src={mothAsset.src} alt="" />
+            <div>
+              <strong>Main character</strong>
+              <span>Path-following behavior</span>
+            </div>
+          </div>
+          <label className="range-row">
+            Speed
+            <input
+              min="0.1"
+              max="0.4"
+              step="0.01"
+              type="range"
+              value={project.gameplay.mothSpeed}
+              onChange={(event) => updateGameplay({ mothSpeed: Number(event.target.value) }, 'Updated moth speed')}
+            />
+            <span>{project.gameplay.mothSpeed.toFixed(2)}x</span>
+          </label>
+          <label className="range-row">
+            Size
+            <input
+              min="0.35"
+              max="4"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothSize}
+              onChange={(event) => updateGameplay({ mothSize: Number(event.target.value) }, 'Updated moth size')}
+            />
+            <span>{project.gameplay.mothSize.toFixed(2)}x</span>
+          </label>
+          <label className="range-row">
+            Glow
+            <input
+              min="0"
+              max="3"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothGlow}
+              onChange={(event) => updateGameplay({ mothGlow: Number(event.target.value) }, 'Updated moth glow')}
+            />
+            <span>{project.gameplay.mothGlow.toFixed(2)}x</span>
+          </label>
+          <label className="range-row">
+            Glow Pulse
+            <input
+              min="0.05"
+              max="1.2"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothGlowPulseSpeed ?? 0.35}
+              onChange={(event) => updateGameplay({ mothGlowPulseSpeed: Number(event.target.value) }, 'Updated glow pulse')}
+            />
+            <span>{(project.gameplay.mothGlowPulseSpeed ?? 0.35).toFixed(2)}Hz</span>
+          </label>
+          <p className="target-hint">Loop estimate: <strong>{estimatedLoopSeconds}s</strong> before cue pauses.</p>
+          <label className="range-row">
+            Flutter Speed
+            <input
+              min="0.6"
+              max="4"
+              step="0.1"
+              type="range"
+              value={project.gameplay.mothFlutterSpeed ?? 2}
+              onChange={(event) => updateGameplay({ mothFlutterSpeed: Number(event.target.value) }, 'Updated flutter speed')}
+            />
+            <span>{(project.gameplay.mothFlutterSpeed ?? 2).toFixed(1)}Hz</span>
+          </label>
+          <label className="range-row">
+            Flutter Amount
+            <input
+              min="0"
+              max="0.08"
+              step="0.002"
+              type="range"
+              value={project.gameplay.mothFlutterAmount ?? 0.018}
+              onChange={(event) => updateGameplay({ mothFlutterAmount: Number(event.target.value) }, 'Updated flutter amount')}
+            />
+            <span>{(project.gameplay.mothFlutterAmount ?? 0.018).toFixed(3)}</span>
+          </label>
+          <label className="range-row">
+            Bob
+            <input
+              min="0"
+              max="8"
+              step="0.25"
+              type="range"
+              value={project.gameplay.mothBobAmount ?? 2.5}
+              onChange={(event) => updateGameplay({ mothBobAmount: Number(event.target.value) }, 'Updated moth bob')}
+            />
+            <span>{(project.gameplay.mothBobAmount ?? 2.5).toFixed(1)}px</span>
+          </label>
+          <label className="range-row">
+            Forward Lean
+            <input
+              min="0"
+              max="0.08"
+              step="0.005"
+              type="range"
+              value={project.gameplay.mothLeanForwardAmount ?? 0.02}
+              onChange={(event) => updateGameplay({ mothLeanForwardAmount: Number(event.target.value) }, 'Updated forward micro drift')}
+            />
+            <span>{(project.gameplay.mothLeanForwardAmount ?? 0.02).toFixed(3)}</span>
+          </label>
+          <label className="range-row">
+            Back Lean
+            <input
+              min="0"
+              max="0.08"
+              step="0.005"
+              type="range"
+              value={project.gameplay.mothLeanBackwardAmount ?? 0.02}
+              onChange={(event) => updateGameplay({ mothLeanBackwardAmount: Number(event.target.value) }, 'Updated backward micro drift')}
+            />
+            <span>{(project.gameplay.mothLeanBackwardAmount ?? 0.02).toFixed(3)}</span>
+          </label>
+          <label className="range-row">
+            Stretch
+            <input
+              min="0"
+              max="0.12"
+              step="0.005"
+              type="range"
+              value={project.gameplay.mothStretchAmount ?? 0}
+              onChange={(event) => updateGameplay({ mothStretchAmount: Number(event.target.value) }, 'Updated moth stretch')}
+            />
+            <span>{(project.gameplay.mothStretchAmount ?? 0).toFixed(3)}</span>
+          </label>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={project.gameplay.mothTrailEnabled !== false}
+              onChange={(event) => updateGameplay({ mothTrailEnabled: event.target.checked }, event.target.checked ? 'Trail enabled' : 'Trail disabled')}
+            />
+            Trail
+          </label>
+          <label>
+            Trail Feel
+            <select
+              value={project.gameplay.mothTrailStyle ?? 'mist'}
+              onChange={(event) => updateGameplay({ mothTrailStyle: event.target.value as MothTrailStyle }, 'Updated trail feel')}
+            >
+              <option value="mist">Moon Mist</option>
+              <option value="bubble">Heavier Pearls</option>
+              <option value="sparkle">Sparkle Dust</option>
+            </select>
+          </label>
+          <label className="range-row">
+            Trail Amount
+            <input
+              min="0"
+              max="1"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothTrailAmount ?? 0.5}
+              onChange={(event) => updateGameplay({ mothTrailAmount: Number(event.target.value) }, 'Updated trail amount')}
+            />
+            <span>{(project.gameplay.mothTrailAmount ?? 0.5).toFixed(2)}</span>
+          </label>
+          <label className="range-row">
+            Trail Wave
+            <input
+              min="0"
+              max="32"
+              step="1"
+              type="range"
+              value={project.gameplay.mothTrailWaveAmount ?? 10}
+              onChange={(event) => updateGameplay({ mothTrailWaveAmount: Number(event.target.value) }, 'Updated trail wave')}
+            />
+            <span>{Math.round(project.gameplay.mothTrailWaveAmount ?? 10)}px</span>
+          </label>
+          <label className="range-row">
+            Trail Glints
+            <input
+              min="0"
+              max="1"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothTrailSparkle ?? 0.25}
+              onChange={(event) => updateGameplay({ mothTrailSparkle: Number(event.target.value) }, 'Updated trail glints')}
+            />
+            <span>{(project.gameplay.mothTrailSparkle ?? 0.25).toFixed(2)}</span>
+          </label>
+          <label className="range-row">
+            Forward Accel
+            <input
+              min="300"
+              max="3000"
+              step="100"
+              type="range"
+              value={project.gameplay.mothManualRampMs ?? 1200}
+              onChange={(event) => updateGameplay({ mothManualRampMs: Number(event.target.value) }, 'Updated forward acceleration')}
+            />
+            <span>{((project.gameplay.mothManualRampMs ?? 1200) / 1000).toFixed(1)}s</span>
+          </label>
+          <div className="button-grid">
+            <button
+              className={forwardPressed ? 'active' : ''}
+              type="button"
+              onPointerDown={handleForwardPointerDown}
+              onPointerUp={handleForwardPointerEnd}
+              onPointerCancel={handleForwardPointerEnd}
+              onContextMenu={(event) => event.preventDefault()}
+            >
+              <ChevronRight size={15} /> Hold Forward
+            </button>
+            <button className={appMode === 'play' && playPaused ? 'active' : ''} type="button" onClick={() => {
+              setAppMode('play')
+              togglePlayPaused()
+            }}>
+              {playPaused ? <Play size={15} /> : <Pause size={15} />} {playPaused ? 'Resume' : 'Pause'}
+            </button>
+            <button type="button" onClick={() => {
+              stopForwardControl()
+              mothMotionRef.current.velocity = 0
+              setPlayProgress(0)
+              playProgressRef.current = 0
+              setMessage('Moth returned to route start')
+            }}>
+              <SkipBack size={15} /> Route Start
+            </button>
+            <button className={zoomFromMothView ? 'active' : ''} type="button" onClick={handleMothViewToggle}>
+              <Crosshair size={15} /> Follow View
+            </button>
+          </div>
+        </EditorSection>
+
+        <EditorSection title="View" {...panelSectionProps('View')}>
           <label className="range-row">
             <ZoomIn size={15} />
             <input min="0.08" max="1.7" step="0.01" type="range" value={project.camera.zoom} onChange={(event) => setZoom(Number(event.target.value))} />
@@ -953,49 +1754,27 @@ function App() {
           <button className={zoomFromMothView ? 'active wide-button' : 'wide-button'} type="button" onClick={handleMothViewToggle}>
             <Crosshair size={15} /> Moth View Zoom
           </button>
-        </section>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>Gameplay</h2>
-          <label className="range-row">
-            Speed
-            <input
-              min="0.1"
-              max="3"
-              step="0.05"
-              type="range"
-              value={project.gameplay.mothSpeed}
-              onChange={(event) => updateGameplay({ mothSpeed: Number(event.target.value) })}
-            />
-            <span>{project.gameplay.mothSpeed.toFixed(2)}x</span>
+        <EditorSection title="Music" {...panelSectionProps('Music')}>
+          <label>
+            Track
+            <select value={selectedMusicTrack.id} onChange={(event) => handleMusicTrackChange(event.target.value)}>
+              {musicTracks.map((track) => <option key={track.id} value={track.id}>{track.label}</option>)}
+            </select>
           </label>
-          <label className="range-row">
-            Size
-            <input
-              min="0.35"
-              max="2.25"
-              step="0.05"
-              type="range"
-              value={project.gameplay.mothSize}
-              onChange={(event) => updateGameplay({ mothSize: Number(event.target.value) })}
-            />
-            <span>{project.gameplay.mothSize.toFixed(2)}x</span>
-          </label>
-          <label className="range-row">
-            Glow
-            <input
-              min="0"
-              max="2"
-              step="0.05"
-              type="range"
-              value={project.gameplay.mothGlow}
-              onChange={(event) => updateGameplay({ mothGlow: Number(event.target.value) })}
-            />
-            <span>{project.gameplay.mothGlow.toFixed(2)}x</span>
-          </label>
-          <div className="button-grid">
-            <button className={project.gameplay.musicEnabled ? 'active' : ''} type="button" onClick={handleMusicToggle}>
-              <Music size={15} /> {project.gameplay.musicEnabled ? 'Music On' : 'Music Off'}
+          <div className="button-grid music-controls">
+            <button className={project.gameplay.musicEnabled ? 'active' : ''} type="button" onClick={() => handleMusicPlay()}>
+              <Play size={15} /> Play
+            </button>
+            <button type="button" onClick={() => handleMusicPause()}>
+              <Pause size={15} /> Pause
+            </button>
+            <button type="button" onClick={() => handleMusicRestart()}>
+              <SkipBack size={15} /> Restart
+            </button>
+            <button className={project.gameplay.musicMuted ? 'active' : ''} type="button" onClick={() => handleMusicMuteToggle()}>
+              {project.gameplay.musicMuted ? <VolumeX size={15} /> : <Volume2 size={15} />} Mute
             </button>
           </div>
           <label className="range-row">
@@ -1010,10 +1789,9 @@ function App() {
             />
             <span>{Math.round(project.gameplay.musicVolume * 100)}%</span>
           </label>
-        </section>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>Layers</h2>
+        <EditorSection title="Layers" {...panelSectionProps('Layers')}>
           <div className="target-bar" aria-label="Canvas layer isolation">
             <button className={allCanvasTargetsSelected ? 'active' : ''} type="button" onClick={() => handleCanvasTargetToggle('all')}>
               All
@@ -1060,46 +1838,59 @@ function App() {
             </div>
           ))}
           <div className="item-list">
-            {orderItemsByLayerZ(project.items.filter((item) => item.layerId === activeLayerId))
-              .reverse()
-              .map((item) => (
-                <div
-                  key={item.id}
-                  className={selectedItemIds.includes(item.id) ? 'item-list-row active' : 'item-list-row'}
-                >
-                  <button type="button" onClick={(event) => {
-                    if (event.metaKey || event.ctrlKey) {
-                      const nextIds = selectedItemIds.includes(item.id)
-                        ? selectedItemIds.filter((id) => id !== item.id)
-                        : [...selectedItemIds, item.id]
-                      setSelectedItemIds(nextIds)
-                      setSelection(nextIds.length > 0 ? { type: 'item', id: nextIds[nextIds.length - 1] } : null)
-                      return
-                    }
-                    setSelection({ type: 'item', id: item.id })
-                    setSelectedItemIds([item.id])
-                  }}>
-                    <span>{getItemDisplayName(item)}</span>
-                    <small>{item.visible ? 'visible' : 'hidden'} · {Math.round(item.opacity * 100)}%</small>
-                  </button>
-                  <div className="item-z-buttons" aria-label="Item stack order">
-                    <button className="mini" type="button" title="Move backward in this layer" onClick={() => moveItemsInLayerZ([item.id], -1)}>
-                      Back
-                    </button>
-                    <button className="mini" type="button" title="Move forward in this layer" onClick={() => moveItemsInLayerZ([item.id], 1)}>
-                      Fwd
-                    </button>
-                  </div>
-                  <button type="button" title={`Delete ${getItemDisplayName(item)}`} onClick={() => handleDeleteItem(item.id)}>
-                    <Trash2 size={14} />
-                  </button>
+            {groupItemsForLayer(project.items, activeLayerId).map((group) => (
+              <div className="item-role-group" key={group.key}>
+                <div className="item-role-heading">
+                  <span>{group.label}</span>
+                  <small>{group.items.length}</small>
                 </div>
-              ))}
+                {group.items.map((item) => {
+                  const asset = assetById.get(item.assetId)
+                  return (
+                    <div
+                      key={item.id}
+                      className={selectedItemIds.includes(item.id) ? 'item-list-row active' : 'item-list-row'}
+                    >
+                      <button type="button" onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey) {
+                          const nextIds = selectedItemIds.includes(item.id)
+                            ? selectedItemIds.filter((id) => id !== item.id)
+                            : [...selectedItemIds, item.id]
+                          setSelectedItemIds(nextIds)
+                          setSelection(nextIds.length > 0 ? { type: 'item', id: nextIds[nextIds.length - 1] } : null)
+                          setSelectedRoutePointIds([])
+                          setSelectedRouteGroupId(null)
+                          return
+                        }
+                        setSelection({ type: 'item', id: item.id })
+                        setSelectedItemIds([item.id])
+                        setSelectedRoutePointIds([])
+                        setSelectedRouteGroupId(null)
+                      }}>
+                        {asset ? <img className="item-preview" src={asset.src} alt="" loading="lazy" /> : <span className="item-preview missing">?</span>}
+                        <span>{getItemDisplayName(item)}</span>
+                        <small>{resolveItemSubLayer(item)} · {item.visible ? 'visible' : 'hidden'} · {Math.round(item.opacity * 100)}%</small>
+                      </button>
+                      <div className="item-z-buttons" aria-label="Item stack order">
+                        <button className="mini" type="button" title="Move backward in this layer" onClick={() => moveItemsInLayerZ([item.id], -1)}>
+                          Back
+                        </button>
+                        <button className="mini" type="button" title="Move forward in this layer" onClick={() => moveItemsInLayerZ([item.id], 1)}>
+                          Fwd
+                        </button>
+                      </div>
+                      <button type="button" title={`Delete ${getItemDisplayName(item)}`} onClick={() => handleDeleteItem(item.id)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
-        </section>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>Artwork</h2>
+        <EditorSection title="Assets" {...panelSectionProps('Assets')}>
           <select value={selectedAssetId} onChange={(event) => setSelectedAssetId(event.target.value)}>
             {assetsForLayer.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
           </select>
@@ -1125,18 +1916,18 @@ function App() {
                         event.dataTransfer.setData('application/x-moon-moth-asset', asset.id)
                       }}
                     >
-                      <img src={asset.src} alt="" />
+                      <img src={asset.src} alt="" loading="lazy" />
                       <span>{asset.label}</span>
+                      <small>{asset.defaultSubLayer ?? 'Mid'} · {(asset.tags ?? []).slice(0, 2).join(', ')}</small>
                     </button>
                   ))}
                 </div>
               </details>
             ))}
           </div>
-        </section>
+        </EditorSection>
 
-        <section className="panel-section">
-          <h2>Selected</h2>
+        <EditorSection title="Selection" {...panelSectionProps('Selection')}>
           {selectedItems.length > 1 ? (
             <MultiSelectedItemInspector
               items={selectedItems}
@@ -1154,7 +1945,23 @@ function App() {
           ) : (
             <p className="muted">Select an asset or route point on the canvas.</p>
           )}
-        </section>
+        </EditorSection>
+
+        <EditorSection title="JSON" {...panelSectionProps('JSON')}>
+          <label className="json-scratchpad">
+            Quick Save JSON
+            <textarea
+              ref={jsonTextareaRef}
+              spellCheck={false}
+              value={jsonDraft}
+              onChange={(event) => setJsonDraft(event.target.value)}
+            />
+          </label>
+          <div className="button-grid">
+            <button type="button" onClick={handleApplyJson}>Load JSON</button>
+            <button type="button" onClick={() => setJsonDraft(JSON.stringify(project, null, 2))}>Refresh JSON</button>
+          </div>
+        </EditorSection>
       </aside>
     </main>
   )
@@ -1169,31 +1976,140 @@ function App() {
     }))
   }
 
-  function updateGameplay(patch: Partial<EditorProject['gameplay']>, message = 'Updated moth gameplay settings') {
+  function clearSelection(nextMessage?: string) {
+    setSelection(null)
+    setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+    setSelectionBox(null)
+    dragRef.current = null
+    if (nextMessage) {
+      setMessage(nextMessage)
+    }
+  }
+
+  function updateGameplay(patch: Partial<EditorProject['gameplay']>, message = 'Updated moth gameplay settings', history = true) {
     updateProject((current) => ({
       ...current,
       gameplay: {
         ...current.gameplay,
         ...patch,
       },
-    }), { message })
+    }), { message, history })
   }
 
-  function handleMusicToggle() {
-    const nextEnabled = !projectRef.current.gameplay.musicEnabled
+  function handleMusicPlay(history = true) {
     const music = musicRef.current
-    if (!nextEnabled) {
-      music?.pause()
-      updateGameplay({ musicEnabled: false }, 'Moon Moth music off')
-      return
-    }
     if (music) {
-      music.volume = projectRef.current.gameplay.musicVolume
+      music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
       void music.play().catch(() => {
-        setMessage('Music is ready; press Music On again if the browser blocks it')
+        setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
-    updateGameplay({ musicEnabled: true }, 'Moon Moth music on')
+    updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music playing', history)
+  }
+
+  function handleMusicPause(history = true) {
+    musicRef.current?.pause()
+    updateGameplay({ musicEnabled: false }, 'Moon Moth music paused', history)
+  }
+
+  function handleMusicRestart(history = true) {
+    const music = musicRef.current
+    if (music) {
+      music.currentTime = 0
+      if (projectRef.current.gameplay.musicEnabled) {
+        void music.play().catch(() => {
+          setMessage('Music is ready; press Play Music when the browser allows it')
+        })
+      }
+    }
+    updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music restarted', history)
+  }
+
+  function handleMusicMuteToggle(history = true) {
+    const muted = !projectRef.current.gameplay.musicMuted
+    const music = musicRef.current
+    if (music) {
+      music.volume = muted ? 0 : projectRef.current.gameplay.musicVolume
+    }
+    updateGameplay({ musicMuted: muted }, muted ? 'Moon Moth music muted' : 'Moon Moth music unmuted', history)
+  }
+
+  function handleMusicTrackChange(trackId: string) {
+    const track = musicTracks.find((candidate) => candidate.id === trackId)
+    if (!track) {
+      return
+    }
+    updateGameplay({ musicTrackId: track.id }, `Selected ${track.label}`)
+  }
+
+  function applyMusicCue(action: MusicCueAction) {
+    if (action === 'none') {
+      return
+    }
+    if (action === 'start') {
+      handleMusicPlay(false)
+    }
+    if (action === 'pause') {
+      handleMusicPause(false)
+    }
+    if (action === 'mute' && !projectRef.current.gameplay.musicMuted) {
+      handleMusicMuteToggle(false)
+    }
+    if (action === 'unmute' && projectRef.current.gameplay.musicMuted) {
+      handleMusicMuteToggle(false)
+    }
+  }
+
+  function createRouteGroupFromSelection() {
+    const routePointIds = selectedRoutePointIdsRef.current.filter((id) => projectRef.current.route.some((point) => point.id === id))
+    if (routePointIds.length === 0) {
+      setMessage('Select one or more checkpoints first')
+      return
+    }
+    const group: RouteGroup = {
+      id: createId('route-group'),
+      name: `Tour Cue ${(projectRef.current.routeGroups ?? []).length + 1}`,
+      routePointIds,
+      speedMultiplier: 1,
+      holdMs: 0,
+      cameraZoom: undefined,
+      musicCue: 'none',
+      notes: '',
+    }
+    updateProject((current) => ({
+      ...current,
+      routeGroups: [...(current.routeGroups ?? []), group],
+    }), { message: `Created ${group.name}` })
+    setSelectedRouteGroupId(group.id)
+  }
+
+  function updateRouteGroup(groupId: string, patch: Partial<RouteGroup>) {
+    updateProject((current) => ({
+      ...current,
+      routeGroups: (current.routeGroups ?? []).map((group) => (
+        group.id === groupId
+          ? {
+            ...group,
+            ...patch,
+            speedMultiplier: patch.speedMultiplier ?? group.speedMultiplier,
+            holdMs: patch.holdMs ?? group.holdMs,
+            routePointIds: patch.routePointIds ?? group.routePointIds,
+          }
+          : group
+      )),
+    }), { message: 'Updated tour cue' })
+  }
+
+  function deleteRouteGroup(groupId: string) {
+    updateProject((current) => ({
+      ...current,
+      routeGroups: (current.routeGroups ?? []).filter((group) => group.id !== groupId),
+    }), { message: 'Deleted tour cue' })
+    if (selectedRouteGroupId === groupId) {
+      setSelectedRouteGroupId(null)
+    }
   }
 
   function moveLayer(layerId: LayerId, direction: -1 | 1) {
@@ -1246,12 +2162,279 @@ function App() {
     return true
   }
 
-  function updateRoutePoint(id: string, patch: Partial<Point>) {
+  function moveItemsToLayerBack(itemIds: string[]) {
+    const ids = [...new Set(itemIds.filter((id) => projectRef.current.items.some((item) => item.id === id)))]
+    if (ids.length === 0) {
+      return false
+    }
+    updateProject((current) => sendItemsToLayerBack(current, ids), {
+      message: ids.length === 1 ? 'Sent artwork to back of layer' : `Sent ${ids.length} artworks to back of layer`,
+    })
+    setSelectedItemIds(ids)
+    setSelection({ type: 'item', id: ids[ids.length - 1] })
+    return true
+  }
+
+  function updateRoutePoint(id: string, patch: Partial<RoutePoint>) {
     updateProject((current) => expandWorldForRoute({
       ...current,
       route: current.route.map((point) => (point.id === id ? { ...point, ...patch } : point)),
     }))
   }
+}
+
+function EditorSection({ title, editorView, isOpen = true, onToggle, children }: {
+  title: string
+  editorView: EditorView
+  isOpen?: boolean
+  onToggle?: () => void
+  children: ReactNode
+}) {
+  if (editorView === 'classic') {
+    return (
+      <section className="panel-section">
+        <h2>{title}</h2>
+        {children}
+      </section>
+    )
+  }
+  if (!isOpen) {
+    return null
+  }
+  return (
+    <section className="panel-section compact-section">
+      <div className="compact-section-header">
+        <h2>{title}</h2>
+        <button type="button" aria-label={`Collapse ${title}`} title={`Collapse ${title}`} onClick={onToggle}>-</button>
+      </div>
+      <div className="panel-section-body">{children}</div>
+    </section>
+  )
+}
+
+function CanvasItemQuickEditor({ item, style, onChange, onDuplicate, onSendWayBack, onDelete, onClose, onOpenDetails }: {
+  item: EditorItem
+  style: CSSProperties
+  onChange: (patch: Partial<EditorItem>) => void
+  onDuplicate: () => void
+  onSendWayBack: () => void
+  onDelete: () => void
+  onClose: () => void
+  onOpenDetails: () => void
+}) {
+  return (
+    <div className="canvas-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
+      <div className="popover-header">
+        <input className="popover-title-input" value={getItemDisplayName(item)} onChange={(event) => onChange({ name: event.target.value })} />
+        <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
+      </div>
+      <div className="quick-grid">
+        <label>
+          Role
+          <select value={resolveItemRole(item)} onChange={(event) => onChange({ role: event.target.value as EditorItem['role'] })}>
+            {assetRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+          </select>
+        </label>
+        <label>
+          Layer
+          <select value={item.layerId} onChange={(event) => onChange({ layerId: event.target.value as LayerId })}>
+            <option value="background">Background</option>
+            <option value="foreground">Foreground</option>
+          </select>
+        </label>
+        <label>
+          Sub-layer
+          <select value={resolveItemSubLayer(item)} onChange={(event) => onChange({ subLayer: event.target.value as SubLayer })}>
+            {subLayers.map((subLayer) => <option key={subLayer} value={subLayer}>{subLayer}</option>)}
+          </select>
+        </label>
+        <label>
+          Opacity
+          <input min="0" max="1" step="0.01" type="range" value={item.opacity} onChange={(event) => onChange({ opacity: Number(event.target.value) })} />
+        </label>
+      </div>
+      <label className="mini-comment">
+        Comment
+        <textarea
+          rows={2}
+          value={item.notes ?? ''}
+          placeholder="Leave a note for this exact asset"
+          onChange={(event) => onChange({ notes: event.target.value })}
+        />
+      </label>
+      <div className="button-grid">
+        <button className={item.visible ? 'active' : ''} type="button" onClick={() => onChange({ visible: !item.visible })}>{item.visible ? <Eye size={14} /> : <EyeOff size={14} />} Visible</button>
+        <button className={item.silhouette ? 'active' : ''} type="button" onClick={() => onChange({ silhouette: !item.silhouette })}>Mask</button>
+        <button className={isFrontOccluder(item) ? 'active' : ''} type="button" onClick={() => onChange({ renderBand: isFrontOccluder(item) ? 'normal' : 'frontOccluder' })}>Front</button>
+        <button type="button" onClick={onSendWayBack}><SkipBack size={14} /> Way Back</button>
+        <button type="button" onClick={onDuplicate}><Copy size={14} /> Copy</button>
+        <button type="button" onClick={onOpenDetails}>Details</button>
+        <button type="button" onClick={onDelete}><Trash2 size={14} /> Delete</button>
+      </div>
+    </div>
+  )
+}
+
+function CanvasMultiQuickEditor({ items, style, onChange, onSendWayBack, onDelete, onClose, onOpenDetails }: {
+  items: EditorItem[]
+  style: CSSProperties
+  onChange: (patch: Partial<EditorItem>) => void
+  onSendWayBack: () => void
+  onDelete: () => void
+  onClose: () => void
+  onOpenDetails: () => void
+}) {
+  const first = items[0]
+  const sameLayer = items.every((item) => item.layerId === first.layerId)
+  const sameRole = items.every((item) => resolveItemRole(item) === resolveItemRole(first))
+  const sameSubLayer = items.every((item) => resolveItemSubLayer(item) === resolveItemSubLayer(first))
+  const allVisible = items.every((item) => item.visible)
+  const allSilhouette = items.every((item) => item.silhouette)
+  const allFrontOccluders = items.every((item) => isFrontOccluder(item))
+  return (
+    <div className="canvas-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
+      <div className="popover-header">
+        <div className="popover-title">{items.length} items selected</div>
+        <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
+      </div>
+      <div className="quick-grid">
+        <label>
+          Role
+          <select value={sameRole ? resolveItemRole(first) : ''} onChange={(event) => onChange({ role: event.target.value as EditorItem['role'] })}>
+            <option value="" disabled>Mixed</option>
+            {assetRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+          </select>
+        </label>
+        <label>
+          Layer
+          <select value={sameLayer ? first.layerId : ''} onChange={(event) => onChange({ layerId: event.target.value as LayerId })}>
+            <option value="" disabled>Mixed</option>
+            <option value="background">Background</option>
+            <option value="foreground">Foreground</option>
+          </select>
+        </label>
+        <label>
+          Sub-layer
+          <select value={sameSubLayer ? resolveItemSubLayer(first) : ''} onChange={(event) => onChange({ subLayer: event.target.value as SubLayer })}>
+            <option value="" disabled>Mixed</option>
+            {subLayers.map((subLayer) => <option key={subLayer} value={subLayer}>{subLayer}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="button-grid">
+        <button className={allVisible ? 'active' : ''} type="button" onClick={() => onChange({ visible: !allVisible })}>{allVisible ? <Eye size={14} /> : <EyeOff size={14} />} Visible</button>
+        <button className={allSilhouette ? 'active' : ''} type="button" onClick={() => onChange({ silhouette: !allSilhouette })}>Mask</button>
+        <button className={allFrontOccluders ? 'active' : ''} type="button" onClick={() => onChange({ renderBand: allFrontOccluders ? 'normal' : 'frontOccluder' })}>Front</button>
+        <button type="button" onClick={onSendWayBack}><SkipBack size={14} /> Way Back</button>
+        <button type="button" onClick={onOpenDetails}>Details</button>
+        <button type="button" onClick={onDelete}><Trash2 size={14} /> Delete</button>
+      </div>
+    </div>
+  )
+}
+
+function CanvasRouteQuickEditor({ point, selectedCount, style, onChange, onCreateGroup, onDelete, onClose }: {
+  point: RoutePoint
+  selectedCount: number
+  style: CSSProperties
+  onChange: (patch: Partial<RoutePoint>) => void
+  onCreateGroup: () => void
+  onDelete: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="canvas-popover compact-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
+      <div className="popover-header">
+        <div className="popover-title">{point.label}</div>
+        <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
+      </div>
+      <p className="item-meta">{selectedCount} checkpoint{selectedCount === 1 ? '' : 's'} selected</p>
+      <label className="mini-comment">
+        Path comment
+        <textarea
+          rows={2}
+          value={point.notes ?? ''}
+          placeholder="Leave a note for this checkpoint"
+          onChange={(event) => onChange({ notes: event.target.value })}
+        />
+      </label>
+      <div className="button-grid">
+        <button type="button" onClick={onCreateGroup} disabled={selectedCount === 0}><Plus size={14} /> Cue</button>
+        <button type="button" onClick={onDelete}><Trash2 size={14} /> Delete</button>
+      </div>
+    </div>
+  )
+}
+
+function RouteGroupEditor({ project, selectedRoutePointIds, selectedRouteGroupId, onSelectGroup, onCreate, onChange, onDelete }: {
+  project: EditorProject
+  selectedRoutePointIds: string[]
+  selectedRouteGroupId: string | null
+  onSelectGroup: (group: RouteGroup) => void
+  onCreate: () => void
+  onChange: (groupId: string, patch: Partial<RouteGroup>) => void
+  onDelete: (groupId: string) => void
+}) {
+  const groups = project.routeGroups ?? []
+  const selectedGroup = groups.find((group) => group.id === selectedRouteGroupId) ?? null
+  return (
+    <div className="tour-editor">
+      <div className="button-grid">
+        <button type="button" onClick={onCreate} disabled={selectedRoutePointIds.length === 0}><Plus size={15} /> Cue From Selection</button>
+      </div>
+      <div className="tour-group-list">
+        {groups.length === 0 ? (
+          <p className="muted">Create cue groups from selected checkpoints.</p>
+        ) : groups.map((group) => (
+          <button key={group.id} className={group.id === selectedRouteGroupId ? 'tour-group-row active' : 'tour-group-row'} type="button" onClick={() => onSelectGroup(group)}>
+            <span>{group.name}</span>
+            <small>{group.routePointIds.length} point{group.routePointIds.length === 1 ? '' : 's'} · {group.speedMultiplier.toFixed(2)}x · {group.musicCue}</small>
+          </button>
+        ))}
+      </div>
+      {selectedGroup && (
+        <div className="selected-editor tour-detail">
+          <label>
+            Name
+            <input value={selectedGroup.name} onChange={(event) => onChange(selectedGroup.id, { name: event.target.value })} />
+          </label>
+          <label className="range-row">
+            Speed
+            <input min="0.05" max="3" step="0.05" type="range" value={selectedGroup.speedMultiplier} onChange={(event) => onChange(selectedGroup.id, { speedMultiplier: Number(event.target.value) })} />
+            <span>{selectedGroup.speedMultiplier.toFixed(2)}x</span>
+          </label>
+          <label className="range-row">
+            Hold
+            <input min="0" max="10000" step="250" type="range" value={selectedGroup.holdMs} onChange={(event) => onChange(selectedGroup.id, { holdMs: Number(event.target.value) })} />
+            <span>{(selectedGroup.holdMs / 1000).toFixed(1)}s</span>
+          </label>
+          <label className="range-row">
+            Camera
+            <input
+              min="0.08"
+              max="1.7"
+              step="0.01"
+              type="range"
+              value={selectedGroup.cameraZoom ?? project.camera.zoom}
+              onChange={(event) => onChange(selectedGroup.id, { cameraZoom: Number(event.target.value) })}
+            />
+            <span>{Math.round((selectedGroup.cameraZoom ?? project.camera.zoom) * 100)}%</span>
+          </label>
+          <label>
+            Music cue
+            <select value={selectedGroup.musicCue} onChange={(event) => onChange(selectedGroup.id, { musicCue: event.target.value as MusicCueAction })}>
+              {(['none', 'start', 'pause', 'mute', 'unmute'] satisfies MusicCueAction[]).map((cue) => <option key={cue} value={cue}>{cue}</option>)}
+            </select>
+          </label>
+          <label>
+            Note
+            <textarea rows={2} value={selectedGroup.notes} onChange={(event) => onChange(selectedGroup.id, { notes: event.target.value })} />
+          </label>
+          <button type="button" onClick={() => onDelete(selectedGroup.id)}><Trash2 size={15} /> Delete Cue</button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function SelectedItemInspector({ item, onChange, onMoveZ, onDelete }: {
@@ -1275,11 +2458,37 @@ function SelectedItemInspector({ item, onChange, onMoveZ, onDelete }: {
         </select>
       </label>
       <div className="inspector-grid">
+        <label>
+          Role
+          <select value={resolveItemRole(item)} onChange={(event) => onChange({ role: event.target.value as EditorItem['role'] })}>
+            {assetRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+          </select>
+        </label>
+        <label>
+          Sub-layer
+          <select value={resolveItemSubLayer(item)} onChange={(event) => onChange({ subLayer: event.target.value as SubLayer })}>
+            {subLayers.map((subLayer) => <option key={subLayer} value={subLayer}>{subLayer}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="inspector-grid">
         <label>X <input type="number" value={Math.round(item.x)} onChange={(event) => onChange({ x: Number(event.target.value) })} /></label>
         <label>Y <input type="number" value={Math.round(item.y)} onChange={(event) => onChange({ y: Number(event.target.value) })} /></label>
         <label>W <input type="number" value={Math.round(item.width)} onChange={(event) => onChange({ width: Math.max(20, Number(event.target.value)) })} /></label>
         <label>H <input type="number" value={Math.round(item.height)} onChange={(event) => onChange({ height: Math.max(20, Number(event.target.value)) })} /></label>
       </div>
+      <label>
+        Notes
+        <textarea rows={2} value={item.notes ?? ''} onChange={(event) => onChange({ notes: event.target.value })} />
+      </label>
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={isFrontOccluder(item)}
+          onChange={(event) => onChange({ renderBand: event.target.checked ? 'frontOccluder' : 'normal' })}
+        />
+        In front of path+moth
+      </label>
       <label className="range-row">
         Opacity
         <input min="0" max="1" step="0.01" type="range" value={item.opacity} onChange={(event) => onChange({ opacity: Number(event.target.value) })} />
@@ -1312,12 +2521,15 @@ function MultiSelectedItemInspector({ items, onChange, onMoveZ, onDelete }: {
 }) {
   const first = items[0]
   const sameLayer = items.every((item) => item.layerId === first.layerId)
+  const sameRole = items.every((item) => resolveItemRole(item) === resolveItemRole(first))
+  const sameSubLayer = items.every((item) => resolveItemSubLayer(item) === resolveItemSubLayer(first))
   const averageWidth = Math.round(items.reduce((sum, item) => sum + item.width, 0) / items.length)
   const averageHeight = Math.round(items.reduce((sum, item) => sum + item.height, 0) / items.length)
   const averageOpacity = items.reduce((sum, item) => sum + item.opacity, 0) / items.length
   const averageRotation = items.reduce((sum, item) => sum + item.rotation, 0) / items.length
   const allVisible = items.every((item) => item.visible)
   const allSilhouette = items.every((item) => item.silhouette)
+  const allFrontOccluders = items.every((item) => isFrontOccluder(item))
 
   return (
     <div className="selected-editor">
@@ -1331,6 +2543,22 @@ function MultiSelectedItemInspector({ items, onChange, onMoveZ, onDelete }: {
         </select>
       </label>
       <div className="inspector-grid">
+        <label>
+          Role
+          <select value={sameRole ? resolveItemRole(first) : ''} onChange={(event) => onChange({ role: event.target.value as EditorItem['role'] })}>
+            <option value="" disabled>Mixed roles</option>
+            {assetRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+          </select>
+        </label>
+        <label>
+          Sub-layer
+          <select value={sameSubLayer ? resolveItemSubLayer(first) : ''} onChange={(event) => onChange({ subLayer: event.target.value as SubLayer })}>
+            <option value="" disabled>Mixed sub-layers</option>
+            {subLayers.map((subLayer) => <option key={subLayer} value={subLayer}>{subLayer}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="inspector-grid">
         <label>W <input type="number" value={averageWidth} onChange={(event) => onChange({ width: Math.max(20, Number(event.target.value)) })} /></label>
         <label>H <input type="number" value={averageHeight} onChange={(event) => onChange({ height: Math.max(20, Number(event.target.value)) })} /></label>
       </div>
@@ -1343,6 +2571,14 @@ function MultiSelectedItemInspector({ items, onChange, onMoveZ, onDelete }: {
         Rotate
         <input min="-180" max="180" step="1" type="range" value={averageRotation} onChange={(event) => onChange({ rotation: Number(event.target.value) })} />
         <span>{Math.round(averageRotation)}°</span>
+      </label>
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={allFrontOccluders}
+          onChange={(event) => onChange({ renderBand: event.target.checked ? 'frontOccluder' : 'normal' })}
+        />
+        In front of path+moth
       </label>
       <div className="button-grid">
         <button type="button" onClick={() => onMoveZ(-1)}>Send Back</button>
@@ -1359,29 +2595,37 @@ function MultiSelectedItemInspector({ items, onChange, onMoveZ, onDelete }: {
 }
 
 function assignFrontZIndexes(project: EditorProject, items: EditorItem[]) {
-  const nextByLayer = new Map<LayerId, number>()
+  const nextByLayer = new Map<string, number>()
   return items.map((item) => {
-    const zIndex = nextByLayer.get(item.layerId) ?? nextLayerZIndex(project, item.layerId)
-    nextByLayer.set(item.layerId, zIndex + 1)
+    const subLayer = resolveItemSubLayer(item)
+    const key = `${item.layerId}:${subLayer}`
+    const zIndex = nextByLayer.get(key) ?? nextSubLayerZIndex(project, item.layerId, subLayer)
+    nextByLayer.set(key, zIndex + 1)
     return { ...item, zIndex }
   })
 }
 
 function applyItemPatchWithLayerZ(project: EditorProject, ids: string[], patch: Partial<EditorItem>) {
   const selected = new Set(ids)
-  const nextByLayer = new Map<LayerId, number>()
+  const nextByGroup = new Map<string, number>()
   return project.items.map((item) => {
     if (!selected.has(item.id)) {
       return item
     }
     const nextLayerId = patch.layerId ?? item.layerId
-    const movedLayer = Boolean(patch.layerId && patch.layerId !== item.layerId)
-    if (!movedLayer) {
+    const currentSubLayer = resolveItemSubLayer(item)
+    const nextSubLayer = patch.subLayer ?? currentSubLayer
+    const movedGroup = Boolean(
+      (patch.layerId && patch.layerId !== item.layerId)
+      || (patch.subLayer && patch.subLayer !== currentSubLayer),
+    )
+    if (!movedGroup) {
       return { ...item, ...patch }
     }
-    const zIndex = nextByLayer.get(nextLayerId) ?? nextLayerZIndex(project, nextLayerId)
-    nextByLayer.set(nextLayerId, zIndex + 1)
-    return { ...item, ...patch, zIndex }
+    const key = `${nextLayerId}:${nextSubLayer}`
+    const zIndex = nextByGroup.get(key) ?? nextSubLayerZIndex(project, nextLayerId, nextSubLayer)
+    nextByGroup.set(key, zIndex + 1)
+    return { ...item, ...patch, layerId: nextLayerId, subLayer: nextSubLayer, zIndex }
   })
 }
 
@@ -1424,6 +2668,31 @@ function reorderItemsWithinLayers(project: EditorProject, ids: string[], directi
   }
 }
 
+function sendItemsToLayerBack(project: EditorProject, ids: string[]): EditorProject {
+  const selected = new Set(ids)
+  const affectedLayers = new Set(
+    project.items
+      .filter((item) => selected.has(item.id))
+      .map((item) => item.layerId),
+  )
+  const updates = new Map<string, EditorItem>()
+
+  for (const layerId of affectedLayers) {
+    const layerItems = orderItemsByLayerZ(project.items.filter((item) => item.layerId === layerId))
+    const selectedItems = layerItems.filter((item) => selected.has(item.id))
+    const otherItems = layerItems.filter((item) => !selected.has(item.id))
+    const reorderedItems = [...selectedItems, ...otherItems]
+    reorderedItems.forEach((item, zIndex) => {
+      updates.set(item.id, { ...item, zIndex })
+    })
+  }
+
+  return {
+    ...project,
+    items: project.items.map((item) => updates.get(item.id) ?? item),
+  }
+}
+
 function getItemDisplayName(item: EditorItem) {
   return item.name?.trim() || assetLibrary.find((asset) => asset.id === item.assetId)?.label || item.assetId
 }
@@ -1431,6 +2700,152 @@ function getItemDisplayName(item: EditorItem) {
 function formatCanvasTargets(targets: CanvasTarget[], project: EditorProject) {
   const labels = targets.map((target) => target === 'path' ? 'Path' : project.layers[target].label)
   return labels.join(' + ')
+}
+
+async function copyTextToClipboard(text: string) {
+  if (copyTextWithTextarea(text)) {
+    return true
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function copyTextWithTextarea(text: string) {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.top = '0'
+  document.body.append(textarea)
+  textarea.focus()
+  textarea.select()
+  try {
+    return document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
+    textarea.remove()
+  }
+}
+
+function groupItemsForLayer(items: EditorItem[], layerId: LayerId) {
+  const groups = new Map<string, { key: string; label: string; items: EditorItem[] }>()
+  for (const item of orderItemsByLayerZ(items.filter((candidate) => candidate.layerId === layerId)).reverse()) {
+    const role = resolveItemRole(item)
+    const subLayer = resolveItemSubLayer(item)
+    const key = `${subLayer}:${role}`
+    const label = `${subLayer} · ${role}`
+    const group = groups.get(key) ?? { key, label, items: [] }
+    group.items.push(item)
+    groups.set(key, group)
+  }
+  const roleRank = new Map(assetRoles.map((role, index) => [role, index]))
+  const subLayerRank = new Map(subLayers.map((subLayer, index) => [subLayer, index]))
+  return Array.from(groups.values()).sort((a, b) => {
+    const [aSubLayer, aRole] = a.key.split(':') as [SubLayer, string]
+    const [bSubLayer, bRole] = b.key.split(':') as [SubLayer, string]
+    return (subLayerRank.get(aSubLayer) ?? 99) - (subLayerRank.get(bSubLayer) ?? 99)
+      || (roleRank.get(aRole as (typeof assetRoles)[number]) ?? 99) - (roleRank.get(bRole as (typeof assetRoles)[number]) ?? 99)
+  })
+}
+
+function makeScreenRect(start: Point, current: Point) {
+  const x = Math.min(start.x, current.x)
+  const y = Math.min(start.y, current.y)
+  return {
+    x,
+    y,
+    width: Math.abs(current.x - start.x),
+    height: Math.abs(current.y - start.y),
+  }
+}
+
+function screenRectStyle(rect: { x: number; y: number; width: number; height: number }): CSSProperties {
+  return {
+    left: rect.x,
+    top: rect.y,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+function selectVisibleItemsInRect(
+  project: EditorProject,
+  rect: { x: number; y: number; width: number; height: number },
+  camera: Camera,
+  viewport: Size,
+  canvasTargets: CanvasTarget[],
+) {
+  if (rect.width < 3 && rect.height < 3) {
+    return []
+  }
+  const selectedIds: string[] = []
+  for (const layerId of orderedLayerIds(project)) {
+    if (!canvasTargets.includes(layerId) || !project.layers[layerId].visible) {
+      continue
+    }
+    for (const item of project.items.filter((candidate) => candidate.layerId === layerId && candidate.visible)) {
+      const bounds = itemScreenBounds(item, project, camera, viewport)
+      if (rectsOverlap(rect, bounds)) {
+        selectedIds.push(item.id)
+      }
+    }
+  }
+  return selectedIds
+}
+
+function rectsOverlap(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) {
+  return a.x <= b.x + b.width
+    && a.x + a.width >= b.x
+    && a.y <= b.y + b.height
+    && a.y + a.height >= b.y
+}
+
+function getRouteGroupAnchorProgress(project: EditorProject, group: RouteGroup) {
+  const point = project.route.find((candidate) => candidate.id === group.routePointIds[0])
+  if (!point) {
+    return 1
+  }
+  return nearestRouteProgress(project.route, project.routeRenderMode, point)
+}
+
+function getSortedRouteGroups(project: EditorProject) {
+  return [...(project.routeGroups ?? [])].sort((a, b) => getRouteGroupAnchorProgress(project, a) - getRouteGroupAnchorProgress(project, b))
+}
+
+function getActiveRouteGroupAtProgress(project: EditorProject, progress: number) {
+  const groups = getSortedRouteGroups(project)
+  if (groups.length === 0) {
+    return null
+  }
+  let active: RouteGroup | null = null
+  for (const group of groups) {
+    if (getRouteGroupAnchorProgress(project, group) <= progress) {
+      active = group
+    } else {
+      break
+    }
+  }
+  return active
+}
+
+function findCrossedRouteGroup(project: EditorProject, fromProgress: number, toProgress: number, triggeredIds: Set<string>) {
+  const groups = getSortedRouteGroups(project)
+  return groups.find((group) => {
+    if (triggeredIds.has(group.id)) {
+      return false
+    }
+    const anchor = getRouteGroupAnchorProgress(project, group)
+    if (toProgress >= fromProgress) {
+      return anchor > fromProgress && anchor <= toProgress
+    }
+    return anchor > fromProgress || anchor <= toProgress
+  }) ?? null
 }
 
 function eventToCanvasPoint(

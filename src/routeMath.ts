@@ -1,4 +1,25 @@
-import type { Camera, Point, RoutePoint, RouteRenderMode, Size } from './types'
+import type { Camera, GameplaySettings, Point, RoutePoint, RouteRenderMode, Size } from './types'
+
+export type RouteSampleData = {
+  polyline: Point[]
+  segmentLengths: number[]
+  totalLength: number
+}
+
+export type ManualScrubSettings = Partial<Pick<GameplaySettings, 'mothSpeed' | 'mothManualSpeedMin' | 'mothManualRampMs'>>
+export type MothLeanSettings = Pick<GameplaySettings, 'mothLeanForwardAmount' | 'mothLeanBackwardAmount'>
+
+const defaultManualScrub = {
+  speedMin: 0.006,
+  rampMs: 1200,
+  topSpeedScale: 0.055,
+}
+
+const defaultMothLean = {
+  forward: 0.02,
+  backward: 0.02,
+  referenceSpeed: 0.055,
+}
 
 export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -32,14 +53,30 @@ export function fitCameraToWorld(world: Size, viewport: Size): Camera {
 }
 
 export function sampleRoute(route: RoutePoint[], mode: RouteRenderMode, progress: number): Point {
-  const polyline = buildRoutePolyline(route, mode, 22)
+  return sampleRouteData(buildRouteSampleData(route, mode), progress)
+}
+
+export function buildRouteSampleData(route: RoutePoint[], mode: RouteRenderMode, stepsPerSegment = 22): RouteSampleData {
+  const polyline = buildRoutePolyline(route, mode, stepsPerSegment)
+  const segmentLengths = polyline.map((point, index) => (
+    index === 0 ? 0 : distance(polyline[index - 1], point)
+  ))
+  return {
+    polyline,
+    segmentLengths,
+    totalLength: totalPolylineLength(polyline),
+  }
+}
+
+export function sampleRouteData(data: RouteSampleData, progress: number): Point {
+  const polyline = data.polyline
   if (polyline.length === 0) {
     return { x: 0, y: 0 }
   }
   if (polyline.length === 1) {
     return polyline[0]
   }
-  const total = totalPolylineLength(polyline)
+  const total = data.totalLength
   if (total <= 0) {
     return polyline[0]
   }
@@ -47,7 +84,7 @@ export function sampleRoute(route: RoutePoint[], mode: RouteRenderMode, progress
   for (let index = 1; index < polyline.length; index += 1) {
     const previous = polyline[index - 1]
     const next = polyline[index]
-    const segment = distance(previous, next)
+    const segment = data.segmentLengths[index] ?? distance(previous, next)
     if (remaining <= segment) {
       const t = segment === 0 ? 0 : remaining / segment
       return {
@@ -58,6 +95,45 @@ export function sampleRoute(route: RoutePoint[], mode: RouteRenderMode, progress
     remaining -= segment
   }
   return polyline[polyline.length - 1]
+}
+
+export function sampleRouteTangent(data: RouteSampleData, progress: number): Point {
+  const offset = 0.002
+  const before = sampleRouteData(data, clamp(progress - offset, 0, 1))
+  const after = sampleRouteData(data, clamp(progress + offset, 0, 1))
+  const dx = after.x - before.x
+  const dy = after.y - before.y
+  const length = Math.hypot(dx, dy)
+  if (length <= 0.0001) {
+    return { x: 1, y: 0 }
+  }
+  return { x: dx / length, y: dy / length }
+}
+
+export function resolveMothLean(signedProgressPerSecond: number, settings: MothLeanSettings = {}) {
+  if (Math.abs(signedProgressPerSecond) <= 0.0001) {
+    return 0
+  }
+  const forwardLean = settings.mothLeanForwardAmount ?? defaultMothLean.forward
+  const backwardLean = settings.mothLeanBackwardAmount ?? defaultMothLean.backward
+  const intensity = clamp(Math.abs(signedProgressPerSecond) / defaultMothLean.referenceSpeed, 0, 1)
+  return Math.sign(signedProgressPerSecond) * intensity * (signedProgressPerSecond >= 0 ? forwardLean : backwardLean)
+}
+
+export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings = {}, shiftKey = false, direction: -1 | 1 = 1) {
+  const directionMultiplier = direction < 0 ? 0.72 : 1
+  const shiftMultiplier = shiftKey ? 1.45 : 1
+  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.25) * directionMultiplier * shiftMultiplier)
+  const start = Math.min(settings.mothManualSpeedMin ?? defaultManualScrub.speedMin, topSpeed * 0.35)
+  const rampMs = Math.max(120, settings.mothManualRampMs ?? defaultManualScrub.rampMs)
+  const t = clamp(heldMs / rampMs, 0, 1)
+  const eased = 1 - (1 - t) ** 3
+  return lerp(start, topSpeed, eased)
+}
+
+export function advanceRouteProgress(current: number, direction: -1 | 1, deltaSeconds: number, heldMs: number, settings?: ManualScrubSettings, shiftKey = false) {
+  const next = current + direction * manualScrubSpeed(heldMs, settings, shiftKey, direction) * deltaSeconds
+  return clamp(next, 0, 1)
 }
 
 export function buildRoutePolyline(route: RoutePoint[], mode: RouteRenderMode, stepsPerSegment = 18): Point[] {

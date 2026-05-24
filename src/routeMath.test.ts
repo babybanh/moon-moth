@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appendRoutePoint, buildRoutePolyline, insertRoutePoint, sampleRoute } from './routeMath'
+import { advanceRouteProgress, appendRoutePoint, buildRoutePolyline, buildRouteSampleData, insertRoutePoint, manualScrubSpeed, resolveMothLean, sampleRoute, sampleRouteTangent } from './routeMath'
 import type { RoutePoint } from './types'
 
 const route: RoutePoint[] = [
@@ -39,5 +39,42 @@ describe('route math', () => {
     const inserted = next.find((point) => !route.some((original) => original.id === point.id))
     expect(inserted?.handleIn).toBeDefined()
     expect(inserted?.handleOut).toBeDefined()
+  })
+
+  it('ramps forward moth control up to the moth speed cap', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    const start = manualScrubSpeed(0, settings)
+    const middle = manualScrubSpeed(600, settings)
+    const cap = manualScrubSpeed(2400, settings)
+    expect(start).toBeLessThan(middle)
+    expect(middle).toBeLessThan(cap)
+    expect(cap).toBeCloseTo(0.01375)
+  })
+
+  it('holds the moth speed cap while forward stays pressed', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    expect(manualScrubSpeed(1600, settings)).toBeCloseTo(manualScrubSpeed(4800, settings))
+  })
+
+  it('clamps manual moth scrub progress to the route ends', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    expect(advanceRouteProgress(0.99, 1, 3, 1200, settings)).toBe(1)
+    expect(advanceRouteProgress(0.01, -1, 3, 1200, settings)).toBe(0)
+  })
+
+  it('uses a lower hidden backward cap for compatibility', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    expect(manualScrubSpeed(1600, settings, false, -1)).toBeLessThan(manualScrubSpeed(1600, settings, false, 1))
+  })
+
+  it('samples a normalized route tangent for moth lean direction', () => {
+    const tangent = sampleRouteTangent(buildRouteSampleData(route, 'smooth'), 0.4)
+    expect(Math.hypot(tangent.x, tangent.y)).toBeCloseTo(1)
+  })
+
+  it('keeps moth lean available as a small signed micro drift', () => {
+    const settings = { mothLeanForwardAmount: 0.02, mothLeanBackwardAmount: 0.02 }
+    expect(resolveMothLean(0.055, settings)).toBeCloseTo(0.02)
+    expect(resolveMothLean(-0.055, settings)).toBeCloseTo(-0.02)
   })
 })

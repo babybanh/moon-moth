@@ -1,8 +1,37 @@
 import { assetById } from './assets'
 import { defaultProjectData } from './defaultProjectData'
-import type { EditorItem, EditorProject, LayerId, SandboxId } from './types'
+import type { AssetRole, EditorItem, EditorProject, GameplaySettings, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
 
 export const sandboxIds: SandboxId[] = ['a', 'b', 'c']
+
+const defaultAssetRole: AssetRole = 'Other'
+const defaultSubLayer: SubLayer = 'Mid'
+const defaultRenderBand: RenderBand = 'normal'
+const frontOccluderNotePattern = /\bin\s+front\s+path\b/i
+const manualSpeedMinDefault = 0.006
+const manualSpeedMaxDefault = 0.055
+const manualRampMsDefault = 1200
+const manualSwellPeakDefault = 0.038
+const manualSwellCruiseDefault = 0.014
+const manualSwellPeriodMsDefault = 2200
+const mothGlowPulseSpeedDefault = 0.35
+const mothFlutterSpeedDefault = 0.6
+const mothFlutterAmountDefault = 0.044
+const mothBobAmountDefault = 2.5
+const mothLeanForwardAmountDefault = 0.02
+const mothLeanBackwardAmountDefault = 0.02
+const mothStretchAmountDefault = 0
+const mothTrailStyleDefault = 'mist'
+const mothTrailAmountDefault = 0.5
+const mothTrailWaveAmountDefault = 10
+const mothTrailSparkleDefault = 0.25
+
+const subLayerZBase: Record<SubLayer, number> = {
+  Far: 0,
+  Mid: 1000,
+  Near: 2000,
+  'Overlay/Mask': 3000,
+}
 
 const storagePrefix = 'moonMothRouteEditor.v1.sandbox.'
 
@@ -56,6 +85,7 @@ export function addAssetItem(project: EditorProject, assetId: string, layerId: L
   if (!asset) {
     return project
   }
+  const subLayer = asset.defaultSubLayer ?? defaultSubLayer
   const width = Math.min(860, Math.max(180, asset.naturalWidth * 0.58))
   const height = width * (asset.naturalHeight / asset.naturalWidth)
   return {
@@ -67,12 +97,15 @@ export function addAssetItem(project: EditorProject, assetId: string, layerId: L
         name: asset.label,
         assetId,
         layerId,
+        role: asset.role ?? defaultAssetRole,
+        subLayer,
+        notes: '',
         x: point?.x ?? project.camera.x,
         y: point?.y ?? project.camera.y,
         width,
         height,
         rotation: 0,
-        zIndex: nextLayerZIndex(project, layerId),
+        zIndex: nextSubLayerZIndex(project, layerId, subLayer),
         opacity: 1,
         visible: true,
         silhouette: false,
@@ -94,6 +127,7 @@ export function migrateProject(value: unknown): EditorProject {
     world: { ...fallback.world, ...draft.world },
     routeRenderMode: draft.routeRenderMode ?? fallback.routeRenderMode,
     route: Array.isArray(draft.route) && draft.route.length >= 2 ? draft.route : fallback.route,
+    routeGroups: migrateRouteGroups(draft.routeGroups, Array.isArray(draft.route) ? draft.route.map((point) => point.id) : fallback.route.map((point) => point.id)),
     layerOrder: resolveLayerOrder(draft.layerOrder, fallback.layerOrder),
     layers: {
       background: { ...fallback.layers.background, ...draft.layers?.background },
@@ -103,9 +137,13 @@ export function migrateProject(value: unknown): EditorProject {
       ? withLayerZIndexes(draft.items.map((item) => ({
         ...item,
         name: resolveMigratedItemName(item.id, item.assetId, item.name),
+        role: resolveItemRole(item),
+        subLayer: resolveItemSubLayer(item),
+        renderBand: resolveMigratedItemRenderBand(item),
+        notes: typeof item.notes === 'string' ? item.notes : '',
       })))
       : fallback.items,
-    gameplay: { ...fallback.gameplay, ...draft.gameplay },
+    gameplay: migrateGameplaySettings(draft.gameplay, fallback.gameplay),
     camera: { ...fallback.camera, ...draft.camera },
   }
 }
@@ -128,6 +166,57 @@ export function nextLayerZIndex(project: EditorProject, layerId: LayerId) {
   ) + 1
 }
 
+export function resolveItemRole(item: Pick<EditorItem, 'assetId' | 'role'>): AssetRole {
+  return item.role ?? assetById.get(item.assetId)?.role ?? defaultAssetRole
+}
+
+export function resolveItemSubLayer(item: Pick<EditorItem, 'assetId' | 'subLayer'>): SubLayer {
+  return item.subLayer ?? assetById.get(item.assetId)?.defaultSubLayer ?? defaultSubLayer
+}
+
+export function resolveItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'notes'>): RenderBand {
+  if (typeof item.notes === 'string' && frontOccluderNotePattern.test(item.notes)) {
+    return 'frontOccluder'
+  }
+  if (item.renderBand === 'frontOccluder') {
+    return 'frontOccluder'
+  }
+  if (item.renderBand === 'normal') {
+    return 'normal'
+  }
+  return defaultRenderBand
+}
+
+export function isFrontOccluder(item: Pick<EditorItem, 'renderBand' | 'notes'>) {
+  return resolveItemRenderBand(item) === 'frontOccluder'
+}
+
+export function nextSubLayerZIndex(project: EditorProject, layerId: LayerId, subLayer: SubLayer) {
+  const base = subLayerZBase[subLayer]
+  return Math.max(
+    base - 1,
+    ...project.items
+      .filter((item) => item.layerId === layerId && resolveItemSubLayer(item) === subLayer)
+      .map((item) => item.zIndex ?? base),
+  ) + 1
+}
+
+export function moveItemsToLayerSubLayer(project: EditorProject, itemIds: string[], layerId: LayerId, subLayer: SubLayer): EditorProject {
+  const selected = new Set(itemIds)
+  let nextZIndex = nextSubLayerZIndex(project, layerId, subLayer)
+  return {
+    ...project,
+    items: project.items.map((item) => {
+      if (!selected.has(item.id)) {
+        return item
+      }
+      const zIndex = nextZIndex
+      nextZIndex += 1
+      return { ...item, layerId, subLayer, zIndex }
+    }),
+  }
+}
+
 function resolveLayerOrder(layerOrder: LayerId[] | undefined, fallback: LayerId[]) {
   const layerIds: LayerId[] = ['background', 'foreground']
   const existing = Array.isArray(layerOrder)
@@ -142,6 +231,81 @@ function resolveMigratedItemName(id: string, assetId: string, name: string | und
     return functionalItemNames[id] ?? assetLabel ?? assetId
   }
   return name
+}
+
+function migrateRouteGroups(routeGroups: unknown, routePointIds: string[]): RouteGroup[] {
+  if (!Array.isArray(routeGroups)) {
+    return []
+  }
+  const routePointSet = new Set(routePointIds)
+  return routeGroups
+    .filter((group): group is Partial<RouteGroup> => Boolean(group && typeof group === 'object'))
+    .map((group, index) => ({
+      id: typeof group.id === 'string' && group.id ? group.id : createId('route-group'),
+      name: typeof group.name === 'string' && group.name ? group.name : `Tour Cue ${index + 1}`,
+      routePointIds: Array.isArray(group.routePointIds)
+        ? group.routePointIds.filter((id): id is string => typeof id === 'string' && routePointSet.has(id))
+        : [],
+      speedMultiplier: clampNumber(group.speedMultiplier, 0.05, 3, 1),
+      holdMs: Math.round(clampNumber(group.holdMs, 0, 10000, 0)),
+      cameraZoom: typeof group.cameraZoom === 'number' ? clampNumber(group.cameraZoom, 0.08, 1.7, 0.58) : undefined,
+      musicCue: resolveMusicCue(group.musicCue),
+      notes: typeof group.notes === 'string' ? group.notes : '',
+    }))
+    .filter((group) => group.routePointIds.length > 0)
+}
+
+function resolveMusicCue(value: unknown): MusicCueAction {
+  return value === 'start' || value === 'pause' || value === 'mute' || value === 'unmute' ? value : 'none'
+}
+
+function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): GameplaySettings {
+  const source = value && typeof value === 'object' ? value as Partial<GameplaySettings> : {}
+  const merged: GameplaySettings = { ...fallback, ...source }
+  const mothManualSpeedMin = clampNumber(source.mothManualSpeedMin, 0.001, 0.5, fallback.mothManualSpeedMin ?? manualSpeedMinDefault)
+  const mothManualSpeedMax = Math.max(
+    mothManualSpeedMin,
+    clampNumber(source.mothManualSpeedMax, 0.001, 1, fallback.mothManualSpeedMax ?? manualSpeedMaxDefault),
+  )
+  return {
+    ...merged,
+    mothManualSpeedMin,
+    mothManualSpeedMax,
+    mothManualRampMs: Math.round(clampNumber(source.mothManualRampMs, 100, 5000, fallback.mothManualRampMs ?? manualRampMsDefault)),
+    mothManualSwellPeak: clampNumber(source.mothManualSwellPeak, 0.004, 0.12, fallback.mothManualSwellPeak ?? manualSwellPeakDefault),
+    mothManualSwellCruise: clampNumber(source.mothManualSwellCruise, 0.001, 0.08, fallback.mothManualSwellCruise ?? manualSwellCruiseDefault),
+    mothManualSwellPeriodMs: Math.round(clampNumber(source.mothManualSwellPeriodMs, 900, 6000, fallback.mothManualSwellPeriodMs ?? manualSwellPeriodMsDefault)),
+    mothGlowPulseSpeed: clampNumber(source.mothGlowPulseSpeed, 0.05, 2, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault),
+    mothFlutterSpeed: clampNumber(source.mothFlutterSpeed, 0.4, 6, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault),
+    mothFlutterAmount: clampNumber(source.mothFlutterAmount, 0, 0.2, fallback.mothFlutterAmount ?? mothFlutterAmountDefault),
+    mothBobAmount: clampNumber(source.mothBobAmount, 0, 12, fallback.mothBobAmount ?? mothBobAmountDefault),
+    mothLeanForwardAmount: clampNumber(source.mothLeanForwardAmount, 0, 0.6, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault),
+    mothLeanBackwardAmount: clampNumber(source.mothLeanBackwardAmount, 0, 0.6, fallback.mothLeanBackwardAmount ?? mothLeanBackwardAmountDefault),
+    mothStretchAmount: clampNumber(source.mothStretchAmount, 0, 0.3, fallback.mothStretchAmount ?? mothStretchAmountDefault),
+    mothTrailEnabled: source.mothTrailEnabled === undefined ? fallback.mothTrailEnabled ?? true : source.mothTrailEnabled !== false,
+    mothTrailStyle: source.mothTrailStyle === 'bubble' || source.mothTrailStyle === 'sparkle' ? source.mothTrailStyle : fallback.mothTrailStyle ?? mothTrailStyleDefault,
+    mothTrailAmount: clampNumber(source.mothTrailAmount, 0, 1, fallback.mothTrailAmount ?? mothTrailAmountDefault),
+    mothTrailWaveAmount: clampNumber(source.mothTrailWaveAmount, 0, 40, fallback.mothTrailWaveAmount ?? mothTrailWaveAmountDefault),
+    mothTrailSparkle: clampNumber(source.mothTrailSparkle, 0, 1, fallback.mothTrailSparkle ?? mothTrailSparkleDefault),
+    mothHeadingMode: source.mothHeadingMode === 'path' ? 'path' : 'north',
+  }
+}
+
+function resolveMigratedItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'notes'>): RenderBand | undefined {
+  if (typeof item.notes === 'string' && frontOccluderNotePattern.test(item.notes)) {
+    return 'frontOccluder'
+  }
+  if (item.renderBand === 'frontOccluder' || item.renderBand === 'normal') {
+    return item.renderBand
+  }
+  return undefined
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback
+  }
+  return Math.min(max, Math.max(min, value))
 }
 
 export function readProjectFromStorage(sandboxId: SandboxId): EditorProject {
@@ -169,6 +333,83 @@ export function createId(prefix: string) {
   return `${slug}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+export function formatProjectCommentsSummary(project: EditorProject) {
+  const assetComments = project.items
+    .filter((item) => item.notes?.trim())
+    .map((item) => ({
+      itemId: item.id,
+      name: getItemDisplayName(item),
+      assetId: item.assetId,
+      assetLabel: assetById.get(item.assetId)?.label ?? item.assetId,
+      role: resolveItemRole(item),
+      layerId: item.layerId,
+      subLayer: resolveItemSubLayer(item),
+      renderBand: resolveItemRenderBand(item),
+      inFrontOfPathAndMoth: isFrontOccluder(item),
+      position: { x: Math.round(item.x), y: Math.round(item.y) },
+      size: { width: Math.round(item.width), height: Math.round(item.height) },
+      visible: item.visible,
+      opacity: Number(item.opacity.toFixed(2)),
+      silhouette: item.silhouette,
+      comment: item.notes?.trim() ?? '',
+    }))
+  const routePointComments = project.route
+    .filter((point) => point.notes?.trim())
+    .map((point, index) => ({
+      routePointId: point.id,
+      label: point.label,
+      index,
+      position: { x: Math.round(point.x), y: Math.round(point.y) },
+      comment: point.notes?.trim() ?? '',
+    }))
+  const routeCueComments = (project.routeGroups ?? [])
+    .filter((group) => group.notes.trim())
+    .map((group) => ({
+      groupId: group.id,
+      name: group.name,
+      routePointIds: group.routePointIds,
+      speedMultiplier: group.speedMultiplier,
+      holdMs: group.holdMs,
+      cameraZoom: group.cameraZoom,
+      musicCue: group.musicCue,
+      comment: group.notes.trim(),
+    }))
+
+  if (assetComments.length === 0 && routePointComments.length === 0 && routeCueComments.length === 0) {
+    return [
+      '# Moon Moth Editor Comments',
+      '',
+      `Project: ${project.title}`,
+      '',
+      'No asset, path, or tour cue comments yet.',
+    ].join('\n')
+  }
+
+  return [
+    '# Moon Moth Editor Comments',
+    '',
+    `Project: ${project.title}`,
+    `Assets with comments: ${assetComments.length}`,
+    `Path points with comments: ${routePointComments.length}`,
+    `Tour cues with comments: ${routeCueComments.length}`,
+    '',
+    'Paste this back to Codex when asking for visual, path, layout, or cue changes.',
+    '',
+    '```json',
+    JSON.stringify({
+      projectTitle: project.title,
+      assetComments,
+      routePointComments,
+      routeCueComments,
+    }, null, 2),
+    '```',
+  ].join('\n')
+}
+
 function cloneProject(project: EditorProject): EditorProject {
   return JSON.parse(JSON.stringify(project)) as EditorProject
+}
+
+function getItemDisplayName(item: EditorItem) {
+  return item.name?.trim() || assetById.get(item.assetId)?.label || item.assetId
 }

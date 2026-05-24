@@ -1,5 +1,6 @@
 import { assetById, mothAsset } from './assets'
-import { buildRoutePolyline, sampleRoute, worldToScreen } from './routeMath'
+import { isFrontOccluder } from './project'
+import { resolveMothLean, sampleRouteData, sampleRouteTangent, worldToScreen, type RouteSampleData } from './routeMath'
 import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, LayerId, Point, Selection, Size } from './types'
 
 export type ImageMap = Map<string, HTMLImageElement>
@@ -14,6 +15,10 @@ export type RenderOptions = {
   appMode: 'play' | 'edit'
   artworkMode: ArtworkMode
   playProgress: number
+  routeSampleData: RouteSampleData
+  animationTime: number
+  mothMotionVelocity: number
+  mothForwardActive: boolean
 }
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
@@ -25,7 +30,7 @@ export function renderScene(context: CanvasRenderingContext2D, project: EditorPr
 
   for (const layerId of orderedLayerIds(project).filter((id) => project.layers[id].parallax <= 1)) {
     if (showingAll || options.canvasTargets.includes(layerId)) {
-      drawLayer(context, project, layerId, options)
+      drawLayer(context, project, layerId, options, 'normal')
     }
   }
   if (showingAll || options.canvasTargets.includes('path')) {
@@ -33,15 +38,23 @@ export function renderScene(context: CanvasRenderingContext2D, project: EditorPr
   }
   for (const layerId of orderedLayerIds(project).filter((id) => project.layers[id].parallax > 1)) {
     if (showingAll || options.canvasTargets.includes(layerId)) {
-      drawLayer(context, project, layerId, options)
+      drawLayer(context, project, layerId, options, 'normal')
     }
   }
   if (showingAll || options.canvasTargets.includes('path')) {
+    drawMothTrail(context, project, options)
     drawMoth(context, project, options)
   }
+  if (options.appMode === 'edit' && options.canvasTargets.includes('path')) {
+    drawSelectedRoute(context, project, options)
+  }
+  if (options.appMode === 'edit' && options.canvasTargets.includes('path')) {
+    drawRoutePoints(context, project, options)
+  }
+  drawFrontOccluders(context, project, options, showingAll)
 
   if (options.appMode === 'edit') {
-    drawEditorOverlay(context, project, options)
+    drawSelectedItem(context, project, options)
   }
 }
 
@@ -84,17 +97,34 @@ function drawWorldFrame(context: CanvasRenderingContext2D, project: EditorProjec
   context.restore()
 }
 
-function drawLayer(context: CanvasRenderingContext2D, project: EditorProject, layerId: LayerId, options: RenderOptions) {
+function drawLayer(
+  context: CanvasRenderingContext2D,
+  project: EditorProject,
+  layerId: LayerId,
+  options: RenderOptions,
+  renderBand: 'normal' | 'frontOccluder',
+) {
   const layer = project.layers[layerId]
   if (!layer.visible) {
     return
   }
   const items = project.items
-    .filter((item) => item.layerId === layerId && item.visible)
+    .filter((item) => item.layerId === layerId && item.visible && (isFrontOccluder(item) ? 'frontOccluder' : 'normal') === renderBand)
     .sort(compareItemsByLayerZ)
 
   for (const item of items) {
     drawItem(context, item, project, options)
+  }
+}
+
+function drawFrontOccluders(
+  context: CanvasRenderingContext2D,
+  project: EditorProject,
+  options: RenderOptions,
+  _showingAll: boolean,
+) {
+  for (const layerId of orderedLayerIds(project)) {
+    drawLayer(context, project, layerId, options, 'frontOccluder')
   }
 }
 
@@ -130,7 +160,7 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
 }
 
 function drawRoute(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
-  const points = buildRoutePolyline(project.route, project.routeRenderMode, 30)
+  const points = options.routeSampleData.polyline
   if (points.length < 2) {
     return
   }
@@ -156,34 +186,202 @@ function drawPolyline(context: CanvasRenderingContext2D, points: Point[], camera
   context.stroke()
 }
 
+function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
+  if (options.appMode !== 'play' || project.gameplay.mothTrailEnabled === false || options.routeSampleData.totalLength <= 0) {
+    return
+  }
+  const amount = project.gameplay.mothTrailAmount ?? 0.5
+  if (amount <= 0) {
+    return
+  }
+  const style = project.gameplay.mothTrailStyle ?? 'mist'
+  const waveAmount = project.gameplay.mothTrailWaveAmount ?? 10
+  const glints = project.gameplay.mothTrailSparkle ?? 0.25
+  const time = options.animationTime / 1000
+  const direction = options.mothMotionVelocity < -0.0001 ? -1 : 1
+  const speedIntensity = Math.min(1, Math.max(0.18, Math.abs(options.mothMotionVelocity) / 0.038))
+  const forwardGlowLevel = Math.min(1, Math.max(0, options.mothMotionVelocity / Math.max(0.001, 0.055 * project.gameplay.mothSpeed)))
+  const forwardGlowBoost = 1 + forwardGlowLevel * 0.24
+  const count = Math.round(style === 'bubble' ? 7 + amount * 15 : style === 'sparkle' ? 12 + amount * 28 : 14 + amount * 32)
+  const moth = sampleRouteData(options.routeSampleData, options.playProgress)
+  const anchor = worldToScreen(moth, options.camera, options.viewport)
+  const tangent = sampleRouteTangent(options.routeSampleData, options.playProgress)
+  const travel = direction < 0 ? { x: -tangent.x, y: -tangent.y } : tangent
+  const normal = { x: -travel.y, y: travel.x }
+  const spacing = style === 'bubble' ? 14 + speedIntensity * 12 : style === 'sparkle' ? 5.8 + speedIntensity * 6.5 : 6.5 + speedIntensity * 8
+  const colors = [
+    [245, 225, 255],
+    [219, 210, 255],
+    [188, 255, 235],
+    [255, 245, 190],
+  ]
+
+  context.save()
+  context.globalCompositeOperation = style === 'sparkle' ? 'lighter' : 'screen'
+  for (let index = 1; index <= count; index += 1) {
+    const age = index / count
+    const phase = time * (style === 'bubble' ? 0.45 : style === 'sparkle' ? 1.8 : 0.72) + index * 0.77
+    const wave = Math.sin(phase) * waveAmount * (0.2 + age * 0.88)
+    const breath = 0.74 + 0.26 * Math.sin(time * 0.9 + index * 1.31)
+    const jitter = Math.sin(index * 12.9898) * 43758.5453
+    const randomish = jitter - Math.floor(jitter)
+    const sizeVariance = 0.72 + randomish * 0.66
+    const distanceBehind = index * spacing
+    const bubbleScatter = style === 'bubble' ? (randomish - 0.5) * waveAmount * 1.9 : 0
+    const x = anchor.x - travel.x * distanceBehind + normal.x * (wave + bubbleScatter) + Math.sin(phase * 0.53) * 2.4
+    const y = anchor.y - travel.y * distanceBehind + normal.y * (wave + bubbleScatter) + Math.sin(time * 0.8 + index) * 3.2 * age
+    const color = colors[index % colors.length]
+    const fade = (1 - age) ** (style === 'sparkle' ? 1.2 : 1.55)
+
+    if (style === 'sparkle') {
+      const alpha = amount * fade * (0.22 + glints * 0.28) * breath * forwardGlowBoost
+      const radius = Math.max(1, (4.2 - age * 2.5) * (0.74 + glints * 0.26) * options.camera.zoom ** 0.12 * (1 + forwardGlowLevel * 0.08))
+      const gradient = context.createRadialGradient(x, y, 0, x, y, radius * 2.8)
+      gradient.addColorStop(0, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`)
+      gradient.addColorStop(0.52, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha * 0.26})`)
+      gradient.addColorStop(1, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0)`)
+      context.fillStyle = gradient
+      context.beginPath()
+      context.arc(x, y, radius * 2.8, 0, Math.PI * 2)
+      context.fill()
+
+      if (glints > 0.5 && index % 7 === 0) {
+        drawTrailGlint(context, x, y, radius * 1.7, alpha * glints)
+      }
+      continue
+    }
+
+    if (style === 'bubble') {
+      const orbRadius = (11 + age * 14 + amount * 9) * sizeVariance * (0.9 + breath * 0.18) * (1 + forwardGlowLevel * 0.08)
+      const orbAlpha = amount * fade * (0.28 + speedIntensity * 0.1) * forwardGlowBoost
+      const halo = context.createRadialGradient(x, y, orbRadius * 0.18, x, y, orbRadius * 1.75)
+      halo.addColorStop(0, `rgba(255, 228, 185, ${orbAlpha * 0.42})`)
+      halo.addColorStop(0.46, `rgba(190, 255, 232, ${orbAlpha * 0.32})`)
+      halo.addColorStop(1, 'rgba(190, 255, 232, 0)')
+      context.fillStyle = halo
+      context.beginPath()
+      context.arc(x, y, orbRadius * 1.75, 0, Math.PI * 2)
+      context.fill()
+
+      const core = context.createRadialGradient(
+        x - orbRadius * 0.22,
+        y - orbRadius * 0.24,
+        orbRadius * 0.08,
+        x,
+        y,
+        orbRadius,
+      )
+      core.addColorStop(0, `rgba(255, 245, 210, ${orbAlpha * 1.45})`)
+      core.addColorStop(0.3, `rgba(255, 225, 178, ${orbAlpha * 0.74})`)
+      core.addColorStop(0.66, `rgba(196, 255, 235, ${orbAlpha * 0.32})`)
+      core.addColorStop(1, `rgba(196, 255, 235, ${orbAlpha * 0.04})`)
+      context.fillStyle = core
+      context.beginPath()
+      context.arc(x, y, orbRadius, 0, Math.PI * 2)
+      context.fill()
+
+      const highlightRadius = orbRadius * (0.14 + glints * 0.11)
+      const highlightX = x - orbRadius * 0.28
+      const highlightY = y - orbRadius * 0.34
+      const highlight = context.createRadialGradient(highlightX, highlightY, 0, highlightX, highlightY, highlightRadius * 2.45)
+      highlight.addColorStop(0, `rgba(255, 236, 225, ${Math.min(0.62, orbAlpha * (1.55 + glints))})`)
+      highlight.addColorStop(0.42, `rgba(255, 212, 194, ${orbAlpha * 0.34})`)
+      highlight.addColorStop(1, 'rgba(255, 203, 183, 0)')
+      context.fillStyle = highlight
+      context.beginPath()
+      context.arc(highlightX, highlightY, highlightRadius * 2.45, 0, Math.PI * 2)
+      context.fill()
+      continue
+    }
+
+    const puffRadius = (11 + age * 20 + amount * 8) * (0.84 + breath * 0.24)
+    const alpha = amount * fade * 0.19 * (0.86 + speedIntensity * 0.12) * forwardGlowBoost
+    const gradient = context.createRadialGradient(x, y, puffRadius * 0.12, x, y, puffRadius)
+    gradient.addColorStop(0, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`)
+    gradient.addColorStop(0.55, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha * 0.38})`)
+    gradient.addColorStop(1, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0)`)
+    context.fillStyle = gradient
+    context.beginPath()
+    context.arc(x, y, puffRadius, 0, Math.PI * 2)
+    context.fill()
+
+    const shouldDrawBubble = style === 'mist' && index % 3 === 0
+    if (shouldDrawBubble) {
+      const bubbleRadius = puffRadius * 0.34
+      context.strokeStyle = `rgba(231, 255, 250, ${alpha * 1.2})`
+      context.lineWidth = Math.max(0.65, bubbleRadius * 0.055)
+      context.beginPath()
+      context.arc(x + bubbleRadius * 0.14, y - bubbleRadius * 0.08, bubbleRadius, 0, Math.PI * 2)
+      context.stroke()
+    }
+
+    if (glints > 0.3 && index % 8 === 0) {
+      drawTrailGlint(context, x - normal.x * puffRadius * 0.2, y - normal.y * puffRadius * 0.2, puffRadius * 0.16, alpha * glints * 1.4)
+    }
+  }
+  context.restore()
+}
+
+function drawTrailGlint(context: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha: number) {
+  context.save()
+  context.strokeStyle = `rgba(255, 248, 207, ${Math.min(0.45, alpha)})`
+  context.lineWidth = Math.max(0.45, radius * 0.12)
+  context.beginPath()
+  context.moveTo(x - radius, y)
+  context.lineTo(x + radius, y)
+  context.moveTo(x, y - radius)
+  context.lineTo(x, y + radius)
+  context.stroke()
+  context.restore()
+}
+
 function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
-  const moth = sampleRoute(project.route, project.routeRenderMode, options.playProgress)
-  const next = sampleRoute(project.route, project.routeRenderMode, Math.min(1, options.playProgress + 0.012))
-  const screen = worldToScreen(moth, options.camera, options.viewport)
-  const angle = Math.atan2(next.y - moth.y, next.x - moth.x)
+  const moth = sampleRouteData(options.routeSampleData, options.playProgress)
+  const next = sampleRouteData(options.routeSampleData, Math.min(1, options.playProgress + 0.012))
+  const tangent = sampleRouteTangent(options.routeSampleData, options.playProgress)
+  const rawScreen = worldToScreen(moth, options.camera, options.viewport)
+  const time = options.animationTime / 1000
+  const bobAmount = project.gameplay.mothBobAmount ?? 2.5
+  const bob = Math.sin(time * Math.PI * 2 * 0.82) * bobAmount
+  const drift = Math.sin(time * Math.PI * 2 * 0.37 + 1.2) * bobAmount * 0.28
   const size = Math.max(28, 154 * options.camera.zoom * project.gameplay.mothSize)
-  const glow = project.gameplay.mothGlow
+  const flutterAmount = project.gameplay.mothFlutterAmount ?? 0.018
+  const flutterSpeed = project.gameplay.mothFlutterSpeed ?? 2
+  const flutter = Math.sin(time * Math.PI * 2 * flutterSpeed)
+  const wingBreath = Math.sin(time * Math.PI * 2 * (flutterSpeed * 0.47) + 0.8)
+  const lean = resolveMothLean(options.mothMotionVelocity, project.gameplay)
+  const travelDirection = lean < 0 ? { x: -tangent.x, y: -tangent.y } : tangent
+  const microDrift = Math.min(0.02, Math.abs(lean)) * size * 0.22
+  const screen = {
+    x: rawScreen.x + drift + travelDirection.x * microDrift,
+    y: rawScreen.y + bob + travelDirection.y * microDrift,
+  }
+  const angle = project.gameplay.mothHeadingMode === 'path'
+    ? Math.atan2(next.y - moth.y, next.x - moth.x) + Math.PI / 2
+    : 0
+  const glowPulseSpeed = project.gameplay.mothGlowPulseSpeed ?? 0.35
+  const glowPulse = 0.9 + (0.5 + 0.5 * Math.sin(time * Math.PI * 2 * glowPulseSpeed + 0.5)) * 0.16
+  const forwardGlowLevel = Math.min(1, Math.max(0, options.mothMotionVelocity / Math.max(0.001, 0.055 * project.gameplay.mothSpeed)))
+  const forwardGlowBoost = 1 + forwardGlowLevel * 0.22
+  const glow = project.gameplay.mothGlow * glowPulse * forwardGlowBoost
   const image = options.images.get(mothAsset.src)
 
   context.save()
-  const glowGradient = context.createRadialGradient(screen.x, screen.y, size * 0.18, screen.x, screen.y, size * 0.9)
-  glowGradient.addColorStop(0, `rgba(190, 255, 232, ${0.3 * glow})`)
-  glowGradient.addColorStop(0.52, `rgba(155, 255, 224, ${0.16 * glow})`)
+  const glowRadius = size * (0.74 + forwardGlowLevel * 0.08)
+  const glowGradient = context.createRadialGradient(screen.x, screen.y, size * 0.16, screen.x, screen.y, glowRadius)
+  glowGradient.addColorStop(0, `rgba(190, 255, 232, ${0.22 * glow})`)
+  glowGradient.addColorStop(0.56, `rgba(155, 255, 224, ${0.09 * glow})`)
   glowGradient.addColorStop(1, 'rgba(155, 255, 224, 0)')
   context.beginPath()
   context.fillStyle = glowGradient
-  context.arc(screen.x, screen.y, size * 0.9, 0, Math.PI * 2)
+  context.arc(screen.x, screen.y, glowRadius, 0, Math.PI * 2)
   context.fill()
-  context.beginPath()
-  context.strokeStyle = `rgba(255, 247, 184, ${0.16 * glow})`
-  context.lineWidth = Math.max(1, size * 0.025)
-  context.arc(screen.x, screen.y, size * 0.55, 0, Math.PI * 2)
-  context.stroke()
   context.translate(screen.x, screen.y)
-  context.rotate(angle + Math.PI / 2)
+  context.rotate(angle)
+  context.scale(1 + flutter * flutterAmount * 0.18, 1 - wingBreath * flutterAmount * 0.04)
   context.globalAlpha = 0.96
   context.shadowColor = 'rgba(174, 255, 227, 0.8)'
-  context.shadowBlur = 12 + 14 * glow
+  context.shadowBlur = 10 + 10 * glow
   if (options.artworkMode === 'art' && image?.complete) {
     context.drawImage(image, -size / 2, -size / 2, size, size)
   } else {
@@ -197,17 +395,8 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   context.restore()
 }
 
-function drawEditorOverlay(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
-  if (options.canvasTargets.includes('path')) {
-    drawSelectedRoute(context, project, options)
-    drawRoutePoints(context, project, options)
-  }
-
-  drawSelectedItem(context, project, options)
-}
-
 function drawSelectedRoute(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
-  const points = buildRoutePolyline(project.route, project.routeRenderMode, 30)
+  const points = options.routeSampleData.polyline
   if (points.length < 2) {
     return
   }
