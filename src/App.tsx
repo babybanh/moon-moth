@@ -1,4 +1,4 @@
-import { ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
@@ -19,11 +19,13 @@ import {
   saveProjectToStorage,
 } from './project'
 import {
+  appendRoutePoint,
   buildRouteSampleData,
   clamp,
-  appendRoutePoint,
   distance,
   fitCameraToWorld,
+  idleForwardPushDurationMs,
+  idleForwardPushWaitMs,
   insertRoutePoint,
   manualScrubSpeed,
   nearestRouteProgress,
@@ -63,12 +65,34 @@ type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'View' | 'Music' |
 type ForwardControlState = {
   pressed: boolean
   startedAt: number
+  releaseCarryUntil: number
+  idleSince: number
+  idlePushStartedAt: number
+  idlePushUntil: number
+  idlePushCount: number
 }
 type MothMotionState = {
   velocity: number
 }
+type EditScrubState = {
+  pressed: boolean
+  direction: -1 | 1
+  startedAt: number
+  shiftKey: boolean
+}
 
 const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+
+function cameraForCanvasView(camera: Camera, project: EditorProject): Camera {
+  if (project.gameplay.cameraExtensionEnabled === false) {
+    return camera
+  }
+  const zoomScale = clamp(project.gameplay.cameraExtensionZoomScale ?? 0.95, 0.45, 1)
+  return {
+    ...camera,
+    zoom: camera.zoom * zoomScale,
+  }
+}
 const maxOpenEditorPanels = 3
 
 function App() {
@@ -95,6 +119,7 @@ function App() {
   const [playProgress, setPlayProgress] = useState(0.06)
   const [playPaused, setPlayPaused] = useState(false)
   const [forwardPressed, setForwardPressed] = useState(false)
+  const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -107,8 +132,22 @@ function App() {
   const selectedItemIdsRef = useRef(selectedItemIds)
   const selectedRoutePointIdsRef = useRef(selectedRoutePointIds)
   const playProgressRef = useRef(playProgress)
-  const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 30))
-  const forwardControlRef = useRef<ForwardControlState>({ pressed: false, startedAt: 0 })
+  const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
+  const forwardControlRef = useRef<ForwardControlState>({
+    pressed: false,
+    startedAt: 0,
+    releaseCarryUntil: 0,
+    idleSince: 0,
+    idlePushStartedAt: 0,
+    idlePushUntil: 0,
+    idlePushCount: 0,
+  })
+  const editScrubRef = useRef<EditScrubState>({
+    pressed: false,
+    direction: 1,
+    startedAt: 0,
+    shiftKey: false,
+  })
   const mothMotionRef = useRef<MothMotionState>({ velocity: 0 })
   const tourHoldUntilRef = useRef(0)
   const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
@@ -121,7 +160,7 @@ function App() {
     [project.gameplay.musicTrackId],
   )
   const routeSampleData = useMemo(
-    () => buildRouteSampleData(project.route, project.routeRenderMode, 30),
+    () => buildRouteSampleData(project.route, project.routeRenderMode, 72),
     [project.route, project.routeRenderMode],
   )
 
@@ -219,6 +258,14 @@ function App() {
           togglePlayPaused()
         }
       }
+      if (appMode === 'edit' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (!event.repeat || !editScrubRef.current.pressed || editScrubRef.current.shiftKey !== event.shiftKey) {
+          startEditMothScrub(event.key === 'ArrowRight' ? 1 : -1, event.shiftKey)
+        }
+        return
+      }
       if (appMode === 'play' && event.key === 'ArrowRight') {
         event.preventDefault()
         if (!event.repeat || !forwardControlRef.current.pressed) {
@@ -233,6 +280,12 @@ function App() {
       }
     }
     const handleKeyUp = (event: KeyboardEvent) => {
+      if (appMode === 'edit' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+        event.preventDefault()
+        event.stopPropagation()
+        stopEditMothScrub()
+        return
+      }
       if (event.key !== 'ArrowRight') {
         return
       }
@@ -241,7 +294,8 @@ function App() {
       }
     }
     const handleBlur = () => {
-      stopForwardControl()
+      stopForwardControl(false)
+      stopEditMothScrub()
     }
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
@@ -367,9 +421,23 @@ function App() {
       const delta = Math.min(0.05, (time - previous) / 1000)
       previous = time
       const forwardControl = forwardControlRef.current
+      const editScrub = editScrubRef.current
       let targetVelocity = 0
       let shouldAnimate = appMode === 'play' && !playPaused
-      if (appMode === 'play' && !playPaused) {
+      if (appMode === 'edit' && editScrub.pressed) {
+        const current = playProgressRef.current
+        const heldMs = time - editScrub.startedAt
+        targetVelocity = editScrub.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, editScrub.shiftKey, editScrub.direction)
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 3.4))
+        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+        if (next !== current) {
+          playProgressRef.current = next
+          setPlayProgress(next)
+        } else if ((next <= 0 && editScrub.direction < 0) || (next >= 1 && editScrub.direction > 0)) {
+          mothMotionRef.current.velocity = 0
+        }
+        shouldAnimate = true
+      } else if (appMode === 'play' && !playPaused) {
         const current = playProgressRef.current
         if (tourHoldUntilRef.current > time) {
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 1.8))
@@ -379,13 +447,48 @@ function App() {
           frame = requestAnimationFrame(tick)
           return
         }
-        if (forwardControl.pressed && current < 1) {
+        const releaseCarryActive = !forwardControl.pressed && forwardControl.releaseCarryUntil > time
+        let idlePushActive = !forwardControl.pressed && !releaseCarryActive && forwardControl.idlePushUntil > time
+        if (
+          !forwardControl.pressed
+          && !releaseCarryActive
+          && !idlePushActive
+          && forwardControl.idleSince > 0
+          && current < 1
+          && time - forwardControl.idleSince >= idleForwardPushWaitMs(forwardControl.idlePushCount)
+        ) {
+          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+          const durationMs = idleForwardPushDurationMs(basePushMs, forwardControl.idlePushCount)
+          forwardControlRef.current = {
+            ...forwardControl,
+            idlePushStartedAt: time,
+            idlePushUntil: time + durationMs,
+            idlePushCount: forwardControl.idlePushCount + 1,
+          }
+          idlePushActive = durationMs > 0
+          setMessage(`Idle gentle push ${forwardControl.idlePushCount + 1}: ${(durationMs / 1000).toFixed(1)}s`)
+        }
+        if (!forwardControl.pressed && !releaseCarryActive && forwardControl.idlePushUntil > 0 && forwardControl.idlePushUntil <= time) {
+          forwardControlRef.current = {
+            ...forwardControlRef.current,
+            idleSince: forwardControl.idlePushUntil,
+            idlePushStartedAt: 0,
+            idlePushUntil: 0,
+          }
+        }
+        const forwardRequested = (forwardControl.pressed || releaseCarryActive || idlePushActive) && current < 1
+        if (forwardRequested) {
           const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
           const speedMultiplier = activeGroup?.speedMultiplier ?? 1
-          targetVelocity = manualScrubSpeed(time - forwardControl.startedAt, projectRef.current.gameplay, false, 1) * speedMultiplier
+          const gentlePushActive = releaseCarryActive || idlePushActive
+          const releasePushScale = gentlePushActive ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4 : 1
+          const heldMs = idlePushActive
+            ? time - forwardControlRef.current.idlePushStartedAt
+            : time - forwardControl.startedAt
+          targetVelocity = manualScrubSpeed(heldMs, projectRef.current.gameplay, false, 1) * speedMultiplier * releasePushScale
         }
 
-        const response = forwardControl.pressed ? 2.8 : 1.35
+        const response = forwardRequested ? 2.8 : 1.35
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
         const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
         if (next !== current) {
@@ -404,12 +507,12 @@ function App() {
           setPlayProgress(next)
         } else if (next >= 1) {
           mothMotionRef.current.velocity = 0
-          stopForwardControl()
+          stopForwardControl(false)
         }
       } else {
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
       }
-      if (shouldAnimate || forwardControl.pressed || Math.abs(mothMotionRef.current.velocity) > 0.0001) {
+      if (shouldAnimate || editScrub.pressed || forwardControl.pressed || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > 0.0001) {
         setAnimationTime(time)
       }
       frame = requestAnimationFrame(tick)
@@ -419,18 +522,32 @@ function App() {
   }, [appMode, playPaused])
 
   const renderCamera = useMemo(() => {
+    const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
+    const tourZoom = activeGroup?.cameraZoom
+    const followZoom = (tourZoom ?? 0.58) * 0.8
     if (appMode === 'edit') {
+      if (editScrubDirection !== 0 || zoomFromMothView) {
+        const moth = sampleRouteData(routeSampleData, playProgress)
+        return {
+          x: moth.x,
+          y: moth.y,
+          zoom: Math.max(project.camera.zoom, followZoom),
+        }
+      }
       return project.camera
     }
     const moth = sampleRouteData(routeSampleData, playProgress)
-    const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
-    const tourZoom = activeGroup?.cameraZoom
     return {
       x: moth.x,
       y: moth.y,
-      zoom: Math.max(project.camera.zoom, tourZoom ?? 0.58),
+      zoom: Math.max(project.camera.zoom, followZoom),
     }
-  }, [appMode, playProgress, project, routeSampleData])
+  }, [appMode, editScrubDirection, playProgress, project, routeSampleData, zoomFromMothView])
+
+  const canvasCamera = useMemo(
+    () => cameraForCanvasView(renderCamera, project),
+    [project, renderCamera],
+  )
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -447,7 +564,7 @@ function App() {
     renderScene(context, project, {
       appMode,
       artworkMode,
-      camera: renderCamera,
+      camera: canvasCamera,
       images,
       playProgress,
       routeSampleData,
@@ -459,7 +576,7 @@ function App() {
       canvasTargets,
       viewport,
     })
-  }, [animationTime, appMode, artworkMode, canvasTargets, forwardPressed, images, playProgress, project, renderCamera, routeSampleData, selectedItemIds, selection, viewport])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -485,7 +602,7 @@ function App() {
   const allCanvasTargetsSelected = allCanvasTargets.every((target) => canvasTargets.includes(target))
   const estimatedLoopSeconds = Math.round(1 / Math.max(0.0001, 0.055 * project.gameplay.mothSpeed))
   const quickEditorBounds = selectedItem
-    ? itemScreenBounds(selectedItem, project, project.camera, viewport)
+    ? itemScreenBounds(selectedItem, project, canvasCamera, viewport)
     : null
   const quickEditorStyle = quickEditorBounds
     ? {
@@ -495,13 +612,50 @@ function App() {
     : undefined
   const routeQuickEditorStyle = selectedRoutePoint
     ? (() => {
-      const screen = worldToScreen(selectedRoutePoint, project.camera, viewport)
+      const screen = worldToScreen(selectedRoutePoint, canvasCamera, viewport)
       return {
         left: clamp(screen.x + 14, 12, Math.max(12, viewport.width - 276)),
         top: clamp(screen.y + 14, 12, Math.max(12, viewport.height - 190)),
       }
     })()
     : undefined
+  const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
+  const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
+  const cameraExtensionOverlayStyle = {
+    '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
+    '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
+    '--camera-extension-bg-alpha': `${clamp(cameraExtensionDensity * 0.05, 0, 0.26)}`,
+    '--camera-extension-dim-alpha': `${clamp(cameraExtensionDensity * 0.22, 0, 0.92)}`,
+    '--camera-extension-brightness': `${clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
+    '--camera-extension-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
+  } as CSSProperties
+  const cameraExtensionVignetteStyle = useMemo(() => {
+    const width = Math.max(1, viewport.width)
+    const height = Math.max(1, viewport.height)
+    const inner = Math.min(width, height) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
+    const left = (width - inner) / 2
+    const top = (height - inner) / 2
+    const right = left + inner
+    const bottom = top + inner
+    const radius = inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5
+    const roundedSquarePath = [
+      `M 0 0 H ${width} V ${height} H 0 Z`,
+      `M ${left + radius} ${top}`,
+      `H ${right - radius}`,
+      `Q ${right} ${top} ${right} ${top + radius}`,
+      `V ${bottom - radius}`,
+      `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+      `H ${left + radius}`,
+      `Q ${left} ${bottom} ${left} ${bottom - radius}`,
+      `V ${top + radius}`,
+      `Q ${left} ${top} ${left + radius} ${top}`,
+      'Z',
+    ].join(' ')
+    return {
+      clipPath: `path(evenodd, "${roundedSquarePath}")`,
+      WebkitClipPath: `path(evenodd, "${roundedSquarePath}")`,
+    } as CSSProperties
+  }, [project.gameplay.cameraExtensionInnerScale, project.gameplay.cameraExtensionRoundness, viewport.height, viewport.width])
 
   useEffect(() => {
     if (!assetsForLayer.some((asset) => asset.id === selectedAssetId)) {
@@ -565,7 +719,7 @@ function App() {
     setPlayPaused((current) => {
       const next = !current
       if (next) {
-        stopForwardControl()
+        stopForwardControl(false)
       }
       setMessage(next ? 'Play paused' : 'Play resumed: hold Forward to move')
       return next
@@ -576,26 +730,97 @@ function App() {
     setAppMode('play')
     setPlayPaused(false)
     if (!forwardControlRef.current.pressed) {
-      forwardControlRef.current = { pressed: true, startedAt: performance.now() }
+      const now = performance.now()
+      const currentControl = forwardControlRef.current
+      forwardControlRef.current = {
+        pressed: true,
+        startedAt: currentControl.releaseCarryUntil > now && currentControl.startedAt > 0 ? currentControl.startedAt : now,
+        releaseCarryUntil: 0,
+        idleSince: 0,
+        idlePushStartedAt: 0,
+        idlePushUntil: 0,
+        idlePushCount: 0,
+      }
       setForwardPressed(true)
       setMessage('Forward held: moth easing ahead')
     }
   }
 
-  function stopForwardControl() {
+  function stopForwardControl(useReleaseCarry = true) {
     const currentControl = forwardControlRef.current
     if (!currentControl.pressed) {
+      if (!useReleaseCarry && (currentControl.releaseCarryUntil > 0 || currentControl.idleSince > 0 || currentControl.idlePushUntil > 0)) {
+        forwardControlRef.current = {
+          pressed: false,
+          startedAt: 0,
+          releaseCarryUntil: 0,
+          idleSince: 0,
+          idlePushStartedAt: 0,
+          idlePushUntil: 0,
+          idlePushCount: 0,
+        }
+      }
       return
     }
-    const heldMs = performance.now() - currentControl.startedAt
-    forwardControlRef.current = { pressed: false, startedAt: 0 }
+    const now = performance.now()
+    const heldMs = now - currentControl.startedAt
+    const releaseCarryMs = useReleaseCarry && !playPaused
+      ? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+      : 0
+    forwardControlRef.current = {
+      pressed: false,
+      startedAt: releaseCarryMs > 0 ? currentControl.startedAt : 0,
+      releaseCarryUntil: releaseCarryMs > 0 ? now + releaseCarryMs : 0,
+      idleSince: releaseCarryMs > 0 ? now + releaseCarryMs : now,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount: 0,
+    }
     setForwardPressed(false)
+    if (releaseCarryMs > 0) {
+      setMessage(`Forward released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
+      return
+    }
     if (appMode === 'play' && !playPaused && heldMs < 180) {
       mothMotionRef.current.velocity = Math.max(mothMotionRef.current.velocity, 0.01)
       setMessage('Forward tap: small drift')
       return
     }
     setMessage('Forward released: moth drifting')
+  }
+
+  function startEditMothScrub(direction: -1 | 1, shiftKey = false) {
+    stopForwardControl(false)
+    const current = editScrubRef.current
+    if (!current.pressed || current.direction !== direction || current.shiftKey !== shiftKey) {
+      editScrubRef.current = {
+        pressed: true,
+        direction,
+        startedAt: performance.now(),
+        shiftKey,
+      }
+      setForwardPressed(direction > 0)
+      setEditScrubDirection(direction)
+      setMessage(direction > 0 ? 'Edit scrub: moth moving forward' : 'Edit scrub: moth moving backward')
+    }
+  }
+
+  function stopEditMothScrub() {
+    if (!editScrubRef.current.pressed) {
+      return
+    }
+    editScrubRef.current = {
+      pressed: false,
+      direction: editScrubRef.current.direction,
+      startedAt: 0,
+      shiftKey: false,
+    }
+    if (zoomFromMothView || appMode === 'edit') {
+      setCamera(cameraAtMoth(Math.max(projectRef.current.camera.zoom, followZoomAtProgress(playProgressRef.current))), false)
+    }
+    setForwardPressed(false)
+    setEditScrubDirection(0)
+    setMessage('Edit scrub stopped')
   }
 
   function handleForwardPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -610,6 +835,28 @@ function App() {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
     stopForwardControl()
+  }
+
+  function handleEditScrubPointerDown(direction: -1 | 1, event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    startEditMothScrub(direction, event.shiftKey)
+  }
+
+  function handleEditScrubPointerEnd(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    stopEditMothScrub()
+  }
+
+  function enterEditModeAtMoth() {
+    stopForwardControl(false)
+    stopEditMothScrub()
+    setAppMode('edit')
+    setCamera(cameraAtMoth(projectRef.current.camera.zoom), false)
+    setMessage('Edit mode centered on moth')
   }
 
   const setCamera = (camera: Camera, history = true) => {
@@ -628,6 +875,11 @@ function App() {
     return { x: moth.x, y: moth.y, zoom }
   }
 
+  const followZoomAtProgress = (progress: number) => {
+    const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, progress)
+    return ((activeGroup?.cameraZoom ?? 0.58) * 0.8)
+  }
+
   const setZoom = (zoom: number) => {
     if (zoomFromMothView) {
       setCamera(cameraAtMoth(zoom))
@@ -644,15 +896,16 @@ function App() {
     if (!selectedZoomItem) {
       return { ...project.camera, zoom }
     }
-    const bounds = itemScreenBounds(selectedZoomItem, project, project.camera, viewport)
+    const targetCanvasCamera = cameraForCanvasView({ ...project.camera, zoom }, project)
+    const bounds = itemScreenBounds(selectedZoomItem, project, canvasCamera, viewport)
     const anchorScreen = {
       x: bounds.x + bounds.width / 2,
       y: bounds.y + bounds.height / 2,
     }
     const parallax = project.layers[selectedZoomItem.layerId].parallax
     return {
-      x: selectedZoomItem.x - (anchorScreen.x - viewport.width / 2) / (zoom * parallax),
-      y: selectedZoomItem.y - (anchorScreen.y - viewport.height / 2) / (zoom * parallax),
+      x: selectedZoomItem.x - (anchorScreen.x - viewport.width / 2) / (targetCanvasCamera.zoom * parallax),
+      y: selectedZoomItem.y - (anchorScreen.y - viewport.height / 2) / (targetCanvasCamera.zoom * parallax),
       zoom,
     }
   }
@@ -671,7 +924,8 @@ function App() {
   }
 
   const handleSandboxChange = (nextSandboxId: SandboxId) => {
-    stopForwardControl()
+    stopForwardControl(false)
+    stopEditMothScrub()
     mothMotionRef.current.velocity = 0
     setSandboxId(nextSandboxId)
     const next = readProjectFromStorage(nextSandboxId)
@@ -694,7 +948,8 @@ function App() {
   }
 
   const handleReset = () => {
-    stopForwardControl()
+    stopForwardControl(false)
+    stopEditMothScrub()
     mothMotionRef.current.velocity = 0
     const next = createDefaultProject()
     setProject(next)
@@ -710,7 +965,7 @@ function App() {
   }
 
   const handleClear = () => {
-    stopForwardControl()
+    stopForwardControl(false)
     mothMotionRef.current.velocity = 0
     clearProjectStorage(sandboxId)
     const next = createDefaultProject()
@@ -752,7 +1007,7 @@ function App() {
 
   const handleApplyJson = () => {
     try {
-      stopForwardControl()
+      stopForwardControl(false)
       mothMotionRef.current.velocity = 0
       const next = migrateProject(JSON.parse(jsonDraft))
       pushHistory(projectRef.current)
@@ -1018,7 +1273,7 @@ function App() {
       return
     }
     const screen = eventToCanvasPoint(event)
-    const world = screenToWorld(screen, project.camera, viewport)
+    const world = screenToWorld(screen, canvasCamera, viewport)
     const resizeCorner = findResizeHandle(screen)
     const hit = resizeCorner ? selectionRef.current : hitTest(screen, world)
 
@@ -1104,7 +1359,8 @@ function App() {
       return
     }
     const screen = eventToCanvasPoint(event)
-    const world = screenToWorld(screen, drag.startCamera, viewport)
+    const dragCanvasCamera = cameraForCanvasView(drag.startCamera, drag.startProject)
+    const world = screenToWorld(screen, dragCanvasCamera, viewport)
     const dx = world.x - drag.startWorld.x
     const dy = world.y - drag.startWorld.y
 
@@ -1116,8 +1372,8 @@ function App() {
     if (drag.mode === 'pan') {
       setCamera({
         ...drag.startCamera,
-        x: drag.startCamera.x - (screen.x - drag.startScreen.x) / drag.startCamera.zoom,
-        y: drag.startCamera.y - (screen.y - drag.startScreen.y) / drag.startCamera.zoom,
+        x: drag.startCamera.x - (screen.x - drag.startScreen.x) / dragCanvasCamera.zoom,
+        y: drag.startCamera.y - (screen.y - drag.startScreen.y) / dragCanvasCamera.zoom,
       }, false)
       return
     }
@@ -1157,13 +1413,13 @@ function App() {
         const end = eventToCanvasPoint(event)
         const rect = makeScreenRect(drag.startScreen, end)
         if (rect.width < 5 && rect.height < 5 && drag.selectedItemIds.length > 0) {
-          const stampPoint = screenToWorld(end, drag.startCamera, viewport)
+          const stampPoint = screenToWorld(end, cameraForCanvasView(drag.startCamera, drag.startProject), viewport)
           setSelectionBox(null)
           stampSelectedItemsAt(stampPoint)
           dragRef.current = null
           return
         }
-        const selectedIds = selectVisibleItemsInRect(projectRef.current, rect, projectRef.current.camera, viewport, canvasTargets)
+        const selectedIds = selectVisibleItemsInRect(projectRef.current, rect, cameraForCanvasView(projectRef.current.camera, projectRef.current), viewport, canvasTargets)
         setSelectedItemIds(selectedIds)
         setSelection(selectedIds.length > 0 ? { type: 'item', id: selectedIds[selectedIds.length - 1] } : null)
         setSelectedRoutePointIds([])
@@ -1180,7 +1436,7 @@ function App() {
       return
     }
     const screen = eventToCanvasPoint(event)
-    const world = screenToWorld(screen, project.camera, viewport)
+    const world = screenToWorld(screen, canvasCamera, viewport)
     const progress = nearestRouteProgress(project.route, project.routeRenderMode, world)
     updateProject((current) => expandWorldForRoute({
       ...current,
@@ -1203,8 +1459,8 @@ function App() {
     } else {
       setCamera({
         ...project.camera,
-        x: project.camera.x + event.deltaX / project.camera.zoom,
-        y: project.camera.y + event.deltaY / project.camera.zoom,
+        x: project.camera.x + event.deltaX / canvasCamera.zoom,
+        y: project.camera.y + event.deltaY / canvasCamera.zoom,
       })
     }
   }
@@ -1228,7 +1484,7 @@ function App() {
     if (!assetById.has(assetId)) {
       return
     }
-    const point = screenToWorld(eventToCanvasPoint(event), project.camera, viewport)
+    const point = screenToWorld(eventToCanvasPoint(event), canvasCamera, viewport)
     const dropLayerId = visibleArtworkLayers.includes(activeLayerId) ? activeLayerId : visibleArtworkLayers[0]
     updateProject((current) => {
       const next = addAssetItem(current, assetId, dropLayerId, point)
@@ -1259,16 +1515,16 @@ function App() {
 
     if (project.routeRenderMode === 'bezier') {
       for (const point of [...project.route].reverse()) {
-        if (point.handleIn && distance(worldToScreen(point.handleIn, project.camera, viewport), screen) < 12) {
+        if (point.handleIn && distance(worldToScreen(point.handleIn, canvasCamera, viewport), screen) < 12) {
           return { type: 'route-handle-in', id: point.id }
         }
-        if (point.handleOut && distance(worldToScreen(point.handleOut, project.camera, viewport), screen) < 12) {
+        if (point.handleOut && distance(worldToScreen(point.handleOut, canvasCamera, viewport), screen) < 12) {
           return { type: 'route-handle-out', id: point.id }
         }
       }
     }
     for (const point of [...project.route].reverse()) {
-      if (distance(worldToScreen(point, project.camera, viewport), screen) < 14) {
+      if (distance(worldToScreen(point, canvasCamera, viewport), screen) < 14) {
         return { type: 'route-point', id: point.id }
       }
     }
@@ -1284,7 +1540,7 @@ function App() {
         candidate.layerId === layerId && candidate.visible && filterItem(candidate)
       ))).reverse()
       for (const item of layerItems) {
-        const bounds = itemScreenBounds(item, project, project.camera, viewport)
+        const bounds = itemScreenBounds(item, project, canvasCamera, viewport)
         if (screen.x >= bounds.x && screen.x <= bounds.x + bounds.width && screen.y >= bounds.y && screen.y <= bounds.y + bounds.height) {
           return { type: 'item', id: item.id }
         }
@@ -1301,7 +1557,7 @@ function App() {
     if (!item || !canvasTargets.includes(item.layerId)) {
       return undefined
     }
-    const bounds = itemScreenBounds(item, project, project.camera, viewport)
+    const bounds = itemScreenBounds(item, project, canvasCamera, viewport)
     return resizeHandles(bounds).find((handle) => distance(handle, screen) <= 12)?.id
   }
 
@@ -1320,6 +1576,12 @@ function App() {
             onDragOver={handleCanvasDragOver}
             onDrop={handleCanvasDrop}
           />
+          {project.gameplay.cameraExtensionEnabled !== false && (
+            <div className="camera-extension-overlay" style={cameraExtensionOverlayStyle} aria-hidden="true">
+              <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle} />
+              <div className="camera-extension-frame" />
+            </div>
+          )}
           {selectionBox && (
             <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
           )}
@@ -1361,6 +1623,7 @@ function App() {
         <div className="stage-topbar">
           <div className="segmented" aria-label="Mode">
             <button className={appMode === 'play' ? 'active' : ''} type="button" onClick={() => {
+              stopEditMothScrub()
               setAppMode('play')
               setPlayPaused(false)
               setMessage('Play ready: hold Forward to move')
@@ -1382,7 +1645,33 @@ function App() {
                 <ChevronRight size={16} /> Forward
               </button>
             )}
-            <button className={appMode === 'edit' ? 'active' : ''} type="button" onClick={() => setAppMode('edit')}><MousePointer2 size={15} /> Edit</button>
+            {appMode === 'edit' && (
+              <>
+                <button
+                  className={editScrubDirection === -1 ? 'active forward-hold-button' : 'forward-hold-button'}
+                  type="button"
+                  onPointerDown={(event) => handleEditScrubPointerDown(-1, event)}
+                  onPointerUp={handleEditScrubPointerEnd}
+                  onPointerCancel={handleEditScrubPointerEnd}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <ChevronLeft size={16} /> Back
+                </button>
+                <button
+                  className={editScrubDirection === 1 ? 'active forward-hold-button' : 'forward-hold-button'}
+                  type="button"
+                  onPointerDown={(event) => handleEditScrubPointerDown(1, event)}
+                  onPointerUp={handleEditScrubPointerEnd}
+                  onPointerCancel={handleEditScrubPointerEnd}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <ChevronRight size={16} /> Forward
+                </button>
+              </>
+            )}
+            <button className={appMode === 'edit' ? 'active' : ''} type="button" onClick={() => {
+              enterEditModeAtMoth()
+            }}><MousePointer2 size={15} /> Edit</button>
           </div>
           <div className="segmented" aria-label="Artwork mode">
             <button className={artworkMode === 'art' ? 'active' : ''} type="button" onClick={() => setArtworkMode('art')}><Image size={15} /> Art</button>
@@ -1447,6 +1736,14 @@ function App() {
         </EditorSection>
 
         <EditorSection title="Route" {...panelSectionProps('Route')}>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={project.gameplay.routePathVisible !== false}
+              onChange={(event) => updateGameplay({ routePathVisible: event.target.checked }, event.target.checked ? 'Neon path shown' : 'Neon path hidden')}
+            />
+            Show Neon Path
+          </label>
           <div className="segmented route-mode">
             {(['polyline', 'smooth', 'bezier'] satisfies RouteRenderMode[]).map((mode) => (
               <button
@@ -1519,6 +1816,14 @@ function App() {
               <span>Path-following behavior</span>
             </div>
           </div>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={project.gameplay.routePathVisible !== false}
+              onChange={(event) => updateGameplay({ routePathVisible: event.target.checked }, event.target.checked ? 'Neon path shown' : 'Neon path hidden')}
+            />
+            Show Neon Path
+          </label>
           <label className="range-row">
             Speed
             <input
@@ -1562,10 +1867,10 @@ function App() {
               max="1.2"
               step="0.05"
               type="range"
-              value={project.gameplay.mothGlowPulseSpeed ?? 0.35}
+              value={project.gameplay.mothGlowPulseSpeed ?? 0.55}
               onChange={(event) => updateGameplay({ mothGlowPulseSpeed: Number(event.target.value) }, 'Updated glow pulse')}
             />
-            <span>{(project.gameplay.mothGlowPulseSpeed ?? 0.35).toFixed(2)}Hz</span>
+            <span>{(project.gameplay.mothGlowPulseSpeed ?? 0.55).toFixed(2)}Hz</span>
           </label>
           <p className="target-hint">Loop estimate: <strong>{estimatedLoopSeconds}s</strong> before cue pauses.</p>
           <label className="range-row">
@@ -1575,10 +1880,10 @@ function App() {
               max="4"
               step="0.1"
               type="range"
-              value={project.gameplay.mothFlutterSpeed ?? 2}
+              value={project.gameplay.mothFlutterSpeed ?? 0.9}
               onChange={(event) => updateGameplay({ mothFlutterSpeed: Number(event.target.value) }, 'Updated flutter speed')}
             />
-            <span>{(project.gameplay.mothFlutterSpeed ?? 2).toFixed(1)}Hz</span>
+            <span>{(project.gameplay.mothFlutterSpeed ?? 0.9).toFixed(1)}Hz</span>
           </label>
           <label className="range-row">
             Flutter Amount
@@ -1587,10 +1892,10 @@ function App() {
               max="0.08"
               step="0.002"
               type="range"
-              value={project.gameplay.mothFlutterAmount ?? 0.018}
+              value={project.gameplay.mothFlutterAmount ?? 0.072}
               onChange={(event) => updateGameplay({ mothFlutterAmount: Number(event.target.value) }, 'Updated flutter amount')}
             />
-            <span>{(project.gameplay.mothFlutterAmount ?? 0.018).toFixed(3)}</span>
+            <span>{(project.gameplay.mothFlutterAmount ?? 0.072).toFixed(3)}</span>
           </label>
           <label className="range-row">
             Bob
@@ -1599,10 +1904,10 @@ function App() {
               max="8"
               step="0.25"
               type="range"
-              value={project.gameplay.mothBobAmount ?? 2.5}
+              value={project.gameplay.mothBobAmount ?? 5.5}
               onChange={(event) => updateGameplay({ mothBobAmount: Number(event.target.value) }, 'Updated moth bob')}
             />
-            <span>{(project.gameplay.mothBobAmount ?? 2.5).toFixed(1)}px</span>
+            <span>{(project.gameplay.mothBobAmount ?? 5.5).toFixed(1)}px</span>
           </label>
           <label className="range-row">
             Forward Lean
@@ -1611,10 +1916,10 @@ function App() {
               max="0.08"
               step="0.005"
               type="range"
-              value={project.gameplay.mothLeanForwardAmount ?? 0.02}
+              value={project.gameplay.mothLeanForwardAmount ?? 0.08}
               onChange={(event) => updateGameplay({ mothLeanForwardAmount: Number(event.target.value) }, 'Updated forward micro drift')}
             />
-            <span>{(project.gameplay.mothLeanForwardAmount ?? 0.02).toFixed(3)}</span>
+            <span>{(project.gameplay.mothLeanForwardAmount ?? 0.08).toFixed(3)}</span>
           </label>
           <label className="range-row">
             Back Lean
@@ -1635,10 +1940,10 @@ function App() {
               max="0.12"
               step="0.005"
               type="range"
-              value={project.gameplay.mothStretchAmount ?? 0}
+              value={project.gameplay.mothStretchAmount ?? 0.015}
               onChange={(event) => updateGameplay({ mothStretchAmount: Number(event.target.value) }, 'Updated moth stretch')}
             />
-            <span>{(project.gameplay.mothStretchAmount ?? 0).toFixed(3)}</span>
+            <span>{(project.gameplay.mothStretchAmount ?? 0.015).toFixed(3)}</span>
           </label>
           <label className="checkbox-row">
             <input
@@ -1702,30 +2007,80 @@ function App() {
               max="3000"
               step="100"
               type="range"
-              value={project.gameplay.mothManualRampMs ?? 1200}
+              value={project.gameplay.mothManualRampMs ?? 1300}
               onChange={(event) => updateGameplay({ mothManualRampMs: Number(event.target.value) }, 'Updated forward acceleration')}
             />
-            <span>{((project.gameplay.mothManualRampMs ?? 1200) / 1000).toFixed(1)}s</span>
+            <span>{((project.gameplay.mothManualRampMs ?? 1300) / 1000).toFixed(1)}s</span>
+          </label>
+          <label className="range-row">
+            Release Carry
+            <input
+              min="0"
+              max="4000"
+              step="100"
+              type="range"
+              value={project.gameplay.mothForwardReleaseCarryMs ?? 2300}
+              onChange={(event) => updateGameplay({ mothForwardReleaseCarryMs: Number(event.target.value) }, 'Updated release carry')}
+            />
+            <span>{((project.gameplay.mothForwardReleaseCarryMs ?? 2300) / 1000).toFixed(1)}s</span>
+          </label>
+          <label className="range-row">
+            Release Push
+            <input
+              min="0.1"
+              max="1"
+              step="0.05"
+              type="range"
+              value={project.gameplay.mothForwardReleasePushScale ?? 0.4}
+              onChange={(event) => updateGameplay({ mothForwardReleasePushScale: Number(event.target.value) }, 'Updated release push strength')}
+            />
+            <span>{Math.round((project.gameplay.mothForwardReleasePushScale ?? 0.4) * 100)}%</span>
           </label>
           <div className="button-grid">
-            <button
-              className={forwardPressed ? 'active' : ''}
-              type="button"
-              onPointerDown={handleForwardPointerDown}
-              onPointerUp={handleForwardPointerEnd}
-              onPointerCancel={handleForwardPointerEnd}
-              onContextMenu={(event) => event.preventDefault()}
-            >
-              <ChevronRight size={15} /> Hold Forward
-            </button>
+            {appMode === 'edit' ? (
+              <>
+                <button
+                  className={editScrubDirection === -1 ? 'active' : ''}
+                  type="button"
+                  onPointerDown={(event) => handleEditScrubPointerDown(-1, event)}
+                  onPointerUp={handleEditScrubPointerEnd}
+                  onPointerCancel={handleEditScrubPointerEnd}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <ChevronLeft size={15} /> Back
+                </button>
+                <button
+                  className={editScrubDirection === 1 ? 'active' : ''}
+                  type="button"
+                  onPointerDown={(event) => handleEditScrubPointerDown(1, event)}
+                  onPointerUp={handleEditScrubPointerEnd}
+                  onPointerCancel={handleEditScrubPointerEnd}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <ChevronRight size={15} /> Forward
+                </button>
+              </>
+            ) : (
+              <button
+                className={forwardPressed ? 'active' : ''}
+                type="button"
+                onPointerDown={handleForwardPointerDown}
+                onPointerUp={handleForwardPointerEnd}
+                onPointerCancel={handleForwardPointerEnd}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <ChevronRight size={15} /> Hold Forward
+              </button>
+            )}
             <button className={appMode === 'play' && playPaused ? 'active' : ''} type="button" onClick={() => {
+              stopEditMothScrub()
               setAppMode('play')
               togglePlayPaused()
             }}>
               {playPaused ? <Play size={15} /> : <Pause size={15} />} {playPaused ? 'Resume' : 'Pause'}
             </button>
             <button type="button" onClick={() => {
-              stopForwardControl()
+              stopForwardControl(false)
               mothMotionRef.current.velocity = 0
               setPlayProgress(0)
               playProgressRef.current = 0
@@ -1740,6 +2095,14 @@ function App() {
         </EditorSection>
 
         <EditorSection title="View" {...panelSectionProps('View')}>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={project.gameplay.routePathVisible !== false}
+              onChange={(event) => updateGameplay({ routePathVisible: event.target.checked }, event.target.checked ? 'Neon path shown' : 'Neon path hidden')}
+            />
+            Show Neon Path
+          </label>
           <label className="range-row">
             <ZoomIn size={15} />
             <input min="0.08" max="1.7" step="0.01" type="range" value={project.camera.zoom} onChange={(event) => setZoom(Number(event.target.value))} />
@@ -1754,6 +2117,76 @@ function App() {
           <button className={zoomFromMothView ? 'active wide-button' : 'wide-button'} type="button" onClick={handleMothViewToggle}>
             <Crosshair size={15} /> Moth View Zoom
           </button>
+          <button
+            className={project.gameplay.cameraExtensionEnabled !== false ? 'active wide-button' : 'wide-button'}
+            type="button"
+            onClick={() => updateGameplay(
+              { cameraExtensionEnabled: project.gameplay.cameraExtensionEnabled === false },
+              project.gameplay.cameraExtensionEnabled === false ? 'Camera extension shown' : 'Camera extension hidden',
+            )}
+          >
+            <Crosshair size={15} /> Camera Extension
+          </button>
+          <label className="range-row">
+            Extension Zoom
+            <input
+              min="0.45"
+              max="1"
+              step="0.01"
+              type="range"
+              value={project.gameplay.cameraExtensionZoomScale ?? 0.95}
+              onChange={(event) => updateGameplay({ cameraExtensionZoomScale: Number(event.target.value) }, 'Updated camera extension zoom')}
+            />
+            <span>{Math.round((project.gameplay.cameraExtensionZoomScale ?? 0.95) * 100)}%</span>
+          </label>
+          <label className="range-row">
+            Game Square
+            <input
+              min="0.5"
+              max="0.96"
+              step="0.01"
+              type="range"
+              value={project.gameplay.cameraExtensionInnerScale ?? 0.9}
+              onChange={(event) => updateGameplay({ cameraExtensionInnerScale: Number(event.target.value) }, 'Updated camera extension size')}
+            />
+            <span>{Math.round((project.gameplay.cameraExtensionInnerScale ?? 0.9) * 100)}%</span>
+          </label>
+          <label className="range-row">
+            Roundness
+            <input
+              min="0"
+              max="1"
+              step="0.01"
+              type="range"
+              value={project.gameplay.cameraExtensionRoundness ?? 0.65}
+              onChange={(event) => updateGameplay({ cameraExtensionRoundness: Number(event.target.value) }, 'Updated camera extension roundness')}
+            />
+            <span>{Math.round((project.gameplay.cameraExtensionRoundness ?? 0.65) * 100)}%</span>
+          </label>
+          <label className="range-row">
+            Density
+            <input
+              min="0"
+              max="4"
+              step="0.01"
+              type="range"
+              value={project.gameplay.cameraExtensionDensity ?? 1}
+              onChange={(event) => updateGameplay({ cameraExtensionDensity: Number(event.target.value) }, 'Updated camera extension density')}
+            />
+            <span>{Math.round((project.gameplay.cameraExtensionDensity ?? 1) * 100)}%</span>
+          </label>
+          <label className="range-row">
+            Gaussian Blur
+            <input
+              min="0"
+              max="20"
+              step="0.5"
+              type="range"
+              value={project.gameplay.cameraExtensionBlurAmount ?? 6}
+              onChange={(event) => updateGameplay({ cameraExtensionBlurAmount: Number(event.target.value) }, 'Updated camera extension blur')}
+            />
+            <span>{project.gameplay.cameraExtensionBlurAmount ?? 6}px</span>
+          </label>
         </EditorSection>
 
         <EditorSection title="Music" {...panelSectionProps('Music')}>

@@ -23,8 +23,18 @@ export type RenderOptions = {
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
   const { viewport } = options
-  const showingAll = options.appMode !== 'edit' || options.canvasTargets.length === 0
   context.clearRect(0, 0, viewport.width, viewport.height)
+  renderSceneContent(context, project, options, true)
+}
+
+function renderSceneContent(
+  context: CanvasRenderingContext2D,
+  project: EditorProject,
+  options: RenderOptions,
+  includeEditorOverlays: boolean,
+) {
+  const { viewport } = options
+  const showingAll = options.appMode !== 'edit' || options.canvasTargets.length === 0
   drawSky(context, viewport)
   drawWorldFrame(context, project, options)
 
@@ -33,7 +43,7 @@ export function renderScene(context: CanvasRenderingContext2D, project: EditorPr
       drawLayer(context, project, layerId, options, 'normal')
     }
   }
-  if (showingAll || options.canvasTargets.includes('path')) {
+  if (project.gameplay.routePathVisible !== false && (showingAll || options.canvasTargets.includes('path'))) {
     drawRoute(context, project, options)
   }
   for (const layerId of orderedLayerIds(project).filter((id) => project.layers[id].parallax > 1)) {
@@ -45,15 +55,15 @@ export function renderScene(context: CanvasRenderingContext2D, project: EditorPr
     drawMothTrail(context, project, options)
     drawMoth(context, project, options)
   }
-  if (options.appMode === 'edit' && options.canvasTargets.includes('path')) {
+  if (includeEditorOverlays && options.appMode === 'edit' && options.canvasTargets.includes('path')) {
     drawSelectedRoute(context, project, options)
   }
-  if (options.appMode === 'edit' && options.canvasTargets.includes('path')) {
+  if (includeEditorOverlays && options.appMode === 'edit' && options.canvasTargets.includes('path')) {
     drawRoutePoints(context, project, options)
   }
   drawFrontOccluders(context, project, options, showingAll)
 
-  if (options.appMode === 'edit') {
+  if (includeEditorOverlays && options.appMode === 'edit') {
     drawSelectedItem(context, project, options)
   }
 }
@@ -341,12 +351,12 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   const tangent = sampleRouteTangent(options.routeSampleData, options.playProgress)
   const rawScreen = worldToScreen(moth, options.camera, options.viewport)
   const time = options.animationTime / 1000
-  const bobAmount = project.gameplay.mothBobAmount ?? 2.5
+  const bobAmount = project.gameplay.mothBobAmount ?? 5.5
   const bob = Math.sin(time * Math.PI * 2 * 0.82) * bobAmount
   const drift = Math.sin(time * Math.PI * 2 * 0.37 + 1.2) * bobAmount * 0.28
   const size = Math.max(28, 154 * options.camera.zoom * project.gameplay.mothSize)
-  const flutterAmount = project.gameplay.mothFlutterAmount ?? 0.018
-  const flutterSpeed = project.gameplay.mothFlutterSpeed ?? 2
+  const flutterAmount = project.gameplay.mothFlutterAmount ?? 0.072
+  const flutterSpeed = project.gameplay.mothFlutterSpeed ?? 0.9
   const flutter = Math.sin(time * Math.PI * 2 * flutterSpeed)
   const wingBreath = Math.sin(time * Math.PI * 2 * (flutterSpeed * 0.47) + 0.8)
   const lean = resolveMothLean(options.mothMotionVelocity, project.gameplay)
@@ -359,7 +369,7 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   const angle = project.gameplay.mothHeadingMode === 'path'
     ? Math.atan2(next.y - moth.y, next.x - moth.x) + Math.PI / 2
     : 0
-  const glowPulseSpeed = project.gameplay.mothGlowPulseSpeed ?? 0.35
+  const glowPulseSpeed = project.gameplay.mothGlowPulseSpeed ?? 0.55
   const glowPulse = 0.9 + (0.5 + 0.5 * Math.sin(time * Math.PI * 2 * glowPulseSpeed + 0.5)) * 0.16
   const forwardGlowLevel = Math.min(1, Math.max(0, options.mothMotionVelocity / Math.max(0.001, 0.055 * project.gameplay.mothSpeed)))
   const forwardGlowBoost = 1 + forwardGlowLevel * 0.22

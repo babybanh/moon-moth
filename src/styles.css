@@ -208,7 +208,8 @@ input[type="range"] {
   position: relative;
   align-self: center;
   justify-self: center;
-  width: min(100%, calc(100dvh - 152px));
+  width: auto;
+  height: min(100%, calc(100vw - 430px), calc(100dvh - 152px));
   max-width: 100%;
   max-height: 100%;
   aspect-ratio: 1 / 1;
@@ -223,6 +224,46 @@ canvas {
   width: 100%;
   height: 100%;
   cursor: crosshair;
+}
+
+.camera-extension-overlay {
+  --camera-extension-inner-size: 80%;
+  --camera-extension-radius: 9%;
+  --camera-extension-bg-alpha: 0.05;
+  --camera-extension-dim-alpha: 0.22;
+  --camera-extension-brightness: 0.86;
+  --camera-extension-blur: 6px;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.camera-extension-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(4, 11, 20, var(--camera-extension-dim-alpha)), rgba(4, 11, 20, var(--camera-extension-dim-alpha))),
+    rgba(4, 11, 20, var(--camera-extension-bg-alpha));
+  backdrop-filter:
+    blur(var(--camera-extension-blur))
+    brightness(var(--camera-extension-brightness))
+    saturate(0.94);
+  -webkit-backdrop-filter:
+    blur(var(--camera-extension-blur))
+    brightness(var(--camera-extension-brightness))
+    saturate(0.94);
+}
+
+.camera-extension-frame {
+  position: absolute;
+  left: calc((100% - var(--camera-extension-inner-size)) / 2);
+  top: calc((100% - var(--camera-extension-inner-size)) / 2);
+  width: var(--camera-extension-inner-size);
+  height: var(--camera-extension-inner-size);
+  border: 0;
+  border-radius: var(--camera-extension-radius);
+  box-shadow: none;
 }
 
 .panel-dock {
@@ -837,6 +878,10 @@ canvas {
   .stage-topbar {
     align-items: stretch;
     flex-wrap: wrap;
+  }
+
+  .canvas-shell {
+    height: min(100%, calc(100vw - 20px), calc(100dvh - 152px));
   }
 
   .panel-dock {

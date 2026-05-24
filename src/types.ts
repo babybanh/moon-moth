@@ -102,6 +102,8 @@ export type GameplaySettings = {
   mothManualSwellPeak?: number
   mothManualSwellCruise?: number
   mothManualSwellPeriodMs?: number
+  mothForwardReleaseCarryMs?: number
+  mothForwardReleasePushScale?: number
   mothGlowPulseSpeed?: number
   mothFlutterSpeed?: number
   mothFlutterAmount?: number
@@ -115,6 +117,13 @@ export type GameplaySettings = {
   mothTrailWaveAmount?: number
   mothTrailSparkle?: number
   mothHeadingMode?: MothHeadingMode
+  routePathVisible?: boolean
+  cameraExtensionEnabled?: boolean
+  cameraExtensionZoomScale?: number
+  cameraExtensionInnerScale?: number
+  cameraExtensionRoundness?: number
+  cameraExtensionDensity?: number
+  cameraExtensionBlurAmount?: number
   musicEnabled: boolean
   musicVolume: number
   musicTrackId?: string

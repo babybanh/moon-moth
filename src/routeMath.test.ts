@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { advanceRouteProgress, appendRoutePoint, buildRoutePolyline, buildRouteSampleData, insertRoutePoint, manualScrubSpeed, resolveMothLean, sampleRoute, sampleRouteTangent } from './routeMath'
+import { advanceRouteProgress, appendRoutePoint, buildRoutePolyline, buildRouteSampleData, idleForwardPushDurationMs, idleForwardPushWaitMs, insertRoutePoint, manualScrubSpeed, resolveMothLean, sampleRoute, sampleRouteTangent } from './routeMath'
 import type { RoutePoint } from './types'
 
 const route: RoutePoint[] = [
@@ -67,14 +67,23 @@ describe('route math', () => {
     expect(manualScrubSpeed(1600, settings, false, -1)).toBeLessThan(manualScrubSpeed(1600, settings, false, 1))
   })
 
+  it('staggers idle forward nudges with longer waits and durations', () => {
+    expect(idleForwardPushWaitMs(0)).toBe(2000)
+    expect(idleForwardPushWaitMs(1)).toBe(3000)
+    expect(idleForwardPushWaitMs(2)).toBe(4000)
+    expect(idleForwardPushDurationMs(2300, 0)).toBe(3910)
+    expect(idleForwardPushDurationMs(2300, 1)).toBe(6647)
+    expect(idleForwardPushDurationMs(2300, 2)).toBe(11300)
+  })
+
   it('samples a normalized route tangent for moth lean direction', () => {
     const tangent = sampleRouteTangent(buildRouteSampleData(route, 'smooth'), 0.4)
     expect(Math.hypot(tangent.x, tangent.y)).toBeCloseTo(1)
   })
 
   it('keeps moth lean available as a small signed micro drift', () => {
-    const settings = { mothLeanForwardAmount: 0.02, mothLeanBackwardAmount: 0.02 }
-    expect(resolveMothLean(0.055, settings)).toBeCloseTo(0.02)
+    const settings = { mothLeanForwardAmount: 0.08, mothLeanBackwardAmount: 0.02 }
+    expect(resolveMothLean(0.055, settings)).toBeCloseTo(0.08)
     expect(resolveMothLean(-0.055, settings)).toBeCloseTo(-0.02)
   })
 })

@@ -3,6 +3,7 @@ import type { Camera, GameplaySettings, Point, RoutePoint, RouteRenderMode, Size
 export type RouteSampleData = {
   polyline: Point[]
   segmentLengths: number[]
+  cumulativeLengths: number[]
   totalLength: number
 }
 
@@ -11,12 +12,12 @@ export type MothLeanSettings = Pick<GameplaySettings, 'mothLeanForwardAmount' | 
 
 const defaultManualScrub = {
   speedMin: 0.006,
-  rampMs: 1200,
+  rampMs: 1300,
   topSpeedScale: 0.055,
 }
 
 const defaultMothLean = {
-  forward: 0.02,
+  forward: 0.08,
   backward: 0.02,
   referenceSpeed: 0.055,
 }
@@ -61,10 +62,17 @@ export function buildRouteSampleData(route: RoutePoint[], mode: RouteRenderMode,
   const segmentLengths = polyline.map((point, index) => (
     index === 0 ? 0 : distance(polyline[index - 1], point)
   ))
+  const cumulativeLengths: number[] = []
+  let totalLength = 0
+  for (const segmentLength of segmentLengths) {
+    totalLength += segmentLength
+    cumulativeLengths.push(totalLength)
+  }
   return {
     polyline,
     segmentLengths,
-    totalLength: totalPolylineLength(polyline),
+    cumulativeLengths,
+    totalLength,
   }
 }
 
@@ -80,21 +88,34 @@ export function sampleRouteData(data: RouteSampleData, progress: number): Point 
   if (total <= 0) {
     return polyline[0]
   }
-  let remaining = clamp(progress, 0, 1) * total
-  for (let index = 1; index < polyline.length; index += 1) {
-    const previous = polyline[index - 1]
-    const next = polyline[index]
-    const segment = data.segmentLengths[index] ?? distance(previous, next)
-    if (remaining <= segment) {
-      const t = segment === 0 ? 0 : remaining / segment
-      return {
-        x: lerp(previous.x, next.x, t),
-        y: lerp(previous.y, next.y, t),
-      }
-    }
-    remaining -= segment
+  const targetLength = clamp(progress, 0, 1) * total
+  const index = findRouteSegmentIndex(data.cumulativeLengths, targetLength)
+  const previous = polyline[index - 1]
+  const next = polyline[index]
+  if (!previous || !next) {
+    return polyline[polyline.length - 1]
   }
-  return polyline[polyline.length - 1]
+  const segmentStart = data.cumulativeLengths[index - 1] ?? 0
+  const segment = data.segmentLengths[index] ?? distance(previous, next)
+  const t = segment === 0 ? 0 : (targetLength - segmentStart) / segment
+  return {
+    x: lerp(previous.x, next.x, t),
+    y: lerp(previous.y, next.y, t),
+  }
+}
+
+function findRouteSegmentIndex(cumulativeLengths: number[], targetLength: number) {
+  let low = 1
+  let high = cumulativeLengths.length - 1
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2)
+    if ((cumulativeLengths[middle] ?? 0) < targetLength) {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  return Math.max(1, low)
 }
 
 export function sampleRouteTangent(data: RouteSampleData, progress: number): Point {
@@ -123,12 +144,20 @@ export function resolveMothLean(signedProgressPerSecond: number, settings: MothL
 export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings = {}, shiftKey = false, direction: -1 | 1 = 1) {
   const directionMultiplier = direction < 0 ? 0.72 : 1
   const shiftMultiplier = shiftKey ? 1.45 : 1
-  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.25) * directionMultiplier * shiftMultiplier)
+  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.17) * directionMultiplier * shiftMultiplier)
   const start = Math.min(settings.mothManualSpeedMin ?? defaultManualScrub.speedMin, topSpeed * 0.35)
   const rampMs = Math.max(120, settings.mothManualRampMs ?? defaultManualScrub.rampMs)
   const t = clamp(heldMs / rampMs, 0, 1)
   const eased = 1 - (1 - t) ** 3
   return lerp(start, topSpeed, eased)
+}
+
+export function idleForwardPushWaitMs(pushCount: number) {
+  return 2000 + Math.max(0, pushCount) * 1000
+}
+
+export function idleForwardPushDurationMs(basePushMs: number, pushCount: number) {
+  return Math.round(Math.max(0, basePushMs) * (1.7 ** (Math.max(0, pushCount) + 1)))
 }
 
 export function advanceRouteProgress(current: number, direction: -1 | 1, deltaSeconds: number, heldMs: number, settings?: ManualScrubSettings, shiftKey = false) {

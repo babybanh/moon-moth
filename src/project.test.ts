@@ -15,28 +15,37 @@ import {
 } from './project'
 
 const defaultGameplay = {
-  mothSpeed: 0.25,
-  mothSize: 2.25,
-  mothGlow: 1.85,
+  mothSpeed: 0.18,
+  mothSize: 2.45,
+  mothGlow: 1.95,
   mothManualSpeedMin: 0.006,
   mothManualSpeedMax: 0.055,
-  mothManualRampMs: 1200,
+  mothManualRampMs: 1300,
   mothManualSwellPeak: 0.038,
   mothManualSwellCruise: 0.014,
   mothManualSwellPeriodMs: 2200,
-  mothGlowPulseSpeed: 0.35,
-  mothFlutterSpeed: 0.6,
-  mothFlutterAmount: 0.044,
-  mothBobAmount: 2.5,
-  mothLeanForwardAmount: 0.02,
+  mothForwardReleaseCarryMs: 2300,
+  mothForwardReleasePushScale: 0.4,
+  mothGlowPulseSpeed: 0.55,
+  mothFlutterSpeed: 0.9,
+  mothFlutterAmount: 0.072,
+  mothBobAmount: 5.5,
+  mothLeanForwardAmount: 0.08,
   mothLeanBackwardAmount: 0.02,
-  mothStretchAmount: 0,
+  mothStretchAmount: 0.015,
   mothTrailEnabled: true,
   mothTrailStyle: 'mist',
   mothTrailAmount: 0.5,
   mothTrailWaveAmount: 10,
   mothTrailSparkle: 0.25,
   mothHeadingMode: 'north',
+  routePathVisible: true,
+  cameraExtensionEnabled: true,
+  cameraExtensionZoomScale: 0.95,
+  cameraExtensionInnerScale: 0.9,
+  cameraExtensionRoundness: 0.65,
+  cameraExtensionDensity: 1,
+  cameraExtensionBlurAmount: 6,
   musicEnabled: true,
   musicVolume: 0.56,
 }
@@ -102,26 +111,90 @@ describe('project helpers', () => {
       mothGlow: 1.2,
       mothManualSpeedMin: 0.006,
       mothManualSpeedMax: 0.055,
-      mothManualRampMs: 1200,
+      mothManualRampMs: 1300,
       mothManualSwellPeak: 0.038,
       mothManualSwellCruise: 0.014,
       mothManualSwellPeriodMs: 2200,
-      mothGlowPulseSpeed: 0.35,
-      mothFlutterSpeed: 0.6,
-      mothFlutterAmount: 0.044,
-      mothBobAmount: 2.5,
-      mothLeanForwardAmount: 0.02,
+      mothForwardReleaseCarryMs: 2300,
+      mothForwardReleasePushScale: 0.4,
+      mothGlowPulseSpeed: 0.55,
+      mothFlutterSpeed: 0.9,
+      mothFlutterAmount: 0.072,
+      mothBobAmount: 5.5,
+      mothLeanForwardAmount: 0.08,
       mothLeanBackwardAmount: 0.02,
-      mothStretchAmount: 0,
+      mothStretchAmount: 0.015,
       mothTrailEnabled: true,
       mothTrailStyle: 'mist',
       mothTrailAmount: 0.5,
       mothTrailWaveAmount: 10,
       mothTrailSparkle: 0.25,
       mothHeadingMode: 'north',
+      routePathVisible: true,
+      cameraExtensionEnabled: true,
+      cameraExtensionZoomScale: 0.95,
+      cameraExtensionInnerScale: 0.9,
+      cameraExtensionRoundness: 0.65,
+      cameraExtensionDensity: 1,
+      cameraExtensionBlurAmount: 6,
       musicEnabled: false,
       musicVolume: 0.2,
     })
+  })
+
+  it('refreshes prior moth tuning defaults when a saved sandbox is reloaded', () => {
+    const project = migrateProject({
+      gameplay: {
+        mothSpeed: 0.2,
+        mothSize: 2.25,
+        mothGlow: 1.85,
+        mothGlowPulseSpeed: 0.65,
+        mothFlutterSpeed: 0.8,
+        mothFlutterAmount: 0.056,
+        mothBobAmount: 4.5,
+        mothLeanForwardAmount: 0.02,
+        mothStretchAmount: 0.01,
+      },
+    })
+    expect(project.gameplay).toMatchObject({
+      mothSpeed: 0.18,
+      mothSize: 2.45,
+      mothGlow: 1.95,
+      mothGlowPulseSpeed: 0.55,
+      mothFlutterSpeed: 0.9,
+      mothFlutterAmount: 0.072,
+      mothBobAmount: 5.5,
+      mothLeanForwardAmount: 0.08,
+      mothStretchAmount: 0.015,
+    })
+  })
+
+  it('preserves hidden neon route path through migration', () => {
+    const project = migrateProject({
+      gameplay: {
+        routePathVisible: false,
+      },
+    })
+    expect(project.gameplay.routePathVisible).toBe(false)
+  })
+
+  it('preserves camera extension preferences through migration', () => {
+    const project = migrateProject({
+      gameplay: {
+        cameraExtensionEnabled: false,
+        cameraExtensionZoomScale: 0.72,
+        cameraExtensionInnerScale: 0.62,
+        cameraExtensionRoundness: 0.4,
+        cameraExtensionDensity: 0.75,
+        cameraExtensionBlurAmount: 11,
+      },
+    })
+    expect(project.gameplay.cameraExtensionEnabled).toBe(false)
+    expect(project.gameplay.cameraExtensionZoomScale).toBe(0.72)
+    expect(project.gameplay.cameraExtensionInnerScale).toBe(0.62)
+    expect(project.gameplay.cameraExtensionRoundness).toBe(0.4)
+    expect(project.gameplay.cameraExtensionDensity).toBe(0.75)
+    expect(project.gameplay.cameraExtensionBlurAmount).toBe(11)
   })
 
   it('preserves path-heading moth mode through migration', () => {

@@ -10,21 +10,30 @@ const defaultRenderBand: RenderBand = 'normal'
 const frontOccluderNotePattern = /\bin\s+front\s+path\b/i
 const manualSpeedMinDefault = 0.006
 const manualSpeedMaxDefault = 0.055
-const manualRampMsDefault = 1200
+const manualRampMsDefault = 1300
 const manualSwellPeakDefault = 0.038
 const manualSwellCruiseDefault = 0.014
 const manualSwellPeriodMsDefault = 2200
-const mothGlowPulseSpeedDefault = 0.35
-const mothFlutterSpeedDefault = 0.6
-const mothFlutterAmountDefault = 0.044
-const mothBobAmountDefault = 2.5
-const mothLeanForwardAmountDefault = 0.02
+const mothForwardReleaseCarryMsDefault = 2300
+const mothForwardReleasePushScaleDefault = 0.4
+const mothGlowPulseSpeedDefault = 0.55
+const mothFlutterSpeedDefault = 0.9
+const mothFlutterAmountDefault = 0.072
+const mothBobAmountDefault = 5.5
+const mothLeanForwardAmountDefault = 0.08
 const mothLeanBackwardAmountDefault = 0.02
-const mothStretchAmountDefault = 0
+const mothStretchAmountDefault = 0.015
 const mothTrailStyleDefault = 'mist'
 const mothTrailAmountDefault = 0.5
 const mothTrailWaveAmountDefault = 10
 const mothTrailSparkleDefault = 0.25
+const routePathVisibleDefault = true
+const cameraExtensionEnabledDefault = true
+const cameraExtensionZoomScaleDefault = 0.95
+const cameraExtensionInnerScaleDefault = 0.9
+const cameraExtensionRoundnessDefault = 0.65
+const cameraExtensionDensityDefault = 1
+const cameraExtensionBlurAmountDefault = 6
 
 const subLayerZBase: Record<SubLayer, number> = {
   Far: 0,
@@ -262,6 +271,9 @@ function resolveMusicCue(value: unknown): MusicCueAction {
 function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): GameplaySettings {
   const source = value && typeof value === 'object' ? value as Partial<GameplaySettings> : {}
   const merged: GameplaySettings = { ...fallback, ...source }
+  const mothSpeed = migrateDefaultLikeNumber(source.mothSpeed, fallback.mothSpeed, [0.17, 0.2])
+  const mothSize = migrateDefaultLikeNumber(source.mothSize, fallback.mothSize, [2.25, 2.5, 2.65])
+  const mothGlow = migrateDefaultLikeNumber(source.mothGlow, fallback.mothGlow, [1.3, 1.85])
   const mothManualSpeedMin = clampNumber(source.mothManualSpeedMin, 0.001, 0.5, fallback.mothManualSpeedMin ?? manualSpeedMinDefault)
   const mothManualSpeedMax = Math.max(
     mothManualSpeedMin,
@@ -269,26 +281,45 @@ function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): Ga
   )
   return {
     ...merged,
+    mothSpeed,
+    mothSize,
+    mothGlow,
     mothManualSpeedMin,
     mothManualSpeedMax,
     mothManualRampMs: Math.round(clampNumber(source.mothManualRampMs, 100, 5000, fallback.mothManualRampMs ?? manualRampMsDefault)),
     mothManualSwellPeak: clampNumber(source.mothManualSwellPeak, 0.004, 0.12, fallback.mothManualSwellPeak ?? manualSwellPeakDefault),
     mothManualSwellCruise: clampNumber(source.mothManualSwellCruise, 0.001, 0.08, fallback.mothManualSwellCruise ?? manualSwellCruiseDefault),
     mothManualSwellPeriodMs: Math.round(clampNumber(source.mothManualSwellPeriodMs, 900, 6000, fallback.mothManualSwellPeriodMs ?? manualSwellPeriodMsDefault)),
-    mothGlowPulseSpeed: clampNumber(source.mothGlowPulseSpeed, 0.05, 2, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault),
-    mothFlutterSpeed: clampNumber(source.mothFlutterSpeed, 0.4, 6, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault),
-    mothFlutterAmount: clampNumber(source.mothFlutterAmount, 0, 0.2, fallback.mothFlutterAmount ?? mothFlutterAmountDefault),
-    mothBobAmount: clampNumber(source.mothBobAmount, 0, 12, fallback.mothBobAmount ?? mothBobAmountDefault),
-    mothLeanForwardAmount: clampNumber(source.mothLeanForwardAmount, 0, 0.6, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault),
+    mothForwardReleaseCarryMs: Math.round(clampNumber(source.mothForwardReleaseCarryMs, 0, 5000, fallback.mothForwardReleaseCarryMs ?? mothForwardReleaseCarryMsDefault)),
+    mothForwardReleasePushScale: clampNumber(source.mothForwardReleasePushScale, 0.1, 1, fallback.mothForwardReleasePushScale ?? mothForwardReleasePushScaleDefault),
+    mothGlowPulseSpeed: clampNumber(migrateDefaultLikeNumber(source.mothGlowPulseSpeed, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault, [0.65]), 0.05, 2, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault),
+    mothFlutterSpeed: clampNumber(migrateDefaultLikeNumber(source.mothFlutterSpeed, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault, [0.6, 0.8]), 0.4, 6, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault),
+    mothFlutterAmount: clampNumber(migrateDefaultLikeNumber(source.mothFlutterAmount, fallback.mothFlutterAmount ?? mothFlutterAmountDefault, [0.044, 0.056]), 0, 0.2, fallback.mothFlutterAmount ?? mothFlutterAmountDefault),
+    mothBobAmount: clampNumber(migrateDefaultLikeNumber(source.mothBobAmount, fallback.mothBobAmount ?? mothBobAmountDefault, [2.5, 4.5]), 0, 12, fallback.mothBobAmount ?? mothBobAmountDefault),
+    mothLeanForwardAmount: clampNumber(migrateDefaultLikeNumber(source.mothLeanForwardAmount, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault, [0.02]), 0, 0.6, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault),
     mothLeanBackwardAmount: clampNumber(source.mothLeanBackwardAmount, 0, 0.6, fallback.mothLeanBackwardAmount ?? mothLeanBackwardAmountDefault),
-    mothStretchAmount: clampNumber(source.mothStretchAmount, 0, 0.3, fallback.mothStretchAmount ?? mothStretchAmountDefault),
+    mothStretchAmount: clampNumber(migrateDefaultLikeNumber(source.mothStretchAmount, fallback.mothStretchAmount ?? mothStretchAmountDefault, [0, 0.01]), 0, 0.3, fallback.mothStretchAmount ?? mothStretchAmountDefault),
     mothTrailEnabled: source.mothTrailEnabled === undefined ? fallback.mothTrailEnabled ?? true : source.mothTrailEnabled !== false,
     mothTrailStyle: source.mothTrailStyle === 'bubble' || source.mothTrailStyle === 'sparkle' ? source.mothTrailStyle : fallback.mothTrailStyle ?? mothTrailStyleDefault,
     mothTrailAmount: clampNumber(source.mothTrailAmount, 0, 1, fallback.mothTrailAmount ?? mothTrailAmountDefault),
     mothTrailWaveAmount: clampNumber(source.mothTrailWaveAmount, 0, 40, fallback.mothTrailWaveAmount ?? mothTrailWaveAmountDefault),
     mothTrailSparkle: clampNumber(source.mothTrailSparkle, 0, 1, fallback.mothTrailSparkle ?? mothTrailSparkleDefault),
     mothHeadingMode: source.mothHeadingMode === 'path' ? 'path' : 'north',
+    routePathVisible: source.routePathVisible === undefined ? fallback.routePathVisible ?? routePathVisibleDefault : source.routePathVisible !== false,
+    cameraExtensionEnabled: source.cameraExtensionEnabled === undefined ? fallback.cameraExtensionEnabled ?? cameraExtensionEnabledDefault : source.cameraExtensionEnabled !== false,
+    cameraExtensionZoomScale: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionZoomScale, fallback.cameraExtensionZoomScale ?? cameraExtensionZoomScaleDefault, [0.7, 0.9]), 0.45, 1, fallback.cameraExtensionZoomScale ?? cameraExtensionZoomScaleDefault),
+    cameraExtensionInnerScale: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionInnerScale, fallback.cameraExtensionInnerScale ?? cameraExtensionInnerScaleDefault, [0.8]), 0.5, 0.96, fallback.cameraExtensionInnerScale ?? cameraExtensionInnerScaleDefault),
+    cameraExtensionRoundness: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionRoundness, fallback.cameraExtensionRoundness ?? cameraExtensionRoundnessDefault, [0.18]), 0, 1, fallback.cameraExtensionRoundness ?? cameraExtensionRoundnessDefault),
+    cameraExtensionDensity: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionDensity, fallback.cameraExtensionDensity ?? cameraExtensionDensityDefault, [0.52, 0.68]), 0, 4, fallback.cameraExtensionDensity ?? cameraExtensionDensityDefault),
+    cameraExtensionBlurAmount: clampNumber(source.cameraExtensionBlurAmount, 0, 20, fallback.cameraExtensionBlurAmount ?? cameraExtensionBlurAmountDefault),
   }
+}
+
+function migrateDefaultLikeNumber(value: unknown, fallback: number, previousDefaults: number[]) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback
+  }
+  return previousDefaults.some((previous) => Math.abs(value - previous) < 0.000001) ? fallback : value
 }
 
 function resolveMigratedItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'notes'>): RenderBand | undefined {
