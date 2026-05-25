@@ -257,6 +257,19 @@ input[type="range"] {
   width: min(var(--game-surface-size), calc(100vw - 32px), calc(100dvh - 116px));
 }
 
+.app-shell.public-game .stage-panel {
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+}
+
+.app-shell.public-game .game-surface {
+  width: var(--game-surface-size);
+  max-width: none;
+  max-height: none;
+  transform: scale(var(--public-game-scale, 1));
+  transform-origin: center center;
+}
+
 .canvas-shell {
   position: relative;
   align-self: start;

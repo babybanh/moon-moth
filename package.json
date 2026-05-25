@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:game": "VITE_MOON_MOTH_GAME_ONLY=true vite",
     "build": "tsc -b && vite build",
+    "build:game": "tsc -b && VITE_MOON_MOTH_GAME_ONLY=true vite build",
     "test": "vitest run",
     "preview": "vite preview"
   },

@@ -66,6 +66,21 @@ import type {
 
 const defaultViewport: Size = { width: 900, height: 620 }
 const editorViewStorageKey = 'moonMothRouteEditor.editorView'
+const publicGameBuild = import.meta.env.VITE_MOON_MOTH_GAME_ONLY === 'true'
+const gameSurfaceSize = 628
+const publicGameMargin = 24
+const publicGameHudAllowance = 160
+
+function calculatePublicGameScale() {
+  if (typeof window === 'undefined') {
+    return 1
+  }
+  return clamp(Math.min(
+    1,
+    (window.innerWidth - publicGameMargin) / gameSurfaceSize,
+    (window.innerHeight - publicGameMargin) / (gameSurfaceSize + publicGameHudAllowance),
+  ), 0.36, 1)
+}
 
 type EditorView = 'compact' | 'classic'
 type WorkspaceMode = 'editor' | 'game'
@@ -288,10 +303,10 @@ function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPo
 const maxOpenEditorPanels = 3
 
 function App() {
-  const [project, setProject] = useState<EditorProject>(() => readProjectFromStorage('a'))
+  const [project, setProject] = useState<EditorProject>(() => publicGameBuild ? createDefaultProject() : readProjectFromStorage('a'))
   const [sandboxId, setSandboxId] = useState<SandboxId>('a')
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('editor')
-  const [appMode, setAppMode] = useState<AppMode>('edit')
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(publicGameBuild ? 'game' : 'editor')
+  const [appMode, setAppMode] = useState<AppMode>(publicGameBuild ? 'play' : 'edit')
   const [artworkMode, setArtworkMode] = useState<ArtworkMode>('art')
   const [canvasTargets, setCanvasTargets] = useState<CanvasTarget[]>(['background'])
   const [activeLayerId, setActiveLayerId] = useState<LayerId>('background')
@@ -306,10 +321,11 @@ function App() {
   ))
   const [openEditorPanels, setOpenEditorPanels] = useState<EditorPanelTitle[]>(['Moth', 'Route', 'Layers'])
   const [images, setImages] = useState<ImageMap>(() => new Map())
-  const [viewport, setViewport] = useState(defaultViewport)
-  const [message, setMessage] = useState('Sandbox A loaded')
+  const [viewport, setViewport] = useState(publicGameBuild ? { width: gameSurfaceSize, height: gameSurfaceSize } : defaultViewport)
+  const [publicGameScale, setPublicGameScale] = useState(() => calculatePublicGameScale())
+  const [message, setMessage] = useState(publicGameBuild ? 'Game menu' : 'Sandbox A loaded')
   const [jsonDraft, setJsonDraft] = useState('')
-  const [playProgress, setPlayProgress] = useState(0.06)
+  const [playProgress, setPlayProgress] = useState(publicGameBuild ? 0 : 0.06)
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
   const [gameScreen, setGameScreen] = useState<GameScreen>('menu')
@@ -712,6 +728,10 @@ function App() {
   }, [gameMode, project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
 
   useEffect(() => {
+    if (publicGameBuild) {
+      setViewport({ width: gameSurfaceSize, height: gameSurfaceSize })
+      return
+    }
     const shell = shellRef.current
     if (!shell) {
       return
@@ -727,6 +747,22 @@ function App() {
     const observer = new ResizeObserver(resize)
     observer.observe(shell)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!publicGameBuild) {
+      return
+    }
+    const resize = () => {
+      setPublicGameScale(calculatePublicGameScale())
+    }
+    resize()
+    window.addEventListener('resize', resize)
+    window.addEventListener('orientationchange', resize)
+    return () => {
+      window.removeEventListener('resize', resize)
+      window.removeEventListener('orientationchange', resize)
+    }
   }, [])
 
   useEffect(() => {
@@ -1283,6 +1319,9 @@ function App() {
     '--game-hud-border-alpha': `${hudStylePreset.borderAlpha}`,
     '--game-hud-primary-alpha': `${hudStylePreset.primaryAlpha}`,
   } as CSSProperties
+  const gameSurfaceStyle = publicGameBuild
+    ? { '--public-game-scale': `${publicGameScale}` } as CSSProperties
+    : undefined
   const hudHoldPulseStyle = (startedAt: number, id: string) => {
     const heldMs = startedAt > 0 ? Math.max(0, animationTime - startedAt) : 0
     const progress = clamp(heldMs / 6200, 0, 1)
@@ -1582,6 +1621,11 @@ function App() {
   }
 
   function enterEditorWorkspace() {
+    if (publicGameBuild) {
+      setWorkspaceMode('game')
+      enterGameMenu('Game menu')
+      return
+    }
     clearExploreIdleFocus()
     setWorkspaceMode('editor')
     enterEditModeAtMoth()
@@ -3227,9 +3271,9 @@ function App() {
   }
 
   return (
-    <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}`}>
+    <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}${publicGameBuild ? ' public-game' : ''}`}>
       <section className="stage-panel">
-        {workspaceMode === 'game' && (
+        {workspaceMode === 'game' && !publicGameBuild && (
           <div className="game-topbar">
             <button type="button" onClick={enterEditorWorkspace}>
               <MousePointer2 size={15} /> Editor
@@ -3237,7 +3281,7 @@ function App() {
             <div className="game-status">{message}</div>
           </div>
         )}
-        <div className="game-surface">
+        <div className="game-surface" style={gameSurfaceStyle}>
           <div
             className={[
               'canvas-shell',
