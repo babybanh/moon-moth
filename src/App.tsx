@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { Camera as CameraIcon, ChevronLeft, ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
@@ -65,6 +65,7 @@ const defaultViewport: Size = { width: 900, height: 620 }
 const editorViewStorageKey = 'moonMothRouteEditor.editorView'
 
 type EditorView = 'compact' | 'classic'
+type WorkspaceMode = 'editor' | 'game'
 type SelectionBox = { start: Point; current: Point } | null
 type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
 type ForwardControlState = {
@@ -76,13 +77,37 @@ type ForwardControlState = {
   idlePushUntil: number
   idlePushCount: number
 }
-type GameMode = 'journey' | 'moon-arrival' | 'explore'
+type GameMode = 'journey' | 'explore' | 'loop'
 type ExploreControlState = {
   direction: -1 | 0 | 1
+  startedAt: number
+  releaseDirection: -1 | 0 | 1
+  releaseStartedAt: number
+  releaseCarryUntil: number
+  idleSince: number
+  idlePushStartedAt: number
+  idlePushUntil: number
+  idlePushCount: number
+}
+type LoopControlState = {
+  direction: -1 | 1
+  endpointWaitUntil: number
+  releaseStartedAt: number
+  releaseCarryUntil: number
+  idleSince: number
+  idlePushStartedAt: number
+  idlePushUntil: number
+  idlePushCount: number
+}
+type ExploreFinishState = {
+  active: boolean
+  direction: -1 | 1
+  targetProgress: number
   startedAt: number
 }
 type MothMotionState = {
   velocity: number
+  trailVelocity: number
   blurResumeAt: number
 }
 type CanvasPopoverKind = 'quick' | 'compact'
@@ -95,6 +120,44 @@ type EditScrubState = {
 
 const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
 const mothStoppedVelocityThreshold = 0.00012
+const loopEndpointPauseMs = 2000
+const musicLoopGapMs = 2000
+
+function stoppedExploreControl(): ExploreControlState {
+  return {
+    direction: 0,
+    startedAt: 0,
+    releaseDirection: 0,
+    releaseStartedAt: 0,
+    releaseCarryUntil: 0,
+    idleSince: 0,
+    idlePushStartedAt: 0,
+    idlePushUntil: 0,
+    idlePushCount: 0,
+  }
+}
+
+function stoppedLoopControl(direction: -1 | 1 = 1): LoopControlState {
+  return {
+    direction,
+    endpointWaitUntil: 0,
+    releaseStartedAt: 0,
+    releaseCarryUntil: 0,
+    idleSince: 0,
+    idlePushStartedAt: 0,
+    idlePushUntil: 0,
+    idlePushCount: 0,
+  }
+}
+
+function stoppedExploreFinish(): ExploreFinishState {
+  return {
+    active: false,
+    direction: 1,
+    targetProgress: 0,
+    startedAt: 0,
+  }
+}
 
 function cameraForCanvasView(camera: Camera, project: EditorProject): Camera {
   if (project.gameplay.cameraExtensionEnabled === false) {
@@ -121,6 +184,7 @@ const maxOpenEditorPanels = 3
 function App() {
   const [project, setProject] = useState<EditorProject>(() => readProjectFromStorage('a'))
   const [sandboxId, setSandboxId] = useState<SandboxId>('a')
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('editor')
   const [appMode, setAppMode] = useState<AppMode>('edit')
   const [artworkMode, setArtworkMode] = useState<ArtworkMode>('art')
   const [canvasTargets, setCanvasTargets] = useState<CanvasTarget[]>(['background'])
@@ -142,9 +206,12 @@ function App() {
   const [playProgress, setPlayProgress] = useState(0.06)
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
-  const [moonExploreReady, setMoonExploreReady] = useState(false)
   const [forwardPressed, setForwardPressed] = useState(false)
+  const [journeyDirection, setJourneyDirection] = useState<-1 | 1>(1)
+  const [journeyEndpointWaiting, setJourneyEndpointWaiting] = useState(false)
   const [exploreDirection, setExploreDirection] = useState<-1 | 0 | 1>(0)
+  const [exploreFinishing, setExploreFinishing] = useState(false)
+  const [exploreSongEnded, setExploreSongEnded] = useState(false)
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
@@ -169,23 +236,26 @@ function App() {
     idlePushUntil: 0,
     idlePushCount: 0,
   })
-  const exploreControlRef = useRef<ExploreControlState>({
-    direction: 0,
-    startedAt: 0,
-  })
+  const exploreControlRef = useRef<ExploreControlState>(stoppedExploreControl())
+  const exploreFinishRef = useRef<ExploreFinishState>(stoppedExploreFinish())
+  const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
   const editScrubRef = useRef<EditScrubState>({
     pressed: false,
     direction: 1,
     startedAt: 0,
     shiftKey: false,
   })
-  const mothMotionRef = useRef<MothMotionState>({ velocity: 0, blurResumeAt: 0 })
+  const mothMotionRef = useRef<MothMotionState>({ velocity: 0, trailVelocity: 0, blurResumeAt: 0 })
   const tourHoldUntilRef = useRef(0)
   const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
   const cameraRef = useRef<Camera>(project.camera)
   const canvasPopoverDragRef = useRef<{ offset: Point; kind: CanvasPopoverKind } | null>(null)
   const copiedItemsRef = useRef<EditorItem[]>([])
   const musicRef = useRef<HTMLAudioElement | null>(null)
+  const musicLoopGapTimeoutRef = useRef<number | null>(null)
+  const gameModeRef = useRef<GameMode>(gameMode)
+  const journeyDirectionRef = useRef<-1 | 1>(1)
+  const journeyEndpointWaitUntilRef = useRef(0)
   const failedImageSourcesRef = useRef<Set<string>>(new Set())
   const selectedMusicTrack = useMemo(
     () => musicTracks.find((track) => track.id === (project.gameplay.musicTrackId ?? musicTracks[0].id)) ?? musicTracks[0],
@@ -205,6 +275,10 @@ function App() {
   useEffect(() => {
     routeSampleDataRef.current = routeSampleData
   }, [routeSampleData])
+
+  useEffect(() => {
+    gameModeRef.current = gameMode
+  }, [gameMode])
 
   useEffect(() => {
     selectionRef.current = selection
@@ -247,18 +321,6 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(editorViewStorageKey, editorView)
   }, [editorView])
-
-  useEffect(() => {
-    if (gameMode !== 'moon-arrival') {
-      setMoonExploreReady(false)
-      return
-    }
-    const timeout = window.setTimeout(() => {
-      setMoonExploreReady(true)
-      setMessage('Moon reached: Explore is ready')
-    }, 2000)
-    return () => window.clearTimeout(timeout)
-  }, [gameMode])
 
   useEffect(() => {
     triggeredTourCueIdsRef.current.clear()
@@ -377,7 +439,7 @@ function App() {
     }
     const handleBlur = () => {
       stopForwardControl(false)
-      stopExploreControl()
+      stopExploreControl(undefined, false)
       stopEditMothScrub()
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -446,10 +508,33 @@ function App() {
 
   useEffect(() => {
     const music = new Audio(selectedMusicTrack.src)
-    music.loop = true
+    music.loop = shouldNativeLoopMusic()
     music.preload = 'auto'
     music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
+    const handleEnded = () => {
+      clearMusicLoopGap()
+      if (gameModeRef.current === 'explore') {
+        beginExploreSongFinish()
+        return
+      }
+      if (gameModeRef.current !== 'loop') {
+        return
+      }
+      musicLoopGapTimeoutRef.current = window.setTimeout(() => {
+        const latestMusic = musicRef.current
+        const gameplay = projectRef.current.gameplay
+        if (gameModeRef.current !== 'loop' || latestMusic !== music || !gameplay.musicEnabled || gameplay.musicMuted) {
+          return
+        }
+        music.currentTime = 0
+        music.volume = gameplay.musicMuted ? 0 : gameplay.musicVolume
+        void music.play().catch(() => {
+          setMessage('Music is ready; press Play Music when the browser allows it')
+        })
+      }, musicLoopGapMs)
+    }
+    music.addEventListener('ended', handleEnded)
     musicRef.current = music
     if (projectRef.current.gameplay.musicEnabled && !projectRef.current.gameplay.musicMuted) {
       void music.play().catch(() => {
@@ -457,6 +542,8 @@ function App() {
       })
     }
     return () => {
+      clearMusicLoopGap()
+      music.removeEventListener('ended', handleEnded)
       music.pause()
       musicRef.current = null
     }
@@ -467,17 +554,21 @@ function App() {
     if (!music) {
       return
     }
+    music.loop = shouldNativeLoopMusic(gameMode)
     music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
+    if (gameMode !== 'loop' || !project.gameplay.musicEnabled || project.gameplay.musicMuted) {
+      clearMusicLoopGap()
+    }
     if (!project.gameplay.musicEnabled) {
       music.pause()
       return
     }
-    if (!project.gameplay.musicMuted && music.paused) {
+    if (!project.gameplay.musicMuted && music.paused && musicLoopGapTimeoutRef.current === null) {
       void music.play().catch(() => {
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
-  }, [project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
+  }, [gameMode, project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
 
   useEffect(() => {
     const shell = shellRef.current
@@ -505,6 +596,8 @@ function App() {
       previous = time
       const forwardControl = forwardControlRef.current
       const exploreControl = exploreControlRef.current
+      const exploreFinish = exploreFinishRef.current
+      let loopControl = loopControlRef.current
       const editScrub = editScrubRef.current
       let targetVelocity = 0
       let shouldAnimate = appMode === 'play' && !playPaused
@@ -519,13 +612,87 @@ function App() {
           setPlayProgress(next)
         } else if ((next <= 0 && editScrub.direction < 0) || (next >= 1 && editScrub.direction > 0)) {
           mothMotionRef.current.velocity = 0
+          mothMotionRef.current.trailVelocity = 0
         }
         shouldAnimate = true
       } else if (appMode === 'play' && !playPaused && gameMode === 'explore') {
         const current = playProgressRef.current
-        const heldMs = exploreControl.direction === 0 ? 0 : time - exploreControl.startedAt
-        targetVelocity = exploreTargetVelocity(exploreControl.direction, current, heldMs, projectRef.current.gameplay)
-        const movementRequested = exploreControl.direction !== 0 && targetVelocity !== 0
+        if (exploreFinish.active) {
+          const remaining = exploreFinish.targetProgress - current
+          const reachedTarget = Math.abs(remaining) <= 0.0007 || Math.sign(remaining) !== exploreFinish.direction
+          if (reachedTarget) {
+            playProgressRef.current = exploreFinish.targetProgress
+            setPlayProgress(exploreFinish.targetProgress)
+            mothMotionRef.current.velocity = 0
+            mothMotionRef.current.trailVelocity = 0
+            stopExploreFinish()
+            setMessage('Explore song ended: moth settled')
+          } else {
+            const heldMs = time - exploreFinish.startedAt
+            targetVelocity = exploreFinish.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, exploreFinish.direction) * 0.72
+            const maxStepVelocity = Math.abs(remaining) / Math.max(delta, 0.001)
+            targetVelocity = exploreFinish.direction * Math.min(Math.abs(targetVelocity), maxStepVelocity)
+            mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.3))
+            const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+            const clampedNext = exploreFinish.direction > 0
+              ? Math.min(next, exploreFinish.targetProgress)
+              : Math.max(next, exploreFinish.targetProgress)
+            playProgressRef.current = clampedNext
+            setPlayProgress(clampedNext)
+          }
+        } else {
+        const canMoveExploreDirection = (direction: -1 | 0 | 1) => direction !== 0 && !((direction < 0 && current <= 0) || (direction > 0 && current >= 1))
+        const releaseCarryActive = exploreControl.direction === 0
+          && exploreControl.releaseDirection !== 0
+          && exploreControl.releaseCarryUntil > time
+          && canMoveExploreDirection(exploreControl.releaseDirection)
+        let idlePushActive = exploreControl.direction === 0
+          && !releaseCarryActive
+          && exploreControl.releaseDirection !== 0
+          && exploreControl.idlePushUntil > time
+          && canMoveExploreDirection(exploreControl.releaseDirection)
+        if (
+          exploreControl.direction === 0
+          && !releaseCarryActive
+          && !idlePushActive
+          && exploreControl.releaseDirection !== 0
+          && exploreControl.idleSince > 0
+          && canMoveExploreDirection(exploreControl.releaseDirection)
+          && time - exploreControl.idleSince >= idleForwardPushWaitMs(exploreControl.idlePushCount)
+        ) {
+          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+          const durationMs = idleForwardPushDurationMs(basePushMs, exploreControl.idlePushCount)
+          exploreControlRef.current = {
+            ...exploreControl,
+            idlePushStartedAt: time,
+            idlePushUntil: time + durationMs,
+            idlePushCount: exploreControl.idlePushCount + 1,
+          }
+          idlePushActive = durationMs > 0
+          setMessage(`Explore gentle push ${exploreControl.idlePushCount + 1}: ${(durationMs / 1000).toFixed(1)}s`)
+        }
+        if (exploreControl.direction === 0 && !releaseCarryActive && exploreControl.idlePushUntil > 0 && exploreControl.idlePushUntil <= time) {
+          exploreControlRef.current = {
+            ...exploreControlRef.current,
+            idleSince: exploreControl.idlePushUntil,
+            idlePushStartedAt: 0,
+            idlePushUntil: 0,
+          }
+        }
+        const pushDirection = releaseCarryActive || idlePushActive ? exploreControl.releaseDirection : 0
+        const activeDirection = exploreControl.direction || pushDirection
+        const heldMs = exploreControl.direction !== 0
+          ? time - exploreControl.startedAt
+          : idlePushActive
+            ? time - exploreControlRef.current.idlePushStartedAt
+            : releaseCarryActive
+              ? time - exploreControl.releaseStartedAt
+              : 0
+        const pushScale = exploreControl.direction === 0 && activeDirection !== 0
+          ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
+          : 1
+        targetVelocity = exploreTargetVelocity(activeDirection, current, heldMs, projectRef.current.gameplay) * pushScale
+        const movementRequested = activeDirection !== 0 && targetVelocity !== 0
         const response = movementRequested ? 2.8 : 1.75
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
         const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
@@ -534,10 +701,102 @@ function App() {
           setPlayProgress(next)
         } else if ((next <= 0 && mothMotionRef.current.velocity < 0) || (next >= 1 && mothMotionRef.current.velocity > 0)) {
           mothMotionRef.current.velocity = 0
-          stopExploreControl()
+          mothMotionRef.current.trailVelocity = 0
+          stopExploreControl(undefined, false)
+        }
+        }
+      } else if (appMode === 'play' && !playPaused && gameMode === 'loop') {
+        const current = playProgressRef.current
+        if (loopControl.endpointWaitUntil > time) {
+          mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.4))
+          shouldAnimate = true
+        } else {
+          if (loopControl.endpointWaitUntil > 0) {
+            loopControlRef.current = createLoopNudgeControl(loopControl.direction, time)
+            loopControl = loopControlRef.current
+            setMessage(loopControl.direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
+          }
+          const atForwardEnd = current >= 1 && loopControl.direction > 0
+          const atBackEnd = current <= 0 && loopControl.direction < 0
+          if (atForwardEnd || atBackEnd) {
+            mothMotionRef.current.velocity = 0
+            mothMotionRef.current.trailVelocity = 0
+            loopControlRef.current = {
+              ...stoppedLoopControl(atForwardEnd ? -1 : 1),
+              endpointWaitUntil: time + loopEndpointPauseMs,
+            }
+            setMessage(atForwardEnd ? 'Loop resting at the moon' : 'Loop resting at the start')
+          } else {
+            const canMoveLoopDirection = !((loopControl.direction < 0 && current <= 0) || (loopControl.direction > 0 && current >= 1))
+            const releaseCarryActive = loopControl.releaseCarryUntil > time && canMoveLoopDirection
+            let idlePushActive = !releaseCarryActive && loopControl.idlePushUntil > time && canMoveLoopDirection
+            if (
+              !releaseCarryActive
+              && !idlePushActive
+              && loopControl.idleSince > 0
+              && canMoveLoopDirection
+              && time - loopControl.idleSince >= idleForwardPushWaitMs(loopControl.idlePushCount)
+            ) {
+              const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+              const durationMs = idleForwardPushDurationMs(basePushMs, loopControl.idlePushCount)
+              loopControlRef.current = {
+                ...loopControl,
+                idlePushStartedAt: time,
+                idlePushUntil: time + durationMs,
+                idlePushCount: loopControl.idlePushCount + 1,
+              }
+              loopControl = loopControlRef.current
+              idlePushActive = durationMs > 0
+              setMessage(`Loop gentle push ${loopControl.idlePushCount}: ${(durationMs / 1000).toFixed(1)}s`)
+            }
+            if (!releaseCarryActive && loopControl.idlePushUntil > 0 && loopControl.idlePushUntil <= time) {
+              loopControlRef.current = {
+                ...loopControlRef.current,
+                idleSince: loopControl.idlePushUntil,
+                idlePushStartedAt: 0,
+                idlePushUntil: 0,
+              }
+              loopControl = loopControlRef.current
+            }
+            const loopNudgeActive = releaseCarryActive || idlePushActive
+            if (loopNudgeActive) {
+              const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
+              const speedMultiplier = activeGroup?.speedMultiplier ?? 1
+              const releasePushScale = projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
+              const heldMs = idlePushActive
+                ? time - loopControlRef.current.idlePushStartedAt
+                : time - loopControl.releaseStartedAt
+              targetVelocity = loopControl.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, loopControl.direction) * speedMultiplier * releasePushScale
+            }
+            const response = loopNudgeActive ? 2.8 : 1.35
+            mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+            const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+            if (next !== current) {
+              playProgressRef.current = next
+              setPlayProgress(next)
+            }
+            if (next >= 1 || next <= 0) {
+              mothMotionRef.current.velocity = 0
+              mothMotionRef.current.trailVelocity = 0
+              loopControlRef.current = {
+                ...stoppedLoopControl(next >= 1 ? -1 : 1),
+                endpointWaitUntil: time + loopEndpointPauseMs,
+              }
+              setMessage(next >= 1 ? 'Loop resting at the moon' : 'Loop resting at the start')
+            }
+          }
         }
       } else if (appMode === 'play' && !playPaused && gameMode === 'journey') {
         const current = playProgressRef.current
+        if (journeyEndpointWaitUntilRef.current > time) {
+          mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.4))
+          shouldAnimate = true
+        } else {
+          if (journeyEndpointWaitUntilRef.current > 0) {
+            journeyEndpointWaitUntilRef.current = 0
+            setJourneyEndpointWaiting(false)
+            setMessage(journeyDirectionRef.current > 0 ? 'Glide ready toward the moon' : 'Glide ready toward the start')
+          }
         if (tourHoldUntilRef.current > time) {
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 1.8))
           if (Math.abs(mothMotionRef.current.velocity) > 0.0001) {
@@ -546,6 +805,8 @@ function App() {
           frame = requestAnimationFrame(tick)
           return
         }
+        const glideDirection = journeyDirectionRef.current
+        const canMoveGlideDirection = !((glideDirection < 0 && current <= 0) || (glideDirection > 0 && current >= 1))
         const releaseCarryActive = !forwardControl.pressed && forwardControl.releaseCarryUntil > time
         let idlePushActive = !forwardControl.pressed && !releaseCarryActive && forwardControl.idlePushUntil > time
         if (
@@ -553,7 +814,7 @@ function App() {
           && !releaseCarryActive
           && !idlePushActive
           && forwardControl.idleSince > 0
-          && current < 1
+          && canMoveGlideDirection
           && time - forwardControl.idleSince >= idleForwardPushWaitMs(forwardControl.idlePushCount)
         ) {
           const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
@@ -575,7 +836,7 @@ function App() {
             idlePushUntil: 0,
           }
         }
-        const forwardRequested = (forwardControl.pressed || releaseCarryActive || idlePushActive) && current < 1
+        const forwardRequested = (forwardControl.pressed || releaseCarryActive || idlePushActive) && canMoveGlideDirection
         if (forwardRequested) {
           const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
           const speedMultiplier = activeGroup?.speedMultiplier ?? 1
@@ -584,7 +845,7 @@ function App() {
           const heldMs = idlePushActive
             ? time - forwardControlRef.current.idlePushStartedAt
             : time - forwardControl.startedAt
-          targetVelocity = manualScrubSpeed(heldMs, projectRef.current.gameplay, false, 1) * speedMultiplier * releasePushScale
+          targetVelocity = glideDirection * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, glideDirection) * speedMultiplier * releasePushScale
         }
 
         const response = forwardRequested ? 2.8 : 1.35
@@ -604,20 +865,24 @@ function App() {
           }
           playProgressRef.current = next
           setPlayProgress(next)
-          if (next >= 1) {
-            mothMotionRef.current.velocity = 0
-            enterMoonArrival()
+          if (next >= 1 || next <= 0) {
+            beginJourneyEndpointWait(next >= 1 ? 'end' : 'start', time)
           }
-        } else if (next >= 1) {
-          mothMotionRef.current.velocity = 0
-          enterMoonArrival()
+        } else if ((next >= 1 || next <= 0) && (forwardRequested || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold)) {
+          beginJourneyEndpointWait(next >= 1 ? 'end' : 'start', time)
+        }
         }
       } else {
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
       }
-      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
+      mothMotionRef.current.trailVelocity += (mothMotionRef.current.velocity - mothMotionRef.current.trailVelocity) * (1 - Math.exp(-delta * 1.25))
+      const loopActive = gameMode === 'loop' && appMode === 'play' && !playPaused && (loopControlRef.current.endpointWaitUntil > time || playProgressRef.current > 0 || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold)
+      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || loopActive || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
       if (motionActive) {
         mothMotionRef.current.blurResumeAt = time + 650
+      }
+      if (!motionActive && Math.abs(mothMotionRef.current.trailVelocity) < mothStoppedVelocityThreshold) {
+        mothMotionRef.current.trailVelocity = 0
       }
       const blurResumePending = mothMotionRef.current.blurResumeAt > time
       const blurResumeReady = mothMotionRef.current.blurResumeAt > 0 && !motionActive && mothMotionRef.current.blurResumeAt <= time
@@ -682,13 +947,15 @@ function App() {
       routeSampleData,
       animationTime,
       mothMotionVelocity: mothMotionRef.current.velocity,
+      mothTrailVelocity: mothMotionRef.current.trailVelocity,
       mothForwardActive: forwardPressed || exploreDirection === 1,
+      hideRoutePath: workspaceMode === 'game' && appMode === 'play',
       selection,
       selectedItemIds,
       canvasTargets,
       viewport,
     })
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -773,9 +1040,12 @@ function App() {
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
   const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold || forwardPressed || exploreDirection !== 0 || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
-  const journeyForwardDisabled = gameMode !== 'journey' || playProgress >= 1
-  const exploreBackDisabled = gameMode !== 'explore' || playProgress <= 0
-  const exploreForwardDisabled = gameMode !== 'explore' || playProgress >= 1
+  const journeyGlideHidden = gameMode === 'journey' && journeyEndpointWaiting
+  const journeyGlideDisabled = gameMode !== 'journey'
+    || journeyEndpointWaiting
+    || (journeyDirection > 0 ? playProgress >= 1 : playProgress <= 0)
+  const exploreBackDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress <= 0
+  const exploreForwardDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress >= 1
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
@@ -878,60 +1148,187 @@ function App() {
       const next = !current
       if (next) {
         stopForwardControl(false)
-        stopExploreControl()
+        stopExploreControl(undefined, false)
       }
-      setMessage(next ? 'Play paused' : gameMode === 'explore' ? 'Play resumed: explore freely' : 'Play resumed: hold Forward to move')
+      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'explore' ? 'Play resumed: explore freely' : 'Play resumed: hold Glide to move')
       return next
     })
   }
 
-  function enterJourneyMode(message = 'Journey mode: hold Forward to move') {
-    stopExploreControl()
+  function enterJourneyMode(message = 'Glide mode: hold Glide to move') {
+    clearLoopControl()
+    clearJourneyEndpointWait(1)
+    stopExploreControl(undefined, false)
+    stopExploreFinish()
+    setExploreSongEnded(false)
     stopForwardControl(false)
+    playProgressRef.current = 0
+    setPlayProgress(0)
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+    setForwardPressed(false)
+    setExploreDirection(0)
+    gameModeRef.current = 'journey'
     setGameMode('journey')
-    setMoonExploreReady(false)
+    setAppMode('play')
+    setPlayPaused(false)
+    handleMusicRestart(false)
     setMessage(message)
   }
 
   function enterExploreMode(message = 'Explore mode: move freely along the path') {
+    clearLoopControl()
+    clearJourneyEndpointWait(journeyDirectionRef.current)
     stopForwardControl(false)
-    stopExploreControl()
+    stopExploreControl(undefined, false)
+    const route = projectRef.current.route
+    let nextMessage = message
+    if (route.length > 0) {
+      const minIndex = Math.min(14, route.length - 1)
+      const maxIndex = Math.min(34, route.length - 1)
+      const randomIndex = minIndex + Math.floor(Math.random() * (Math.max(0, maxIndex - minIndex) + 1))
+      const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, route[randomIndex])
+      playProgressRef.current = progress
+      setPlayProgress(progress)
+      nextMessage = `Explore mode: checkpoint ${randomIndex + 1}`
+    }
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+    stopExploreFinish()
+    setExploreSongEnded(false)
+    gameModeRef.current = 'explore'
     setGameMode('explore')
-    setMoonExploreReady(false)
     setAppMode('play')
     setPlayPaused(false)
+    handleMusicRestart(false)
+    setMessage(nextMessage)
+  }
+
+  function enterLoopMode(message = 'Loop mode: drifting between both ends') {
+    stopForwardControl(false)
+    stopExploreControl(undefined, false)
+    stopExploreFinish()
+    setExploreSongEnded(false)
+    clearJourneyEndpointWait(1)
+    const now = performance.now()
+    playProgressRef.current = 0
+    setPlayProgress(0)
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    loopControlRef.current = createLoopNudgeControl(1, now)
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+    setForwardPressed(false)
+    setExploreDirection(0)
+    gameModeRef.current = 'loop'
+    setGameMode('loop')
+    setAppMode('play')
+    setPlayPaused(false)
+    handleMusicRestart(false)
     setMessage(message)
   }
 
-  function enterMoonArrival() {
-    stopForwardControl(false)
-    stopExploreControl()
-    if (gameMode !== 'moon-arrival') {
-      setGameMode('moon-arrival')
-      setMoonExploreReady(false)
-      setMessage('Moon reached: resting before Explore')
+  function enterGameWorkspace() {
+    clearSelection('Game view')
+    setSelectionBox(null)
+    stopEditMothScrub()
+    setWorkspaceMode('game')
+    setAppMode('play')
+    setPlayPaused(false)
+    setMessage(gameMode === 'journey' ? 'Game view: hold Glide to move' : 'Game view')
+  }
+
+  function enterEditorWorkspace() {
+    setWorkspaceMode('editor')
+    enterEditModeAtMoth()
+    setMessage('Editor view')
+  }
+
+  function clearLoopControl(direction: -1 | 1 = 1) {
+    loopControlRef.current = stoppedLoopControl(direction)
+    clearMusicLoopGap()
+  }
+
+  function createLoopNudgeControl(direction: -1 | 1, time: number, idlePushCount = 0): LoopControlState {
+    const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+    return {
+      direction,
+      endpointWaitUntil: 0,
+      releaseStartedAt: time,
+      releaseCarryUntil: time + releaseCarryMs,
+      idleSince: time + releaseCarryMs,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount,
     }
   }
 
-  function resetRuntimeToJourney() {
+  function clearJourneyEndpointWait(direction: -1 | 1 = 1) {
+    journeyEndpointWaitUntilRef.current = 0
+    journeyDirectionRef.current = direction
+    setJourneyDirection(direction)
+    setJourneyEndpointWaiting(false)
+  }
+
+  function beginJourneyEndpointWait(endpoint: 'start' | 'end', time: number) {
+    const nextDirection = endpoint === 'end' ? -1 : 1
     stopForwardControl(false)
-    stopExploreControl()
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    journeyDirectionRef.current = nextDirection
+    journeyEndpointWaitUntilRef.current = time + loopEndpointPauseMs
+    setJourneyDirection(nextDirection)
+    setJourneyEndpointWaiting(true)
+    setForwardPressed(false)
+    setMessage(endpoint === 'end' ? 'Glide resting at the moon' : 'Glide resting at the start')
+  }
+
+  function turnLoopDirection() {
+    if (gameMode !== 'loop') {
+      enterLoopMode()
+      return
+    }
+    const now = performance.now()
+    const loopControl = loopControlRef.current
+    const nextDirection = loopControl.direction > 0 ? -1 : 1
+    loopControlRef.current = createLoopNudgeControl(nextDirection, now)
+    handleMusicPlay(false)
+    setPlayPaused(false)
+    setMessage(nextDirection > 0 ? 'Loop turned toward the moon' : 'Loop turned toward the start')
+  }
+
+  function resetRuntimeToJourney() {
+    clearLoopControl()
+    clearJourneyEndpointWait(1)
+    stopForwardControl(false)
+    stopExploreControl(undefined, false)
+    stopExploreFinish()
+    setExploreSongEnded(false)
+    gameModeRef.current = 'journey'
     setGameMode('journey')
-    setMoonExploreReady(false)
+    setPlayPaused(false)
     setForwardPressed(false)
     setExploreDirection(0)
-    exploreControlRef.current = {
-      direction: 0,
-      startedAt: 0,
-    }
+    exploreControlRef.current = stoppedExploreControl()
   }
 
   function startForwardControl() {
     if (gameMode !== 'journey') {
       return
     }
-    if (playProgressRef.current >= 1) {
-      setMessage('Moth is already at route end')
+    const direction = journeyDirectionRef.current
+    if (journeyEndpointWaitUntilRef.current > performance.now()) {
+      return
+    }
+    if ((direction > 0 && playProgressRef.current >= 1) || (direction < 0 && playProgressRef.current <= 0)) {
+      setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
       return
     }
     setAppMode('play')
@@ -949,7 +1346,7 @@ function App() {
         idlePushCount: 0,
       }
       setForwardPressed(true)
-      setMessage('Forward held: moth easing ahead')
+      setMessage(direction > 0 ? 'Glide held: moth easing toward the moon' : 'Glide held: moth easing toward the start')
     }
   }
 
@@ -985,19 +1382,23 @@ function App() {
     }
     setForwardPressed(false)
     if (releaseCarryMs > 0) {
-      setMessage(`Forward released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
+      setMessage(`Glide released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
       return
     }
     if (appMode === 'play' && !playPaused && heldMs < 180) {
-      mothMotionRef.current.velocity = Math.max(mothMotionRef.current.velocity, 0.01)
-      setMessage('Forward tap: small drift')
+      mothMotionRef.current.velocity = journeyDirectionRef.current * Math.max(Math.abs(mothMotionRef.current.velocity), 0.01)
+      setMessage('Glide tap: small drift')
       return
     }
-    setMessage('Forward released: moth drifting')
+    setMessage('Glide released: moth drifting')
   }
 
   function startExploreControl(direction: -1 | 1) {
     if (gameMode !== 'explore') {
+      return
+    }
+    if (exploreSongEnded || exploreFinishRef.current.active) {
+      setMessage('Explore song ended: controls locked')
       return
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
@@ -1009,29 +1410,114 @@ function App() {
     exploreControlRef.current = {
       direction,
       startedAt: performance.now(),
+      releaseDirection: 0,
+      releaseStartedAt: 0,
+      releaseCarryUntil: 0,
+      idleSince: 0,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount: 0,
     }
     setExploreDirection(direction)
     setMessage(direction > 0 ? 'Explore: moving forward' : 'Explore: moving back')
   }
 
-  function stopExploreControl(direction?: -1 | 1) {
+  function stopExploreControl(direction?: -1 | 1, useReleaseCarry = true) {
     if (direction && exploreControlRef.current.direction !== direction) {
       return
     }
-    if (exploreControlRef.current.direction === 0) {
+    const currentControl = exploreControlRef.current
+    if (currentControl.direction === 0) {
+      if (!useReleaseCarry && (currentControl.releaseCarryUntil > 0 || currentControl.idleSince > 0 || currentControl.idlePushUntil > 0)) {
+        exploreControlRef.current = stoppedExploreControl()
+        setExploreDirection(0)
+      }
       return
     }
+    const now = performance.now()
+    const releaseCarryMs = useReleaseCarry && !playPaused
+      ? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+      : 0
     exploreControlRef.current = {
       direction: 0,
       startedAt: 0,
+      releaseDirection: releaseCarryMs > 0 ? currentControl.direction : 0,
+      releaseStartedAt: now,
+      releaseCarryUntil: releaseCarryMs > 0 ? now + releaseCarryMs : 0,
+      idleSince: releaseCarryMs > 0 ? now + releaseCarryMs : now,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount: 0,
     }
     setExploreDirection(0)
-    setMessage('Explore: drifting to a stop')
+    setMessage(releaseCarryMs > 0 ? 'Explore released: gentle push' : 'Explore: drifting to a stop')
+  }
+
+  function stopExploreFinish() {
+    if (!exploreFinishRef.current.active) {
+      return
+    }
+    exploreFinishRef.current = stoppedExploreFinish()
+    setExploreFinishing(false)
+  }
+
+  function beginExploreSongFinish() {
+    if (gameModeRef.current !== 'explore') {
+      return
+    }
+    const now = performance.now()
+    const current = playProgressRef.current
+    const control = exploreControlRef.current
+    const hasExploreMotion = control.direction !== 0
+      || control.releaseCarryUntil > now
+      || control.idlePushUntil > now
+      || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
+    if (!hasExploreMotion) {
+      stopExploreControl(undefined, false)
+      stopExploreFinish()
+      mothMotionRef.current.velocity = 0
+      mothMotionRef.current.trailVelocity = 0
+      setExploreSongEnded(true)
+      updateGameplay({ musicEnabled: false }, 'Explore song ended', false)
+      setMessage('Explore song ended: moth resting')
+      return
+    }
+    const direction: -1 | 1 = control.direction !== 0
+      ? control.direction
+      : control.releaseDirection !== 0
+        ? control.releaseDirection
+        : mothMotionRef.current.velocity < -mothStoppedVelocityThreshold
+          ? -1
+          : 1
+    const targetProgress = findClosestRoutePointProgressInDirection(current, direction)
+    stopExploreControl(undefined, false)
+    exploreFinishRef.current = {
+      active: true,
+      direction,
+      targetProgress,
+      startedAt: now,
+    }
+    setExploreFinishing(true)
+    setExploreSongEnded(true)
+    updateGameplay({ musicEnabled: false }, 'Explore song ended', false)
+    setMessage(direction > 0 ? 'Explore song ended: settling forward' : 'Explore song ended: settling back')
+  }
+
+  function findClosestRoutePointProgressInDirection(current: number, direction: -1 | 1) {
+    const pointProgresses = projectRef.current.route
+      .map((point) => nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, point))
+      .filter((progress) => direction > 0 ? progress > current + 0.001 : progress < current - 0.001)
+    if (pointProgresses.length === 0) {
+      return direction > 0 ? 1 : 0
+    }
+    return pointProgresses.reduce((closest, progress) => (
+      Math.abs(progress - current) < Math.abs(closest - current) ? progress : closest
+    ), pointProgresses[0])
   }
 
   function startEditMothScrub(direction: -1 | 1, shiftKey = false) {
     stopForwardControl(false)
-    stopExploreControl()
+    stopExploreControl(undefined, false)
     const current = editScrubRef.current
     if (!current.pressed || current.direction !== direction || current.shiftKey !== shiftKey) {
       editScrubRef.current = {
@@ -1106,7 +1592,7 @@ function App() {
 
   function enterEditModeAtMoth() {
     stopForwardControl(false)
-    stopExploreControl()
+    stopExploreControl(undefined, false)
     stopEditMothScrub()
     setAppMode('edit')
     setCamera(cameraAtMoth(projectRef.current.camera.zoom), false)
@@ -1182,6 +1668,7 @@ function App() {
     resetRuntimeToJourney()
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
     mothMotionRef.current.blurResumeAt = 0
     setSandboxId(nextSandboxId)
     const next = readProjectFromStorage(nextSandboxId)
@@ -1207,6 +1694,7 @@ function App() {
     resetRuntimeToJourney()
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
     mothMotionRef.current.blurResumeAt = 0
     const next = createDefaultProject()
     setProject(next)
@@ -1225,6 +1713,7 @@ function App() {
     resetRuntimeToJourney()
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
     mothMotionRef.current.blurResumeAt = 0
     clearProjectStorage(sandboxId)
     const next = createDefaultProject()
@@ -1269,6 +1758,7 @@ function App() {
       resetRuntimeToJourney()
       stopEditMothScrub()
       mothMotionRef.current.velocity = 0
+      mothMotionRef.current.trailVelocity = 0
       mothMotionRef.current.blurResumeAt = 0
       const next = migrateProject(JSON.parse(jsonDraft))
       pushHistory(projectRef.current)
@@ -1860,37 +2350,76 @@ function App() {
       )
     }
 
-    if (gameMode === 'moon-arrival') {
+    if (gameMode === 'loop') {
       return (
         <button
-          className={className(moonExploreReady)}
+          className={className(false)}
           type="button"
-          disabled={!moonExploreReady}
-          onClick={() => enterExploreMode()}
+          onClick={turnLoopDirection}
         >
-          <Crosshair size={iconSize} /> {moonExploreReady ? 'Explore' : 'Resting'}
+          <RotateCcw size={iconSize} /> Turn
         </button>
       )
+    }
+
+    if (journeyGlideHidden) {
+      return null
     }
 
     return (
       <button
         className={className(forwardPressed)}
         type="button"
-        disabled={journeyForwardDisabled}
+        disabled={journeyGlideDisabled}
         onPointerDown={handleForwardPointerDown}
         onPointerUp={handleForwardPointerEnd}
         onPointerCancel={handleForwardPointerEnd}
         onContextMenu={(event) => event.preventDefault()}
       >
-        <ChevronRight size={iconSize} /> {context === 'panel' ? 'Hold Forward' : 'Forward'}
+        {journeyDirection > 0 ? <ChevronRight size={iconSize} /> : <ChevronLeft size={iconSize} />} Glide
       </button>
     )
   }
 
+  const handleScreenshot = () => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      setMessage('Screenshot failed: canvas is not ready')
+      return
+    }
+    try {
+      const filename = `moon-moth-${formatScreenshotTimestamp(new Date())}.png`
+      if (typeof canvas.toBlob === 'function') {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            setMessage('Screenshot failed: browser blocked canvas export')
+            return
+          }
+          const url = URL.createObjectURL(blob)
+          downloadScreenshotUrl(url, filename)
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+          setMessage('Screenshot saved')
+        }, 'image/png')
+        return
+      }
+      downloadScreenshotUrl(canvas.toDataURL('image/png'), filename)
+      setMessage('Screenshot saved')
+    } catch {
+      setMessage('Screenshot failed: browser blocked canvas export')
+    }
+  }
+
   return (
-    <main className={`app-shell ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}`}>
+    <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}`}>
       <section className="stage-panel">
+        {workspaceMode === 'game' && (
+          <div className="game-topbar">
+            <button type="button" onClick={enterEditorWorkspace}>
+              <MousePointer2 size={15} /> Editor
+            </button>
+            <div className="game-status">{message}</div>
+          </div>
+        )}
         <div className="game-surface">
           <div className="canvas-shell" ref={shellRef}>
             <canvas
@@ -1910,10 +2439,10 @@ function App() {
                 <div className="camera-extension-frame" />
               </div>
             )}
-            {selectionBox && (
+            {workspaceMode === 'editor' && selectionBox && (
               <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
             )}
-            {selectedItems.length > 1 && quickEditorStyle && (
+            {workspaceMode === 'editor' && selectedItems.length > 1 && quickEditorStyle && (
               <CanvasMultiQuickEditor
                 items={selectedItems}
                 style={quickEditorStyle}
@@ -1925,7 +2454,7 @@ function App() {
                 onOpenDetails={() => setEditorView('compact')}
               />
             )}
-            {selectedItem && selectedItems.length <= 1 && quickEditorStyle && (
+            {workspaceMode === 'editor' && selectedItem && selectedItems.length <= 1 && quickEditorStyle && (
               <CanvasItemQuickEditor
                 item={selectedItem}
                 style={quickEditorStyle}
@@ -1938,7 +2467,7 @@ function App() {
                 onOpenDetails={() => setEditorView('compact')}
               />
             )}
-            {selectedRoutePoint && selectedItems.length === 0 && routeQuickEditorStyle && (
+            {workspaceMode === 'editor' && selectedRoutePoint && selectedItems.length === 0 && routeQuickEditorStyle && (
               <CanvasRouteQuickEditor
                 point={selectedRoutePoint}
                 selectedCount={selectedRoutePointIds.length}
@@ -1953,15 +2482,23 @@ function App() {
           </div>
           <div className="game-ui-layer" aria-label="Game controls">
             {renderPlayMovementButtons('hud')}
+            <button className="game-screenshot-button" type="button" onClick={handleScreenshot}>
+              <CameraIcon size={16} /> Screenshot
+            </button>
           </div>
         </div>
+        {workspaceMode === 'editor' && (
         <div className="stage-topbar">
+          <div className="segmented workspace-switch" aria-label="Workspace">
+            <button className="active" type="button">Editor</button>
+            <button type="button" onClick={enterGameWorkspace}><Play size={15} /> Game</button>
+          </div>
           <div className="segmented" aria-label="Mode">
             <button className={appMode === 'play' ? 'active' : ''} type="button" onClick={() => {
               stopEditMothScrub()
               setAppMode('play')
               setPlayPaused(false)
-              setMessage('Play ready: hold Forward to move')
+              setMessage(gameMode === 'journey' ? 'Play ready: hold Glide to move' : 'Play ready')
             }}><Play size={15} /> Play</button>
             {appMode === 'play' && (
               <button className={playPaused ? 'active' : ''} type="button" onClick={togglePlayPaused}>
@@ -2023,7 +2560,8 @@ function App() {
           </button>
           <div className="toolbar-readout">{message}</div>
         </div>
-        {editorView === 'compact' && (
+        )}
+        {workspaceMode === 'editor' && editorView === 'compact' && (
           <div className="panel-dock" aria-label="Editor panels">
             {editorPanelTitles.map((title) => (
               <button
@@ -2039,6 +2577,7 @@ function App() {
         )}
       </section>
 
+      {workspaceMode === 'editor' && (
       <aside className="editor-panel">
         <EditorSection title="Scene" {...panelSectionProps('Scene')}>
           <div className="segmented three">
@@ -2149,17 +2688,13 @@ function App() {
             Show Neon Path
           </label>
           <div className="mini-section-label">Game Mode</div>
-          <div className="segmented two">
+          <div className="segmented three">
             <button
-              className={gameMode !== 'explore' ? 'active' : ''}
+              className={gameMode === 'journey' ? 'active' : ''}
               type="button"
-              onClick={() => {
-                setAppMode('play')
-                setPlayPaused(false)
-                enterJourneyMode()
-              }}
+              onClick={() => enterJourneyMode('Glide restarted from route start')}
             >
-              Journey
+              Glide
             </button>
             <button
               className={gameMode === 'explore' ? 'active' : ''}
@@ -2168,10 +2703,14 @@ function App() {
             >
               Explore
             </button>
+            <button
+              className={gameMode === 'loop' ? 'active' : ''}
+              type="button"
+              onClick={() => enterLoopMode()}
+            >
+              Loop
+            </button>
           </div>
-          {gameMode === 'moon-arrival' && (
-            <p className="target-hint">{moonExploreReady ? 'Moon reached. Explore is ready.' : 'Moon reached. Explore unlocks in 2s.'}</p>
-          )}
           <label className="range-row">
             Speed
             <input
@@ -2421,6 +2960,7 @@ function App() {
             <button type="button" onClick={() => {
               resetRuntimeToJourney()
               mothMotionRef.current.velocity = 0
+              mothMotionRef.current.trailVelocity = 0
               mothMotionRef.current.blurResumeAt = 0
               setPlayProgress(0)
               playProgressRef.current = 0
@@ -2754,6 +3294,7 @@ function App() {
           </div>
         </EditorSection>
       </aside>
+      )}
     </main>
   )
 
@@ -2789,9 +3330,22 @@ function App() {
     }), { message, history })
   }
 
+  function clearMusicLoopGap() {
+    if (musicLoopGapTimeoutRef.current !== null) {
+      window.clearTimeout(musicLoopGapTimeoutRef.current)
+      musicLoopGapTimeoutRef.current = null
+    }
+  }
+
+  function shouldNativeLoopMusic(mode = gameModeRef.current) {
+    return mode === 'journey'
+  }
+
   function handleMusicPlay(history = true) {
+    clearMusicLoopGap()
     const music = musicRef.current
     if (music) {
+      music.loop = shouldNativeLoopMusic()
       music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
       void music.play().catch(() => {
         setMessage('Music is ready; press Play Music when the browser allows it')
@@ -2801,19 +3355,21 @@ function App() {
   }
 
   function handleMusicPause(history = true) {
+    clearMusicLoopGap()
     musicRef.current?.pause()
     updateGameplay({ musicEnabled: false }, 'Moon Moth music paused', history)
   }
 
   function handleMusicRestart(history = true) {
+    clearMusicLoopGap()
     const music = musicRef.current
     if (music) {
+      music.loop = shouldNativeLoopMusic()
+      music.volume = projectRef.current.gameplay.musicVolume
       music.currentTime = 0
-      if (projectRef.current.gameplay.musicEnabled) {
-        void music.play().catch(() => {
-          setMessage('Music is ready; press Play Music when the browser allows it')
-        })
-      }
+      void music.play().catch(() => {
+        setMessage('Music is ready; press Play Music when the browser allows it')
+      })
     }
     updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music restarted', history)
   }
@@ -3816,6 +4372,27 @@ function cloneProject(project: EditorProject): EditorProject {
 
 function cloneProjectItem(item: EditorItem): EditorItem {
   return JSON.parse(JSON.stringify(item)) as EditorItem
+}
+
+function formatScreenshotTimestamp(date: Date) {
+  const pad = (value: number) => value.toString().padStart(2, '0')
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join('-')
+}
+
+function downloadScreenshotUrl(url: string, filename: string) {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
 }
 
 function expandWorldForRoute(project: EditorProject): EditorProject {

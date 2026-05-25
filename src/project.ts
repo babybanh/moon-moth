@@ -16,9 +16,7 @@ export const glowBehaviorOptions: Array<{ id: GlowBehavior; label: string }> = [
   { id: 'nearbyRipple', label: 'Nearby Ripple' },
 ]
 const glowBehaviorIds = glowBehaviorOptions.map((option) => option.id)
-const defaultGlowBehaviors: GlowBehavior[] = [...glowBehaviorIds]
 const glowIntensityDefault = 1
-export const glowTaggedIntensityDefault = 1.8
 export const glowRadiusDefault = 1.25
 export const glowPulseSpeedDefault = 0.18
 export const glowBloomDefault = 1.4
@@ -217,9 +215,6 @@ export function resolveItemGlowBehaviors(item: Pick<EditorItem, 'glowBehaviors' 
   if (Array.isArray(item.glowBehaviors)) {
     return uniqueGlowBehaviors(item.glowBehaviors)
   }
-  if (typeof item.notes === 'string' && glowNotePattern.test(item.notes)) {
-    return [...defaultGlowBehaviors]
-  }
   return []
 }
 
@@ -228,9 +223,8 @@ export function hasGlowBehavior(item: Pick<EditorItem, 'glowBehaviors' | 'notes'
 }
 
 export function resolveItemGlowTuning(item: Pick<EditorItem, 'glowBehaviors' | 'notes' | 'glowIntensity' | 'glowRadius' | 'glowPulseSpeed' | 'glowBloom' | 'glowSpriteLift'>) {
-  const hasGlow = resolveItemGlowBehaviors(item).length > 0
   return {
-    intensity: clampNumber(item.glowIntensity, 0, 4, hasGlow ? glowTaggedIntensityDefault : glowIntensityDefault),
+    intensity: clampNumber(item.glowIntensity, 0, 4, glowIntensityDefault),
     radius: clampNumber(item.glowRadius, 0.35, 3, glowRadiusDefault),
     pulseSpeed: clampNumber(item.glowPulseSpeed, 0.02, 1.5, glowPulseSpeedDefault),
     bloom: clampNumber(item.glowBloom, 0, 4, glowBloomDefault),
@@ -375,6 +369,9 @@ function resolveMigratedItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'no
 }
 
 function resolveMigratedItemGlowBehaviors(item: Pick<EditorItem, 'glowBehaviors' | 'notes'>): GlowBehavior[] | undefined {
+  if (typeof item.notes === 'string' && glowNotePattern.test(item.notes)) {
+    return []
+  }
   if (Array.isArray(item.glowBehaviors)) {
     return uniqueGlowBehaviors(item.glowBehaviors)
   }
@@ -383,6 +380,15 @@ function resolveMigratedItemGlowBehaviors(item: Pick<EditorItem, 'glowBehaviors'
 }
 
 function resolveMigratedItemGlowTuning(item: Pick<EditorItem, 'glowBehaviors' | 'notes' | 'glowIntensity' | 'glowRadius' | 'glowPulseSpeed' | 'glowBloom' | 'glowSpriteLift'>): Partial<EditorItem> {
+  if (typeof item.notes === 'string' && glowNotePattern.test(item.notes)) {
+    return {
+      glowIntensity: glowIntensityDefault,
+      glowRadius: glowRadiusDefault,
+      glowPulseSpeed: glowPulseSpeedDefault,
+      glowBloom: glowBloomDefault,
+      glowSpriteLift: glowSpriteLiftDefault,
+    }
+  }
   const hasExplicitTuning = [
     item.glowIntensity,
     item.glowRadius,

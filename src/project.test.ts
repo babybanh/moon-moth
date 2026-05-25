@@ -387,7 +387,7 @@ describe('project helpers', () => {
     expect(summary).toContain('"inFrontOfPathAndMoth": true')
   })
 
-  it('migrates glow notes into editable glow behaviors', () => {
+  it('keeps glow notes as labels without enabling glow behaviors', () => {
     const project = migrateProject({
       items: [
         {
@@ -407,14 +407,10 @@ describe('project helpers', () => {
         },
       ],
     })
-    expect(resolveItemGlowBehaviors(project.items[0])).toEqual([
-      'ambientBreathing',
-      'attentionBloom',
-      'tapResponse',
-      'nearbyRipple',
-    ])
+    expect(resolveItemGlowBehaviors(project.items[0])).toEqual([])
     expect(project.items[0]).toMatchObject({
-      glowIntensity: 1.8,
+      glowBehaviors: [],
+      glowIntensity: 1,
       glowRadius: 1.25,
       glowPulseSpeed: 0.18,
       glowBloom: 1.4,
@@ -445,6 +441,32 @@ describe('project helpers', () => {
     })
     expect(resolveItemGlowBehaviors(project.items[0])).toEqual([])
     expect(resolveItemGlowTuning(project.items[0]).intensity).toBe(1)
+  })
+
+  it('preserves explicit glow choices on non-glow-note assets', () => {
+    const project = migrateProject({
+      items: [
+        {
+          id: 'manual-glow',
+          name: 'Manual Glow',
+          assetId: 'foreground-mist',
+          layerId: 'foreground',
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          visible: true,
+          silhouette: false,
+          glowBehaviors: ['ambientBreathing', 'tapResponse'],
+          glowIntensity: 2.2,
+          notes: 'manual test',
+        },
+      ],
+    })
+    expect(resolveItemGlowBehaviors(project.items[0])).toEqual(['ambientBreathing', 'tapResponse'])
+    expect(resolveItemGlowTuning(project.items[0]).intensity).toBe(2.2)
   })
 
   it('uses compatible defaults when glow slider fields are missing', () => {
@@ -493,17 +515,14 @@ describe('project helpers', () => {
           opacity: 1,
           visible: true,
           silhouette: false,
-          glowBehaviors: ['ambientBreathing', 'tapResponse'],
           notes: 'glow',
         },
       ],
     })
     const summary = formatProjectCommentsSummary(project)
-    expect(summary).toContain('"glowBehaviors": [')
-    expect(summary).toContain('"ambientBreathing"')
-    expect(summary).toContain('"Tap Response"')
+    expect(summary).toContain('"glowBehaviors": []')
     expect(summary).toContain('"glowTuning": {')
-    expect(summary).toContain('"intensity": 1.8')
+    expect(summary).toContain('"intensity": 1')
     expect(summary).toContain('"pulseSpeed": 0.18')
   })
 

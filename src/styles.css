@@ -148,6 +148,10 @@ input[type="range"] {
   grid-template-columns: minmax(0, 1fr) 380px;
 }
 
+.app-shell.game-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .stage-panel {
   display: grid;
   min-width: 0;
@@ -155,6 +159,30 @@ input[type="range"] {
   grid-template-rows: minmax(0, 1fr) auto auto;
   justify-items: center;
   overflow: hidden;
+}
+
+.game-workspace .stage-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.game-topbar {
+  display: flex;
+  align-items: center;
+  justify-self: stretch;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(124, 255, 228, 0.14);
+  background: rgba(5, 12, 22, 0.72);
+}
+
+.game-status {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stage-topbar {
@@ -190,6 +218,10 @@ input[type="range"] {
 .view-toggle {
   flex: 0 0 auto;
   min-width: 84px;
+}
+
+.workspace-switch {
+  flex: 0 0 auto;
 }
 
 .toolbar-readout {
@@ -232,6 +264,10 @@ input[type="range"] {
   touch-action: none;
 }
 
+.game-workspace .canvas-shell {
+  height: min(var(--game-surface-size), calc(100vw - 32px), calc(100dvh - 116px));
+}
+
 .game-ui-layer {
   display: flex;
   justify-content: center;
@@ -252,6 +288,20 @@ input[type="range"] {
 
 .game-forward-button:hover:not(:disabled) {
   background: rgba(19, 38, 56, 0.94);
+}
+
+.game-screenshot-button {
+  min-width: 126px;
+  min-height: 36px;
+  padding: 0 18px;
+  border-color: rgba(162, 194, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(10, 21, 33, 0.86);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.game-screenshot-button:hover:not(:disabled) {
+  background: rgba(18, 33, 54, 0.94);
 }
 
 canvas {

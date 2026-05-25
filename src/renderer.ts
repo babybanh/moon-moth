@@ -18,7 +18,9 @@ export type RenderOptions = {
   routeSampleData: RouteSampleData
   animationTime: number
   mothMotionVelocity: number
+  mothTrailVelocity: number
   mothForwardActive: boolean
+  hideRoutePath?: boolean
 }
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
@@ -43,7 +45,7 @@ function renderSceneContent(
       drawLayer(context, project, layerId, options, 'normal')
     }
   }
-  if (project.gameplay.routePathVisible !== false && (showingAll || options.canvasTargets.includes('path'))) {
+  if (!options.hideRoutePath && project.gameplay.routePathVisible !== false && (showingAll || options.canvasTargets.includes('path'))) {
     drawRoute(context, project, options)
   }
   for (const layerId of orderedLayerIds(project).filter((id) => project.layers[id].parallax > 1)) {
@@ -298,16 +300,17 @@ function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject
   const waveAmount = project.gameplay.mothTrailWaveAmount ?? 10
   const glints = project.gameplay.mothTrailSparkle ?? 0.25
   const time = options.animationTime / 1000
-  const direction = options.mothMotionVelocity < -0.0001 ? -1 : 1
-  const speedIntensity = Math.min(1, Math.max(0.18, Math.abs(options.mothMotionVelocity) / 0.038))
+  const trailVelocityScale = Math.max(0.001, 0.055 * project.gameplay.mothSpeed)
+  const trailDirectionBlend = Math.max(-1, Math.min(1, options.mothTrailVelocity / trailVelocityScale))
+  const speedIntensity = Math.min(1, Math.max(0.18, Math.abs(options.mothTrailVelocity) / 0.038))
   const forwardGlowLevel = Math.min(1, Math.max(0, options.mothMotionVelocity / Math.max(0.001, 0.055 * project.gameplay.mothSpeed)))
   const forwardGlowBoost = 1 + forwardGlowLevel * 0.24
   const count = Math.round(style === 'bubble' ? 7 + amount * 15 : style === 'sparkle' ? 12 + amount * 28 : 14 + amount * 32)
   const moth = sampleRouteData(options.routeSampleData, options.playProgress)
   const anchor = worldToScreen(moth, options.camera, options.viewport)
   const tangent = sampleRouteTangent(options.routeSampleData, options.playProgress)
-  const travel = direction < 0 ? { x: -tangent.x, y: -tangent.y } : tangent
-  const normal = { x: -travel.y, y: travel.x }
+  const travel = { x: tangent.x * trailDirectionBlend, y: tangent.y * trailDirectionBlend }
+  const normal = { x: -tangent.y, y: tangent.x }
   const spacing = style === 'bubble' ? 14 + speedIntensity * 12 : style === 'sparkle' ? 5.8 + speedIntensity * 6.5 : 6.5 + speedIntensity * 8
   const colors = [
     [245, 225, 255],
