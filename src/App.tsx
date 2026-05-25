@@ -7,12 +7,15 @@ import {
   createDefaultProject,
   createId,
   formatProjectCommentsSummary,
+  glowBehaviorOptions,
   isFrontOccluder,
   migrateProject,
   moveItemsToLayerSubLayer,
   nextLayerZIndex,
   nextSubLayerZIndex,
   readProjectFromStorage,
+  resolveItemGlowBehaviors,
+  resolveItemGlowTuning,
   resolveItemRole,
   resolveItemSubLayer,
   sandboxIds,
@@ -23,6 +26,7 @@ import {
   buildRouteSampleData,
   clamp,
   distance,
+  exploreTargetVelocity,
   fitCameraToWorld,
   idleForwardPushDurationMs,
   idleForwardPushWaitMs,
@@ -43,6 +47,7 @@ import type {
   DragState,
   EditorItem,
   EditorProject,
+  GlowBehavior,
   LayerId,
   MothTrailStyle,
   MusicCueAction,
@@ -61,7 +66,7 @@ const editorViewStorageKey = 'moonMothRouteEditor.editorView'
 
 type EditorView = 'compact' | 'classic'
 type SelectionBox = { start: Point; current: Point } | null
-type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
+type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
 type ForwardControlState = {
   pressed: boolean
   startedAt: number
@@ -71,10 +76,16 @@ type ForwardControlState = {
   idlePushUntil: number
   idlePushCount: number
 }
+type GameMode = 'journey' | 'moon-arrival' | 'explore'
+type ExploreControlState = {
+  direction: -1 | 0 | 1
+  startedAt: number
+}
 type MothMotionState = {
   velocity: number
   blurResumeAt: number
 }
+type CanvasPopoverKind = 'quick' | 'compact'
 type EditScrubState = {
   pressed: boolean
   direction: -1 | 1
@@ -82,7 +93,8 @@ type EditScrubState = {
   shiftKey: boolean
 }
 
-const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const mothStoppedVelocityThreshold = 0.00012
 
 function cameraForCanvasView(camera: Camera, project: EditorProject): Camera {
   if (project.gameplay.cameraExtensionEnabled === false) {
@@ -94,6 +106,16 @@ function cameraForCanvasView(camera: Camera, project: EditorProject): Camera {
     zoom: camera.zoom * zoomScale,
   }
 }
+
+function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPopoverKind): Point {
+  const width = kind === 'compact' ? 252 : 292
+  const height = kind === 'compact' ? 230 : 432
+  return {
+    x: clamp(point.x, 12, Math.max(12, viewport.width - width)),
+    y: clamp(point.y, 12, Math.max(12, viewport.height - height)),
+  }
+}
+
 const maxOpenEditorPanels = 3
 
 function App() {
@@ -119,10 +141,14 @@ function App() {
   const [jsonDraft, setJsonDraft] = useState('')
   const [playProgress, setPlayProgress] = useState(0.06)
   const [playPaused, setPlayPaused] = useState(false)
+  const [gameMode, setGameMode] = useState<GameMode>('journey')
+  const [moonExploreReady, setMoonExploreReady] = useState(false)
   const [forwardPressed, setForwardPressed] = useState(false)
+  const [exploreDirection, setExploreDirection] = useState<-1 | 0 | 1>(0)
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
+  const [canvasPopoverPosition, setCanvasPopoverPosition] = useState<Point | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const jsonTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -143,6 +169,10 @@ function App() {
     idlePushUntil: 0,
     idlePushCount: 0,
   })
+  const exploreControlRef = useRef<ExploreControlState>({
+    direction: 0,
+    startedAt: 0,
+  })
   const editScrubRef = useRef<EditScrubState>({
     pressed: false,
     direction: 1,
@@ -153,6 +183,7 @@ function App() {
   const tourHoldUntilRef = useRef(0)
   const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
   const cameraRef = useRef<Camera>(project.camera)
+  const canvasPopoverDragRef = useRef<{ offset: Point; kind: CanvasPopoverKind } | null>(null)
   const copiedItemsRef = useRef<EditorItem[]>([])
   const musicRef = useRef<HTMLAudioElement | null>(null)
   const failedImageSourcesRef = useRef<Set<string>>(new Set())
@@ -188,8 +219,46 @@ function App() {
   }, [selectedRoutePointIds])
 
   useEffect(() => {
+    const handlePointerMove = (event: globalThis.PointerEvent) => {
+      const drag = canvasPopoverDragRef.current
+      const shell = shellRef.current
+      if (!drag || !shell) {
+        return
+      }
+      const rect = shell.getBoundingClientRect()
+      setCanvasPopoverPosition(clampCanvasPopoverPosition({
+        x: event.clientX - rect.left - drag.offset.x,
+        y: event.clientY - rect.top - drag.offset.y,
+      }, viewport, drag.kind))
+    }
+    const handlePointerUp = () => {
+      canvasPopoverDragRef.current = null
+    }
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
+    }
+  }, [viewport])
+
+  useEffect(() => {
     window.localStorage.setItem(editorViewStorageKey, editorView)
   }, [editorView])
+
+  useEffect(() => {
+    if (gameMode !== 'moon-arrival') {
+      setMoonExploreReady(false)
+      return
+    }
+    const timeout = window.setTimeout(() => {
+      setMoonExploreReady(true)
+      setMessage('Moon reached: Explore is ready')
+    }, 2000)
+    return () => window.clearTimeout(timeout)
+  }, [gameMode])
 
   useEffect(() => {
     triggeredTourCueIdsRef.current.clear()
@@ -269,13 +338,21 @@ function App() {
       }
       if (appMode === 'play' && event.key === 'ArrowRight') {
         event.preventDefault()
-        if (!event.repeat || !forwardControlRef.current.pressed) {
+        if (gameMode === 'explore') {
+          if (!event.repeat || exploreControlRef.current.direction !== 1) {
+            startExploreControl(1)
+          }
+        } else if (!event.repeat || !forwardControlRef.current.pressed) {
           startForwardControl()
         }
       }
       if (appMode === 'play' && event.key === 'ArrowLeft') {
         event.preventDefault()
-        if (!event.repeat) {
+        if (gameMode === 'explore') {
+          if (!event.repeat || exploreControlRef.current.direction !== -1) {
+            startExploreControl(-1)
+          }
+        } else if (!event.repeat) {
           setMessage('Backward control is disabled for now')
         }
       }
@@ -287,15 +364,20 @@ function App() {
         stopEditMothScrub()
         return
       }
-      if (event.key !== 'ArrowRight') {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
         return
       }
-      if (forwardControlRef.current.pressed) {
+      if (gameMode === 'explore') {
+        stopExploreControl(event.key === 'ArrowRight' ? 1 : -1)
+        return
+      }
+      if (event.key === 'ArrowRight' && forwardControlRef.current.pressed) {
         stopForwardControl()
       }
     }
     const handleBlur = () => {
       stopForwardControl(false)
+      stopExploreControl()
       stopEditMothScrub()
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -422,6 +504,7 @@ function App() {
       const delta = Math.min(0.05, (time - previous) / 1000)
       previous = time
       const forwardControl = forwardControlRef.current
+      const exploreControl = exploreControlRef.current
       const editScrub = editScrubRef.current
       let targetVelocity = 0
       let shouldAnimate = appMode === 'play' && !playPaused
@@ -438,7 +521,22 @@ function App() {
           mothMotionRef.current.velocity = 0
         }
         shouldAnimate = true
-      } else if (appMode === 'play' && !playPaused) {
+      } else if (appMode === 'play' && !playPaused && gameMode === 'explore') {
+        const current = playProgressRef.current
+        const heldMs = exploreControl.direction === 0 ? 0 : time - exploreControl.startedAt
+        targetVelocity = exploreTargetVelocity(exploreControl.direction, current, heldMs, projectRef.current.gameplay)
+        const movementRequested = exploreControl.direction !== 0 && targetVelocity !== 0
+        const response = movementRequested ? 2.8 : 1.75
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+        if (next !== current) {
+          playProgressRef.current = next
+          setPlayProgress(next)
+        } else if ((next <= 0 && mothMotionRef.current.velocity < 0) || (next >= 1 && mothMotionRef.current.velocity > 0)) {
+          mothMotionRef.current.velocity = 0
+          stopExploreControl()
+        }
+      } else if (appMode === 'play' && !playPaused && gameMode === 'journey') {
         const current = playProgressRef.current
         if (tourHoldUntilRef.current > time) {
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 1.8))
@@ -506,14 +604,18 @@ function App() {
           }
           playProgressRef.current = next
           setPlayProgress(next)
+          if (next >= 1) {
+            mothMotionRef.current.velocity = 0
+            enterMoonArrival()
+          }
         } else if (next >= 1) {
           mothMotionRef.current.velocity = 0
-          stopForwardControl(false)
+          enterMoonArrival()
         }
       } else {
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
       }
-      const motionActive = editScrub.pressed || forwardControl.pressed || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > 0.00012
+      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
       if (motionActive) {
         mothMotionRef.current.blurResumeAt = time + 650
       }
@@ -529,7 +631,7 @@ function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [appMode, playPaused])
+  }, [appMode, gameMode, playPaused])
 
   const renderCamera = useMemo(() => {
     const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
@@ -580,13 +682,13 @@ function App() {
       routeSampleData,
       animationTime,
       mothMotionVelocity: mothMotionRef.current.velocity,
-      mothForwardActive: forwardPressed,
+      mothForwardActive: forwardPressed || exploreDirection === 1,
       selection,
       selectedItemIds,
       canvasTargets,
       viewport,
     })
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -614,24 +716,66 @@ function App() {
   const quickEditorBounds = selectedItem
     ? itemScreenBounds(selectedItem, project, canvasCamera, viewport)
     : null
-  const quickEditorStyle = quickEditorBounds
-    ? {
-      left: clamp(quickEditorBounds.x + quickEditorBounds.width + 12, 12, Math.max(12, viewport.width - 276)),
-      top: clamp(quickEditorBounds.y, 12, Math.max(12, viewport.height - 270)),
-    }
-    : undefined
-  const routeQuickEditorStyle = selectedRoutePoint
+  const quickEditorAnchor = quickEditorBounds
+    ? clampCanvasPopoverPosition({
+      x: quickEditorBounds.x + quickEditorBounds.width + 12,
+      y: quickEditorBounds.y,
+    }, viewport, 'quick')
+    : null
+  const routeQuickEditorAnchor = selectedRoutePoint
     ? (() => {
       const screen = worldToScreen(selectedRoutePoint, canvasCamera, viewport)
-      return {
-        left: clamp(screen.x + 14, 12, Math.max(12, viewport.width - 276)),
-        top: clamp(screen.y + 14, 12, Math.max(12, viewport.height - 190)),
-      }
+      return clampCanvasPopoverPosition({ x: screen.x + 14, y: screen.y + 14 }, viewport, 'compact')
     })()
+    : null
+  const canvasPopoverKind: CanvasPopoverKind | null = selectedItems.length > 0
+    ? 'quick'
+    : selectedRoutePoint
+      ? 'compact'
+      : null
+  const canvasPopoverKey = selectedItems.length > 1
+    ? `items:${selectedItemIds.join('|')}`
+    : selectedItem
+      ? `item:${selectedItem.id}`
+      : selectedRoutePoint
+        ? `route:${selectedRoutePoint.id}`
+        : null
+  const canvasPopoverAnchor = canvasPopoverKind === 'compact' ? routeQuickEditorAnchor : quickEditorAnchor
+  const activeCanvasPopoverPosition = canvasPopoverKind && canvasPopoverAnchor
+    ? clampCanvasPopoverPosition(canvasPopoverPosition ?? canvasPopoverAnchor, viewport, canvasPopoverKind)
     : undefined
+  const quickEditorStyle = canvasPopoverKind === 'quick' && activeCanvasPopoverPosition
+    ? { left: activeCanvasPopoverPosition.x, top: activeCanvasPopoverPosition.y }
+    : undefined
+  const routeQuickEditorStyle = canvasPopoverKind === 'compact' && activeCanvasPopoverPosition
+    ? { left: activeCanvasPopoverPosition.x, top: activeCanvasPopoverPosition.y }
+    : undefined
+  useEffect(() => {
+    setCanvasPopoverPosition(canvasPopoverAnchor)
+  }, [canvasPopoverKey])
+  const startCanvasPopoverDrag = (event: PointerEvent<HTMLElement>, kind: CanvasPopoverKind) => {
+    const shell = shellRef.current
+    const position = activeCanvasPopoverPosition
+    if (!shell || !position) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const rect = shell.getBoundingClientRect()
+    canvasPopoverDragRef.current = {
+      kind,
+      offset: {
+        x: event.clientX - rect.left - position.x,
+        y: event.clientY - rect.top - position.y,
+      },
+    }
+  }
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
-  const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > 0.00012 || forwardPressed || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
+  const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold || forwardPressed || exploreDirection !== 0 || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
+  const journeyForwardDisabled = gameMode !== 'journey' || playProgress >= 1
+  const exploreBackDisabled = gameMode !== 'explore' || playProgress <= 0
+  const exploreForwardDisabled = gameMode !== 'explore' || playProgress >= 1
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
@@ -641,11 +785,14 @@ function App() {
     '--camera-extension-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
   } as CSSProperties
   const cameraExtensionVignetteStyle = useMemo(() => {
-    const width = Math.max(1, viewport.width)
-    const height = Math.max(1, viewport.height)
-    const inner = Math.min(width, height) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
-    const left = (width - inner) / 2
-    const top = (height - inner) / 2
+    const edgeBleed = 1
+    const canvasWidth = Math.max(1, viewport.width)
+    const canvasHeight = Math.max(1, viewport.height)
+    const width = canvasWidth + edgeBleed * 2
+    const height = canvasHeight + edgeBleed * 2
+    const inner = Math.min(canvasWidth, canvasHeight) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
+    const left = edgeBleed + (canvasWidth - inner) / 2
+    const top = edgeBleed + (canvasHeight - inner) / 2
     const right = left + inner
     const bottom = top + inner
     const radius = inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5
@@ -731,13 +878,62 @@ function App() {
       const next = !current
       if (next) {
         stopForwardControl(false)
+        stopExploreControl()
       }
-      setMessage(next ? 'Play paused' : 'Play resumed: hold Forward to move')
+      setMessage(next ? 'Play paused' : gameMode === 'explore' ? 'Play resumed: explore freely' : 'Play resumed: hold Forward to move')
       return next
     })
   }
 
+  function enterJourneyMode(message = 'Journey mode: hold Forward to move') {
+    stopExploreControl()
+    stopForwardControl(false)
+    setGameMode('journey')
+    setMoonExploreReady(false)
+    setMessage(message)
+  }
+
+  function enterExploreMode(message = 'Explore mode: move freely along the path') {
+    stopForwardControl(false)
+    stopExploreControl()
+    setGameMode('explore')
+    setMoonExploreReady(false)
+    setAppMode('play')
+    setPlayPaused(false)
+    setMessage(message)
+  }
+
+  function enterMoonArrival() {
+    stopForwardControl(false)
+    stopExploreControl()
+    if (gameMode !== 'moon-arrival') {
+      setGameMode('moon-arrival')
+      setMoonExploreReady(false)
+      setMessage('Moon reached: resting before Explore')
+    }
+  }
+
+  function resetRuntimeToJourney() {
+    stopForwardControl(false)
+    stopExploreControl()
+    setGameMode('journey')
+    setMoonExploreReady(false)
+    setForwardPressed(false)
+    setExploreDirection(0)
+    exploreControlRef.current = {
+      direction: 0,
+      startedAt: 0,
+    }
+  }
+
   function startForwardControl() {
+    if (gameMode !== 'journey') {
+      return
+    }
+    if (playProgressRef.current >= 1) {
+      setMessage('Moth is already at route end')
+      return
+    }
     setAppMode('play')
     setPlayPaused(false)
     if (!forwardControlRef.current.pressed) {
@@ -800,8 +996,42 @@ function App() {
     setMessage('Forward released: moth drifting')
   }
 
+  function startExploreControl(direction: -1 | 1) {
+    if (gameMode !== 'explore') {
+      return
+    }
+    if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
+      setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
+      return
+    }
+    setAppMode('play')
+    setPlayPaused(false)
+    exploreControlRef.current = {
+      direction,
+      startedAt: performance.now(),
+    }
+    setExploreDirection(direction)
+    setMessage(direction > 0 ? 'Explore: moving forward' : 'Explore: moving back')
+  }
+
+  function stopExploreControl(direction?: -1 | 1) {
+    if (direction && exploreControlRef.current.direction !== direction) {
+      return
+    }
+    if (exploreControlRef.current.direction === 0) {
+      return
+    }
+    exploreControlRef.current = {
+      direction: 0,
+      startedAt: 0,
+    }
+    setExploreDirection(0)
+    setMessage('Explore: drifting to a stop')
+  }
+
   function startEditMothScrub(direction: -1 | 1, shiftKey = false) {
     stopForwardControl(false)
+    stopExploreControl()
     const current = editScrubRef.current
     if (!current.pressed || current.direction !== direction || current.shiftKey !== shiftKey) {
       editScrubRef.current = {
@@ -810,7 +1040,6 @@ function App() {
         startedAt: performance.now(),
         shiftKey,
       }
-      setForwardPressed(direction > 0)
       setEditScrubDirection(direction)
       setMessage(direction > 0 ? 'Edit scrub: moth moving forward' : 'Edit scrub: moth moving backward')
     }
@@ -829,7 +1058,6 @@ function App() {
     if (zoomFromMothView || appMode === 'edit') {
       setCamera(cameraAtMoth(Math.max(projectRef.current.camera.zoom, followZoomAtProgress(playProgressRef.current))), false)
     }
-    setForwardPressed(false)
     setEditScrubDirection(0)
     setMessage('Edit scrub stopped')
   }
@@ -848,6 +1076,20 @@ function App() {
     stopForwardControl()
   }
 
+  function handleExplorePointerDown(direction: -1 | 1, event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    startExploreControl(direction)
+  }
+
+  function handleExplorePointerEnd(direction: -1 | 1, event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    stopExploreControl(direction)
+  }
+
   function handleEditScrubPointerDown(direction: -1 | 1, event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -864,6 +1106,7 @@ function App() {
 
   function enterEditModeAtMoth() {
     stopForwardControl(false)
+    stopExploreControl()
     stopEditMothScrub()
     setAppMode('edit')
     setCamera(cameraAtMoth(projectRef.current.camera.zoom), false)
@@ -936,7 +1179,7 @@ function App() {
   }
 
   const handleSandboxChange = (nextSandboxId: SandboxId) => {
-    stopForwardControl(false)
+    resetRuntimeToJourney()
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
     mothMotionRef.current.blurResumeAt = 0
@@ -961,7 +1204,7 @@ function App() {
   }
 
   const handleReset = () => {
-    stopForwardControl(false)
+    resetRuntimeToJourney()
     stopEditMothScrub()
     mothMotionRef.current.velocity = 0
     mothMotionRef.current.blurResumeAt = 0
@@ -979,7 +1222,8 @@ function App() {
   }
 
   const handleClear = () => {
-    stopForwardControl(false)
+    resetRuntimeToJourney()
+    stopEditMothScrub()
     mothMotionRef.current.velocity = 0
     mothMotionRef.current.blurResumeAt = 0
     clearProjectStorage(sandboxId)
@@ -1022,7 +1266,8 @@ function App() {
 
   const handleApplyJson = () => {
     try {
-      stopForwardControl(false)
+      resetRuntimeToJourney()
+      stopEditMothScrub()
       mothMotionRef.current.velocity = 0
       mothMotionRef.current.blurResumeAt = 0
       const next = migrateProject(JSON.parse(jsonDraft))
@@ -1577,64 +1822,138 @@ function App() {
     return resizeHandles(bounds).find((handle) => distance(handle, screen) <= 12)?.id
   }
 
+  const renderPlayMovementButtons = (context: 'hud' | 'toolbar' | 'panel') => {
+    const baseClass = context === 'hud'
+      ? 'game-forward-button'
+      : context === 'toolbar'
+        ? 'forward-hold-button'
+        : ''
+    const iconSize = context === 'panel' ? 15 : 16
+    const className = (active: boolean) => [active ? 'active' : '', baseClass].filter(Boolean).join(' ')
+
+    if (gameMode === 'explore') {
+      return (
+        <>
+          <button
+            className={className(exploreDirection === -1)}
+            type="button"
+            disabled={exploreBackDisabled}
+            onPointerDown={(event) => handleExplorePointerDown(-1, event)}
+            onPointerUp={(event) => handleExplorePointerEnd(-1, event)}
+            onPointerCancel={(event) => handleExplorePointerEnd(-1, event)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <ChevronLeft size={iconSize} /> Back
+          </button>
+          <button
+            className={className(exploreDirection === 1)}
+            type="button"
+            disabled={exploreForwardDisabled}
+            onPointerDown={(event) => handleExplorePointerDown(1, event)}
+            onPointerUp={(event) => handleExplorePointerEnd(1, event)}
+            onPointerCancel={(event) => handleExplorePointerEnd(1, event)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <ChevronRight size={iconSize} /> Forward
+          </button>
+        </>
+      )
+    }
+
+    if (gameMode === 'moon-arrival') {
+      return (
+        <button
+          className={className(moonExploreReady)}
+          type="button"
+          disabled={!moonExploreReady}
+          onClick={() => enterExploreMode()}
+        >
+          <Crosshair size={iconSize} /> {moonExploreReady ? 'Explore' : 'Resting'}
+        </button>
+      )
+    }
+
+    return (
+      <button
+        className={className(forwardPressed)}
+        type="button"
+        disabled={journeyForwardDisabled}
+        onPointerDown={handleForwardPointerDown}
+        onPointerUp={handleForwardPointerEnd}
+        onPointerCancel={handleForwardPointerEnd}
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        <ChevronRight size={iconSize} /> {context === 'panel' ? 'Hold Forward' : 'Forward'}
+      </button>
+    )
+  }
+
   return (
     <main className={`app-shell ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}`}>
       <section className="stage-panel">
-        <div className="canvas-shell" ref={shellRef}>
-          <canvas
-            ref={canvasRef}
-            onDoubleClick={handleDoubleClick}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            onWheel={handleWheel}
-            onDragOver={handleCanvasDragOver}
-            onDrop={handleCanvasDrop}
-          />
-          {project.gameplay.cameraExtensionEnabled !== false && (
-            <div className={`camera-extension-overlay${cameraExtensionMotionActive ? ' moving' : ''}`} style={cameraExtensionOverlayStyle} aria-hidden="true">
-              <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle} />
-              <div className="camera-extension-frame" />
-            </div>
-          )}
-          {selectionBox && (
-            <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
-          )}
-          {selectedItems.length > 1 && quickEditorStyle && (
-            <CanvasMultiQuickEditor
-              items={selectedItems}
-              style={quickEditorStyle}
-              onChange={(patch) => updateSelectedItems(patch)}
-              onSendWayBack={() => moveItemsToLayerBack(selectedItems.map((item) => item.id))}
-              onDelete={handleDelete}
-              onClose={() => clearSelection('Closed mini panel')}
-              onOpenDetails={() => setEditorView('compact')}
+        <div className="game-surface">
+          <div className="canvas-shell" ref={shellRef}>
+            <canvas
+              ref={canvasRef}
+              onDoubleClick={handleDoubleClick}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onWheel={handleWheel}
+              onDragOver={handleCanvasDragOver}
+              onDrop={handleCanvasDrop}
             />
-          )}
-          {selectedItem && selectedItems.length <= 1 && quickEditorStyle && (
-            <CanvasItemQuickEditor
-              item={selectedItem}
-              style={quickEditorStyle}
-              onChange={(patch) => updateItem(selectedItem.id, patch)}
-              onDuplicate={handleDuplicate}
-              onSendWayBack={() => moveItemsToLayerBack([selectedItem.id])}
-              onDelete={handleDelete}
-              onClose={() => clearSelection('Closed mini panel')}
-              onOpenDetails={() => setEditorView('compact')}
-            />
-          )}
-          {selectedRoutePoint && selectedItems.length === 0 && routeQuickEditorStyle && (
-            <CanvasRouteQuickEditor
-              point={selectedRoutePoint}
-              selectedCount={selectedRoutePointIds.length}
-              style={routeQuickEditorStyle}
-              onChange={(patch) => updateRoutePoint(selectedRoutePoint.id, patch)}
-              onCreateGroup={createRouteGroupFromSelection}
-              onDelete={handleDelete}
-              onClose={() => clearSelection('Closed route mini panel')}
-            />
-          )}
+            {project.gameplay.cameraExtensionEnabled !== false && (
+              <div className={`camera-extension-overlay${cameraExtensionMotionActive ? ' moving' : ''}`} style={cameraExtensionOverlayStyle} aria-hidden="true">
+                <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle} />
+                <div className="camera-extension-frame" />
+              </div>
+            )}
+            {selectionBox && (
+              <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
+            )}
+            {selectedItems.length > 1 && quickEditorStyle && (
+              <CanvasMultiQuickEditor
+                items={selectedItems}
+                style={quickEditorStyle}
+                onStartMove={(event) => startCanvasPopoverDrag(event, 'quick')}
+                onChange={(patch) => updateSelectedItems(patch)}
+                onSendWayBack={() => moveItemsToLayerBack(selectedItems.map((item) => item.id))}
+                onDelete={handleDelete}
+                onClose={() => clearSelection('Closed mini panel')}
+                onOpenDetails={() => setEditorView('compact')}
+              />
+            )}
+            {selectedItem && selectedItems.length <= 1 && quickEditorStyle && (
+              <CanvasItemQuickEditor
+                item={selectedItem}
+                style={quickEditorStyle}
+                onStartMove={(event) => startCanvasPopoverDrag(event, 'quick')}
+                onChange={(patch) => updateItem(selectedItem.id, patch)}
+                onDuplicate={handleDuplicate}
+                onSendWayBack={() => moveItemsToLayerBack([selectedItem.id])}
+                onDelete={handleDelete}
+                onClose={() => clearSelection('Closed mini panel')}
+                onOpenDetails={() => setEditorView('compact')}
+              />
+            )}
+            {selectedRoutePoint && selectedItems.length === 0 && routeQuickEditorStyle && (
+              <CanvasRouteQuickEditor
+                point={selectedRoutePoint}
+                selectedCount={selectedRoutePointIds.length}
+                style={routeQuickEditorStyle}
+                onStartMove={(event) => startCanvasPopoverDrag(event, 'compact')}
+                onChange={(patch) => updateRoutePoint(selectedRoutePoint.id, patch)}
+                onCreateGroup={createRouteGroupFromSelection}
+                onDelete={handleDelete}
+                onClose={() => clearSelection('Closed route mini panel')}
+              />
+            )}
+          </div>
+          <div className="game-ui-layer" aria-label="Game controls">
+            {renderPlayMovementButtons('hud')}
+          </div>
         </div>
         <div className="stage-topbar">
           <div className="segmented" aria-label="Mode">
@@ -1649,18 +1968,7 @@ function App() {
                 {playPaused ? <Play size={15} /> : <Pause size={15} />} {playPaused ? 'Resume' : 'Pause'}
               </button>
             )}
-            {appMode === 'play' && (
-              <button
-                className={forwardPressed ? 'active forward-hold-button' : 'forward-hold-button'}
-                type="button"
-                onPointerDown={handleForwardPointerDown}
-                onPointerUp={handleForwardPointerEnd}
-                onPointerCancel={handleForwardPointerEnd}
-                onContextMenu={(event) => event.preventDefault()}
-              >
-                <ChevronRight size={16} /> Forward
-              </button>
-            )}
+            {appMode === 'play' && renderPlayMovementButtons('toolbar')}
             {appMode === 'edit' && (
               <>
                 <button
@@ -1840,6 +2148,30 @@ function App() {
             />
             Show Neon Path
           </label>
+          <div className="mini-section-label">Game Mode</div>
+          <div className="segmented two">
+            <button
+              className={gameMode !== 'explore' ? 'active' : ''}
+              type="button"
+              onClick={() => {
+                setAppMode('play')
+                setPlayPaused(false)
+                enterJourneyMode()
+              }}
+            >
+              Journey
+            </button>
+            <button
+              className={gameMode === 'explore' ? 'active' : ''}
+              type="button"
+              onClick={() => enterExploreMode()}
+            >
+              Explore
+            </button>
+          </div>
+          {gameMode === 'moon-arrival' && (
+            <p className="target-hint">{moonExploreReady ? 'Moon reached. Explore is ready.' : 'Moon reached. Explore unlocks in 2s.'}</p>
+          )}
           <label className="range-row">
             Speed
             <input
@@ -2077,16 +2409,7 @@ function App() {
                 </button>
               </>
             ) : (
-              <button
-                className={forwardPressed ? 'active' : ''}
-                type="button"
-                onPointerDown={handleForwardPointerDown}
-                onPointerUp={handleForwardPointerEnd}
-                onPointerCancel={handleForwardPointerEnd}
-                onContextMenu={(event) => event.preventDefault()}
-              >
-                <ChevronRight size={15} /> Hold Forward
-              </button>
+              renderPlayMovementButtons('panel')
             )}
             <button className={appMode === 'play' && playPaused ? 'active' : ''} type="button" onClick={() => {
               stopEditMothScrub()
@@ -2096,7 +2419,7 @@ function App() {
               {playPaused ? <Play size={15} /> : <Pause size={15} />} {playPaused ? 'Resume' : 'Pause'}
             </button>
             <button type="button" onClick={() => {
-              stopForwardControl(false)
+              resetRuntimeToJourney()
               mothMotionRef.current.velocity = 0
               mothMotionRef.current.blurResumeAt = 0
               setPlayProgress(0)
@@ -2109,6 +2432,24 @@ function App() {
               <Crosshair size={15} /> Follow View
             </button>
           </div>
+        </EditorSection>
+
+        <EditorSection title="Glow" {...panelSectionProps('Glow')}>
+          {selectedItems.length > 1 ? (
+            <MultiGlowEditor
+              items={selectedItems}
+              onChange={(patch) => updateSelectedItems(patch)}
+            />
+          ) : selectedItem ? (
+            <GlowEditor
+              item={selectedItem}
+              onChange={(patch) => updateItem(selectedItem.id, patch)}
+            />
+          ) : (
+            <div className="glow-empty-state">
+              Select an artwork asset to tune its glow.
+            </div>
+          )}
         </EditorSection>
 
         <EditorSection title="View" {...panelSectionProps('View')}>
@@ -2662,9 +3003,160 @@ function EditorSection({ title, editorView, isOpen = true, onToggle, children }:
   )
 }
 
-function CanvasItemQuickEditor({ item, style, onChange, onDuplicate, onSendWayBack, onDelete, onClose, onOpenDetails }: {
+function GlowBehaviorToggles({ item, onChange, compact = false }: {
+  item: EditorItem
+  onChange: (patch: Partial<EditorItem>) => void
+  compact?: boolean
+}) {
+  const activeBehaviors = resolveItemGlowBehaviors(item)
+  const toggleBehavior = (behavior: GlowBehavior) => {
+    const next = activeBehaviors.includes(behavior)
+      ? activeBehaviors.filter((current) => current !== behavior)
+      : [...activeBehaviors, behavior]
+    onChange({ glowBehaviors: next })
+  }
+  return (
+    <div className={compact ? 'glow-behavior-panel compact' : 'glow-behavior-panel'}>
+      <div className="glow-behavior-title">Glow Behavior</div>
+      <div className="glow-toggle-grid">
+        {glowBehaviorOptions.map((option) => (
+          <button
+            key={option.id}
+            className={activeBehaviors.includes(option.id) ? 'active' : ''}
+            type="button"
+            onClick={() => toggleBehavior(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function GlowBehaviorBatchToggles({ items, onChange }: {
+  items: EditorItem[]
+  onChange: (patch: Partial<EditorItem>) => void
+}) {
+  const behaviorSets = items.map((item) => new Set(resolveItemGlowBehaviors(item)))
+  const union = new Set<GlowBehavior>()
+  behaviorSets.forEach((set) => set.forEach((behavior) => union.add(behavior)))
+  const toggleBehavior = (behavior: GlowBehavior) => {
+    const allActive = behaviorSets.every((set) => set.has(behavior))
+    const next = new Set(union)
+    if (allActive) {
+      next.delete(behavior)
+    } else {
+      next.add(behavior)
+    }
+    onChange({ glowBehaviors: glowBehaviorOptions.map((option) => option.id).filter((id) => next.has(id)) })
+  }
+  return (
+    <div className="glow-behavior-panel">
+      <div className="glow-behavior-title">Glow Behavior</div>
+      <div className="glow-toggle-grid">
+        {glowBehaviorOptions.map((option) => {
+          const activeCount = behaviorSets.filter((set) => set.has(option.id)).length
+          const allActive = activeCount === items.length
+          const mixed = activeCount > 0 && !allActive
+          return (
+            <button
+              key={option.id}
+              className={allActive ? 'active' : mixed ? 'mixed' : ''}
+              type="button"
+              onClick={() => toggleBehavior(option.id)}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function GlowEditor({ item, onChange }: {
+  item: EditorItem
+  onChange: (patch: Partial<EditorItem>) => void
+}) {
+  return (
+    <div className="selected-editor glow-editor">
+      <p className="item-meta">{getItemDisplayName(item)}</p>
+      <GlowBehaviorToggles item={item} onChange={onChange} />
+      <GlowTuningSliders
+        tuning={resolveItemGlowTuning(item)}
+        onChange={onChange}
+      />
+    </div>
+  )
+}
+
+function MultiGlowEditor({ items, onChange }: {
+  items: EditorItem[]
+  onChange: (patch: Partial<EditorItem>) => void
+}) {
+  return (
+    <div className="selected-editor glow-editor">
+      <p className="selection-count">{items.length} artwork items selected</p>
+      <GlowBehaviorBatchToggles items={items} onChange={onChange} />
+      <GlowTuningSliders
+        tuning={averageGlowTuning(items)}
+        onChange={onChange}
+      />
+    </div>
+  )
+}
+
+function GlowTuningSliders({ tuning, onChange }: {
+  tuning: ReturnType<typeof resolveItemGlowTuning>
+  onChange: (patch: Partial<EditorItem>) => void
+}) {
+  return (
+    <div className="glow-slider-stack">
+      <label className="range-row">
+        Glow Intensity
+        <input min="0" max="4" step="0.05" type="range" value={tuning.intensity} onChange={(event) => onChange({ glowIntensity: Number(event.target.value) })} />
+        <span>{tuning.intensity.toFixed(2)}x</span>
+      </label>
+      <label className="range-row">
+        Glow Radius
+        <input min="0.35" max="3" step="0.05" type="range" value={tuning.radius} onChange={(event) => onChange({ glowRadius: Number(event.target.value) })} />
+        <span>{tuning.radius.toFixed(2)}x</span>
+      </label>
+      <label className="range-row">
+        Pulse Speed
+        <input min="0.02" max="1.5" step="0.01" type="range" value={tuning.pulseSpeed} onChange={(event) => onChange({ glowPulseSpeed: Number(event.target.value) })} />
+        <span>{tuning.pulseSpeed.toFixed(2)}Hz</span>
+      </label>
+      <label className="range-row">
+        Bloom
+        <input min="0" max="4" step="0.05" type="range" value={tuning.bloom} onChange={(event) => onChange({ glowBloom: Number(event.target.value) })} />
+        <span>{tuning.bloom.toFixed(2)}x</span>
+      </label>
+      <label className="range-row">
+        Sprite Lift
+        <input min="0" max="1" step="0.01" type="range" value={tuning.spriteLift} onChange={(event) => onChange({ glowSpriteLift: Number(event.target.value) })} />
+        <span>{Math.round(tuning.spriteLift * 100)}%</span>
+      </label>
+    </div>
+  )
+}
+
+function averageGlowTuning(items: EditorItem[]): ReturnType<typeof resolveItemGlowTuning> {
+  const tunings = items.map(resolveItemGlowTuning)
+  return {
+    intensity: tunings.reduce((sum, tuning) => sum + tuning.intensity, 0) / tunings.length,
+    radius: tunings.reduce((sum, tuning) => sum + tuning.radius, 0) / tunings.length,
+    pulseSpeed: tunings.reduce((sum, tuning) => sum + tuning.pulseSpeed, 0) / tunings.length,
+    bloom: tunings.reduce((sum, tuning) => sum + tuning.bloom, 0) / tunings.length,
+    spriteLift: tunings.reduce((sum, tuning) => sum + tuning.spriteLift, 0) / tunings.length,
+  }
+}
+
+function CanvasItemQuickEditor({ item, style, onStartMove, onChange, onDuplicate, onSendWayBack, onDelete, onClose, onOpenDetails }: {
   item: EditorItem
   style: CSSProperties
+  onStartMove: (event: PointerEvent<HTMLElement>) => void
   onChange: (patch: Partial<EditorItem>) => void
   onDuplicate: () => void
   onSendWayBack: () => void
@@ -2675,6 +3167,7 @@ function CanvasItemQuickEditor({ item, style, onChange, onDuplicate, onSendWayBa
   return (
     <div className="canvas-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
       <div className="popover-header">
+        <button className="popover-drag-handle" type="button" aria-label="Move mini panel" title="Drag mini panel" onPointerDown={onStartMove}><MousePointer2 size={14} /></button>
         <input className="popover-title-input" value={getItemDisplayName(item)} onChange={(event) => onChange({ name: event.target.value })} />
         <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
       </div>
@@ -2712,6 +3205,7 @@ function CanvasItemQuickEditor({ item, style, onChange, onDuplicate, onSendWayBa
           onChange={(event) => onChange({ notes: event.target.value })}
         />
       </label>
+      <GlowBehaviorToggles item={item} onChange={onChange} compact />
       <div className="button-grid">
         <button className={item.visible ? 'active' : ''} type="button" onClick={() => onChange({ visible: !item.visible })}>{item.visible ? <Eye size={14} /> : <EyeOff size={14} />} Visible</button>
         <button className={item.silhouette ? 'active' : ''} type="button" onClick={() => onChange({ silhouette: !item.silhouette })}>Mask</button>
@@ -2725,9 +3219,10 @@ function CanvasItemQuickEditor({ item, style, onChange, onDuplicate, onSendWayBa
   )
 }
 
-function CanvasMultiQuickEditor({ items, style, onChange, onSendWayBack, onDelete, onClose, onOpenDetails }: {
+function CanvasMultiQuickEditor({ items, style, onStartMove, onChange, onSendWayBack, onDelete, onClose, onOpenDetails }: {
   items: EditorItem[]
   style: CSSProperties
+  onStartMove: (event: PointerEvent<HTMLElement>) => void
   onChange: (patch: Partial<EditorItem>) => void
   onSendWayBack: () => void
   onDelete: () => void
@@ -2744,6 +3239,7 @@ function CanvasMultiQuickEditor({ items, style, onChange, onSendWayBack, onDelet
   return (
     <div className="canvas-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
       <div className="popover-header">
+        <button className="popover-drag-handle" type="button" aria-label="Move mini panel" title="Drag mini panel" onPointerDown={onStartMove}><MousePointer2 size={14} /></button>
         <div className="popover-title">{items.length} items selected</div>
         <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
       </div>
@@ -2783,10 +3279,11 @@ function CanvasMultiQuickEditor({ items, style, onChange, onSendWayBack, onDelet
   )
 }
 
-function CanvasRouteQuickEditor({ point, selectedCount, style, onChange, onCreateGroup, onDelete, onClose }: {
+function CanvasRouteQuickEditor({ point, selectedCount, style, onStartMove, onChange, onCreateGroup, onDelete, onClose }: {
   point: RoutePoint
   selectedCount: number
   style: CSSProperties
+  onStartMove: (event: PointerEvent<HTMLElement>) => void
   onChange: (patch: Partial<RoutePoint>) => void
   onCreateGroup: () => void
   onDelete: () => void
@@ -2795,6 +3292,7 @@ function CanvasRouteQuickEditor({ point, selectedCount, style, onChange, onCreat
   return (
     <div className="canvas-popover compact-popover" style={style} onPointerDown={(event) => event.stopPropagation()}>
       <div className="popover-header">
+        <button className="popover-drag-handle" type="button" aria-label="Move mini panel" title="Drag mini panel" onPointerDown={onStartMove}><MousePointer2 size={14} /></button>
         <div className="popover-title">{point.label}</div>
         <button className="popover-close" type="button" aria-label="Close mini panel" title="Close mini panel" onClick={onClose}>×</button>
       </div>
@@ -3294,7 +3792,7 @@ function findCrossedRouteGroup(project: EditorProject, fromProgress: number, toP
     if (toProgress >= fromProgress) {
       return anchor > fromProgress && anchor <= toProgress
     }
-    return anchor > fromProgress || anchor <= toProgress
+    return anchor < fromProgress && anchor >= toProgress
   }) ?? null
 }
 

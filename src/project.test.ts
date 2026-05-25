@@ -8,6 +8,8 @@ import {
   migrateProject,
   moveItemsToLayerSubLayer,
   readProjectFromStorage,
+  resolveItemGlowBehaviors,
+  resolveItemGlowTuning,
   resolveItemRenderBand,
   resolveItemRole,
   resolveItemSubLayer,
@@ -41,12 +43,12 @@ const defaultGameplay = {
   mothHeadingMode: 'north',
   routePathVisible: false,
   cameraExtensionEnabled: true,
-  cameraExtensionZoomScale: 0.93,
-  cameraExtensionInnerScale: 0.9,
-  cameraExtensionRoundness: 0.8,
+  cameraExtensionZoomScale: 0.83,
+  cameraExtensionInnerScale: 0.91,
+  cameraExtensionRoundness: 0.82,
   cameraExtensionDensity: 2.5,
-  cameraExtensionBlurAmount: 5.5,
-  musicEnabled: true,
+  cameraExtensionBlurAmount: 5,
+  musicEnabled: false,
   musicVolume: 0.56,
   musicMuted: false,
 }
@@ -56,11 +58,11 @@ describe('project helpers', () => {
     const project = createDefaultProject()
     expect(project.title).toBe('Moonlit Jungle Drift')
     expect(project.route).toHaveLength(50)
-    expect(project.items).toHaveLength(109)
+    expect(project.items).toHaveLength(115)
     expect(project.layers.background.parallax).toBe(0.51)
     expect(project.layers.foreground.parallax).toBe(0.87)
     expect(project.gameplay).toEqual(defaultGameplay)
-    expect(project.camera).toEqual({ x: 29711.510828599072, y: 0, zoom: 0.46399999999999997 })
+    expect(project.camera).toEqual({ x: 6403.907551413502, y: 932.8421213444534, zoom: 0.40860183163282066 })
   })
 
   it('resolves every default project asset through the approved manifest', () => {
@@ -133,11 +135,11 @@ describe('project helpers', () => {
       mothHeadingMode: 'north',
       routePathVisible: false,
       cameraExtensionEnabled: true,
-      cameraExtensionZoomScale: 0.93,
-      cameraExtensionInnerScale: 0.9,
-      cameraExtensionRoundness: 0.8,
+      cameraExtensionZoomScale: 0.83,
+      cameraExtensionInnerScale: 0.91,
+      cameraExtensionRoundness: 0.82,
       cameraExtensionDensity: 2.5,
-      cameraExtensionBlurAmount: 5.5,
+      cameraExtensionBlurAmount: 5,
       musicEnabled: false,
       musicVolume: 0.2,
     })
@@ -383,6 +385,126 @@ describe('project helpers', () => {
     const summary = formatProjectCommentsSummary(project)
     expect(summary).toContain('"renderBand": "frontOccluder"')
     expect(summary).toContain('"inFrontOfPathAndMoth": true')
+  })
+
+  it('migrates glow notes into editable glow behaviors', () => {
+    const project = migrateProject({
+      items: [
+        {
+          id: 'glow-1',
+          name: 'Glow Flower',
+          assetId: 'foreground-mist',
+          layerId: 'foreground',
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          visible: true,
+          silhouette: false,
+          notes: 'in front path. glow',
+        },
+      ],
+    })
+    expect(resolveItemGlowBehaviors(project.items[0])).toEqual([
+      'ambientBreathing',
+      'attentionBloom',
+      'tapResponse',
+      'nearbyRipple',
+    ])
+    expect(project.items[0]).toMatchObject({
+      glowIntensity: 1.8,
+      glowRadius: 1.25,
+      glowPulseSpeed: 0.18,
+      glowBloom: 1.4,
+      glowSpriteLift: 0.35,
+    })
+  })
+
+  it('keeps explicit empty glow behavior choices over glow notes', () => {
+    const project = migrateProject({
+      items: [
+        {
+          id: 'glow-off',
+          name: 'Quiet Flower',
+          assetId: 'foreground-mist',
+          layerId: 'foreground',
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          visible: true,
+          silhouette: false,
+          glowBehaviors: [],
+          notes: 'glow',
+        },
+      ],
+    })
+    expect(resolveItemGlowBehaviors(project.items[0])).toEqual([])
+    expect(resolveItemGlowTuning(project.items[0]).intensity).toBe(1)
+  })
+
+  it('uses compatible defaults when glow slider fields are missing', () => {
+    const project = migrateProject({
+      items: [
+        {
+          id: 'plain-item',
+          name: 'Plain Item',
+          assetId: 'foreground-mist',
+          layerId: 'foreground',
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          visible: true,
+          silhouette: false,
+          notes: '',
+        },
+      ],
+    })
+    expect(resolveItemGlowTuning(project.items[0])).toEqual({
+      intensity: 1,
+      radius: 1.25,
+      pulseSpeed: 0.18,
+      bloom: 1.4,
+      spriteLift: 0.35,
+    })
+  })
+
+  it('includes glow behavior state in copied comments', () => {
+    const project = migrateProject({
+      title: 'Glow Comment Export',
+      items: [
+        {
+          id: 'glow-comment',
+          name: 'Glow Comment',
+          assetId: 'foreground-mist',
+          layerId: 'foreground',
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          visible: true,
+          silhouette: false,
+          glowBehaviors: ['ambientBreathing', 'tapResponse'],
+          notes: 'glow',
+        },
+      ],
+    })
+    const summary = formatProjectCommentsSummary(project)
+    expect(summary).toContain('"glowBehaviors": [')
+    expect(summary).toContain('"ambientBreathing"')
+    expect(summary).toContain('"Tap Response"')
+    expect(summary).toContain('"glowTuning": {')
+    expect(summary).toContain('"intensity": 1.8')
+    expect(summary).toContain('"pulseSpeed": 0.18')
   })
 
   it('duplicates an item in the same layer with a new id', () => {

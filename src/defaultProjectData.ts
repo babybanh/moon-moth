@@ -682,8 +682,8 @@ export const defaultProjectData = {
       "name": "Sky light: moon glow",
       "assetId": "moon-glow",
       "layerId": "background",
-      "x": 6525.893286278804,
-      "y": -601.3833418030007,
+      "x": 6525.543687679685,
+      "y": -601.7931231535536,
       "width": 920,
       "height": 920,
       "rotation": 0,
@@ -693,15 +693,26 @@ export const defaultProjectData = {
       "zIndex": 11,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "moon-1",
       "name": "Sky anchor: moon disc",
       "assetId": "moon",
       "layerId": "background",
-      "x": 6540.952089846335,
-      "y": -611.1454884895642,
+      "x": 6539.674475291806,
+      "y": -611.603540342988,
       "width": 385.44721944175217,
       "height": 385.44721944175217,
       "rotation": 0,
@@ -754,8 +765,8 @@ export const defaultProjectData = {
       "name": "Foreground atmosphere: mist veil copy copy copy",
       "assetId": "foreground-mist",
       "layerId": "foreground",
-      "x": 29124.948025474805,
-      "y": 4633.870133253334,
+      "x": 29124.602814505823,
+      "y": 4633.358613193528,
       "width": 9151.31605602691,
       "height": 5152.894886932075,
       "rotation": 0,
@@ -791,8 +802,8 @@ export const defaultProjectData = {
       "name": "Crooked Sapling Pair",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch4/crooked_sapling_pair.png",
       "layerId": "background",
-      "x": 10595.448327363785,
-      "y": 2486.0784579414067,
+      "x": 10594.38088871638,
+      "y": 2486.4581739699215,
       "width": 2327.893902587891,
       "height": 2327.893902587891,
       "rotation": 0,
@@ -802,7 +813,18 @@ export const defaultProjectData = {
       "zIndex": 13,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-misty-conifer-grove-png-65t3ye",
@@ -874,15 +896,26 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc",
       "name": "Firefly Flower Patch",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/firefly_flower_patch.png",
       "layerId": "foreground",
-      "x": 6720.971655743881,
-      "y": 1300.319824333439,
+      "x": 6718.680947062522,
+      "y": 1302.0881767923609,
       "width": 926.5872618920946,
       "height": 926.5872618920946,
       "rotation": 0,
@@ -892,16 +925,27 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow.",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "foreground-mist-paste-j2ia5o",
       "name": "Foreground Mist",
       "assetId": "foreground-mist",
       "layerId": "background",
-      "x": 12515.125795277801,
-      "y": 232.1300689090191,
+      "x": 12515.167728436743,
+      "y": 232.47561253634888,
       "width": 33698.22653271148,
       "height": 18974.69370918831,
       "rotation": -4,
@@ -918,7 +962,7 @@ export const defaultProjectData = {
       "name": "Hanging Vine Lanterns",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/hanging_vine_lanterns.png",
       "layerId": "foreground",
-      "x": 3983.9107414287846,
+      "x": 3982.8845488438697,
       "y": 2869.735855471335,
       "width": 1069.5266983931224,
       "height": 1242.0310045855615,
@@ -929,8 +973,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow.",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr",
@@ -955,7 +1010,7 @@ export const defaultProjectData = {
       "name": "2d Landmark Glow Flower",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-landmark-glow-flower.png",
       "layerId": "foreground",
-      "x": 9395.744351599931,
+      "x": 9394.972852232157,
       "y": 2918.3709942850273,
       "width": 886.1848450809637,
       "height": 886.1848450809637,
@@ -966,7 +1021,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves-png-rvjqq1",
@@ -1049,8 +1115,8 @@ export const defaultProjectData = {
       "name": "Pearl Fern Cluster copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
       "layerId": "foreground",
-      "x": 10099.249282531824,
-      "y": 4340.99379576251,
+      "x": 10097.118928648939,
+      "y": 4340.666244909725,
       "width": 1533.9860838264365,
       "height": 1533.9860838264365,
       "rotation": 0,
@@ -1087,7 +1153,7 @@ export const defaultProjectData = {
       "name": "Enchanted Pastel Leaf Vine",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
       "layerId": "foreground",
-      "x": 9287.340252037575,
+      "x": 9287.750136972898,
       "y": 3641.162623379747,
       "width": 1255.6403442382812,
       "height": 1458.1629804057459,
@@ -1162,8 +1228,8 @@ export const defaultProjectData = {
       "name": "Pathside Moss Rock Cameo",
       "assetId": "artwork:Moon Moth New Assets 1/moon-moth-pathside-moss-rock-cameo.png",
       "layerId": "foreground",
-      "x": 5497.781166712101,
-      "y": 1975.857509632094,
+      "x": 5497.817317796869,
+      "y": 1975.8696290501966,
       "width": 490.83259277343745,
       "height": 490.83259277343745,
       "rotation": 0,
@@ -1173,7 +1239,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-vapjs9",
@@ -1209,7 +1286,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group-png-hqo0fw",
@@ -1234,8 +1322,8 @@ export const defaultProjectData = {
       "name": "Magical Thicket With Glowing Foliage",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 11424.844048359573,
-      "y": 3962.742961133797,
+      "x": 11564.799251639644,
+      "y": 3957.9333454460952,
       "width": 1966.7986664826628,
       "height": 1966.7986664826628,
       "rotation": -7,
@@ -1253,8 +1341,8 @@ export const defaultProjectData = {
       "name": "Magical Moonlit Botanical Corner Element",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_moonlit_botanical_corner_element.png",
       "layerId": "foreground",
-      "x": 12959.696087873002,
-      "y": 3944.330499168912,
+      "x": 13236.26474642959,
+      "y": 4413.977965784977,
       "width": 1800.4231907017138,
       "height": 1800.4231907017138,
       "rotation": 0,
@@ -1272,8 +1360,8 @@ export const defaultProjectData = {
       "name": "Low Cocoon Bud",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/low_cocoon_bud.png",
       "layerId": "foreground",
-      "x": 16539.575309455453,
-      "y": 3278.3489161692055,
+      "x": 16537.110310854507,
+      "y": 3279.2058269972717,
       "width": 739.6124389648437,
       "height": 739.6124389648437,
       "rotation": 0,
@@ -1283,15 +1371,26 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm",
       "name": "Drooping Bellflower Cluster",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/drooping_bellflower_cluster.png",
       "layerId": "foreground",
-      "x": 15063.23143444787,
+      "x": 15063.774011473703,
       "y": 3469.309749274571,
       "width": 573.5036066973978,
       "height": 573.5036066973978,
@@ -1302,7 +1401,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa",
@@ -1374,7 +1484,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group-png-rk0i70",
@@ -1399,8 +1520,8 @@ export const defaultProjectData = {
       "name": "Pathside Orchid Spill Cameo",
       "assetId": "artwork:Moon Moth New Assets 1/moon-moth-pathside-orchid-spill-cameo.png",
       "layerId": "background",
-      "x": 29413.804341158142,
-      "y": 2753.4066658332094,
+      "x": 29413.306199901108,
+      "y": 2753.9048634219494,
       "width": 1401.8300999765531,
       "height": 1401.8300999765531,
       "rotation": 0,
@@ -1410,15 +1531,26 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy",
       "name": "Pathside Star Petal Bed",
       "assetId": "artwork:Moon Moth New Assets 1/moon-moth-pathside-star-petal-bed.png",
       "layerId": "background",
-      "x": 22442.787222681152,
-      "y": 2216.845798450064,
+      "x": 22442.13278390709,
+      "y": 2218.8091817293557,
       "width": 1606.018123267142,
       "height": 903.3851943377674,
       "rotation": 0,
@@ -1428,7 +1560,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu",
@@ -1471,8 +1614,8 @@ export const defaultProjectData = {
       "name": "Broken Moonstone Fragments",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch3/broken_moonstone_fragments.png",
       "layerId": "background",
-      "x": 13945.058063408387,
-      "y": 3358.902075091817,
+      "x": 13944.353599178256,
+      "y": 3359.653557415795,
       "width": 1910.1833880310485,
       "height": 1910.1833880310485,
       "rotation": 0,
@@ -1482,7 +1625,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2",
@@ -1507,8 +1661,8 @@ export const defaultProjectData = {
       "name": "Slender Moon Reed Cluster",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch5/slender_moon_reed_cluster.png",
       "layerId": "background",
-      "x": 22626.378582921065,
-      "y": 3154.0276042369715,
+      "x": 22625.655405848545,
+      "y": 3153.6297869273667,
       "width": 1801.7893628208265,
       "height": 1801.7893628208265,
       "rotation": 0,
@@ -1518,7 +1672,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr",
@@ -1536,15 +1701,26 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz",
       "name": "2d Foreground Vine Cluster B",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-foreground-vine-cluster-b.png",
       "layerId": "background",
-      "x": 25213.64917633554,
-      "y": 4855.30935626761,
+      "x": 25213.28766548786,
+      "y": 4855.707121784831,
       "width": 1878.3841854873003,
       "height": 2181.3493766949296,
       "rotation": 0,
@@ -1562,8 +1738,8 @@ export const defaultProjectData = {
       "name": "2d Near Foliage Cluster A",
       "assetId": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-near-foliage-cluster-a.png",
       "layerId": "background",
-      "x": 24845.56832833508,
-      "y": 4759.308795981628,
+      "x": 24843.05498533436,
+      "y": 4758.921386413216,
       "width": 3135.266424297687,
       "height": 3135.266424297687,
       "rotation": 0,
@@ -1693,8 +1869,8 @@ export const defaultProjectData = {
       "name": "Sky light: moon glow copy",
       "assetId": "moon-glow",
       "layerId": "background",
-      "x": 19758.31696773966,
-      "y": -384.25565077747933,
+      "x": 19758.355448280603,
+      "y": -384.58302501396315,
       "width": 1277.306681816115,
       "height": 1277.306681816115,
       "rotation": 0,
@@ -1704,7 +1880,18 @@ export const defaultProjectData = {
       "zIndex": 33,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-moon-halo-ring-png-ojq76r",
@@ -1801,7 +1988,7 @@ export const defaultProjectData = {
       "name": "Opaline Vine Arch",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/opaline_vine_arch.png",
       "layerId": "background",
-      "x": 29351.311960082618,
+      "x": 29351.318494560262,
       "y": -355.2443046569824,
       "width": 286.38979492187497,
       "height": 332.581697328629,
@@ -1812,7 +1999,18 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-silver-light-trail-png-paste-l7ukxx",
@@ -1911,8 +2109,8 @@ export const defaultProjectData = {
       "name": "Crescent Vine With Glowing Leaves",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/crescent_vine_with_glowing_leaves.png",
       "layerId": "foreground",
-      "x": 18836.687732610797,
-      "y": 3382.3230546626824,
+      "x": 18836.727471476126,
+      "y": 3381.4747528583316,
       "width": 580.7447827886258,
       "height": 674.41329614163,
       "rotation": 75,
@@ -1922,8 +2120,19 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "",
-      "renderBand": "normal"
+      "notes": "in front path. glow",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-6hwibk",
@@ -1949,7 +2158,7 @@ export const defaultProjectData = {
       "name": "Magical Mossy Rock Garden",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
       "layerId": "foreground",
-      "x": 18798.418262389794,
+      "x": 18797.569895864162,
       "y": 4232.472729974662,
       "width": 964.9263010890106,
       "height": 964.9263010890106,
@@ -1997,7 +2206,18 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w",
@@ -2005,7 +2225,7 @@ export const defaultProjectData = {
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/silver_grass_plumes.png",
       "layerId": "background",
       "x": 26843.234047454614,
-      "y": 2152.106387067432,
+      "y": 2152.4145624103708,
       "width": 739.44208984375,
       "height": 739.44208984375,
       "rotation": 0,
@@ -2022,8 +2242,8 @@ export const defaultProjectData = {
       "name": "Enchanted Pastel Leaf Vine",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
       "layerId": "background",
-      "x": 24995.435707610864,
-      "y": 2306.4517239814945,
+      "x": 24995.156496115946,
+      "y": 2306.7694987712057,
       "width": 550.4166503906249,
       "height": 639.193529485887,
       "rotation": 0,
@@ -2033,8 +2253,19 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "",
-      "renderBand": "normal"
+      "notes": "glow",
+      "renderBand": "normal",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk",
@@ -2142,7 +2373,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Atmosphere",
       "subLayer": "Far",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-paste-drfopu",
@@ -2168,8 +2410,8 @@ export const defaultProjectData = {
       "name": "Pearl Fern Cluster copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
       "layerId": "foreground",
-      "x": 18272.981412694236,
-      "y": 5075.490527111011,
+      "x": 18272.23905962367,
+      "y": 5076.935364944255,
       "width": 1533.9860838264365,
       "height": 1533.9860838264365,
       "rotation": 0,
@@ -2205,8 +2447,8 @@ export const defaultProjectData = {
       "name": "Foreground atmosphere: mist veil copy",
       "assetId": "foreground-mist",
       "layerId": "foreground",
-      "x": 13780.220302124126,
-      "y": 5723.138101223884,
+      "x": 13775.8505217008,
+      "y": 5724.861240556992,
       "width": 15360.641564461554,
       "height": 8649.222788604506,
       "rotation": 0,
@@ -2277,8 +2519,8 @@ export const defaultProjectData = {
       "name": "Magical Mossy Rock Garden copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
       "layerId": "foreground",
-      "x": 30991.794874703966,
-      "y": 1446.9257334477932,
+      "x": 30990.098271095263,
+      "y": 1447.4823364475199,
       "width": 1586.3627792561608,
       "height": 1586.3627792561608,
       "rotation": 0,
@@ -2296,8 +2538,8 @@ export const defaultProjectData = {
       "name": "Glowing Botanical Vine copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch2/glowing_botanical_vine.png",
       "layerId": "foreground",
-      "x": 30377.243243501645,
-      "y": 400.3901892744816,
+      "x": 30376.791416936536,
+      "y": 399.9071606970233,
       "width": 1560.4412263451318,
       "height": 1812.1252951104757,
       "rotation": 0,
@@ -2307,8 +2549,19 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf",
@@ -2326,7 +2579,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x",
@@ -2416,7 +2680,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": ""
+      "notes": "glow",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze-png-52uvgn",
@@ -2441,8 +2716,8 @@ export const defaultProjectData = {
       "name": "Enchanted Pastel Leaf Vine copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
       "layerId": "foreground",
-      "x": 10479.63510855432,
-      "y": 3692.3702376688743,
+      "x": 10477.69109606338,
+      "y": 3693.591139273721,
       "width": 1255.6403442382812,
       "height": 1458.1629804057459,
       "rotation": 0,
@@ -2460,8 +2735,8 @@ export const defaultProjectData = {
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 1148.5881359981158,
-      "y": 3330.3107087673584,
+      "x": 1147.561943413201,
+      "y": 3329.5254068830586,
       "width": 2848.310989423941,
       "height": 2848.310989423941,
       "rotation": 14,
@@ -2471,15 +2746,26 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foreground Masks",
       "subLayer": "Overlay/Mask",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-stamp-9xqyj9",
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": -401.581546010125,
+      "x": -401.1103828766092,
       "y": 2196.1210818047853,
       "width": 5761.642859232012,
       "height": 5761.642859232012,
@@ -2498,8 +2784,8 @@ export const defaultProjectData = {
       "name": "Magical Thicket With Glowing Foliage copy",
       "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
       "layerId": "foreground",
-      "x": 17657.647454091453,
-      "y": 563.8457935214184,
+      "x": 17657.584320025242,
+      "y": 563.9300099773562,
       "width": 3454.3547366730345,
       "height": 3454.3547366730345,
       "rotation": -180,
@@ -2528,8 +2814,19 @@ export const defaultProjectData = {
       "silhouette": true,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path",
-      "renderBand": "frontOccluder"
+      "notes": "in front path. glow.",
+      "renderBand": "frontOccluder",
+      "glowBehaviors": [
+        "ambientBreathing",
+        "attentionBloom",
+        "tapResponse",
+        "nearbyRipple"
+      ],
+      "glowIntensity": 1.8,
+      "glowRadius": 1.25,
+      "glowPulseSpeed": 0.18,
+      "glowBloom": 1.4,
+      "glowSpriteLift": 0.35
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-paste-niox4g",
@@ -2679,6 +2976,120 @@ export const defaultProjectData = {
       "subLayer": "Near",
       "notes": "in front path",
       "renderBand": "frontOccluder"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-stamp-xk5n9s",
+      "name": "Pearl Fern Cluster copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
+      "layerId": "foreground",
+      "x": 12471.964913894168,
+      "y": 3833.404856846295,
+      "width": 1533.9860838264365,
+      "height": 1533.9860838264365,
+      "rotation": 0,
+      "zIndex": 2001,
+      "opacity": 0.62,
+      "visible": true,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "",
+      "renderBand": "normal"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-paste-g13yf4",
+      "name": "Magical Mossy Rock Garden copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
+      "layerId": "foreground",
+      "x": 18808.464724128593,
+      "y": 4464.132821270964,
+      "width": 1206.019925961057,
+      "height": 1206.019925961057,
+      "rotation": 0,
+      "zIndex": 1000,
+      "opacity": 1,
+      "visible": true,
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-paste-9nam1w",
+      "name": "Magical Mossy Rock Garden copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
+      "layerId": "foreground",
+      "x": 30913.603451223782,
+      "y": 1690.4223758609562,
+      "width": 1852.110616230865,
+      "height": 1852.110616230865,
+      "rotation": 0,
+      "zIndex": 1001,
+      "opacity": 1,
+      "visible": true,
+      "silhouette": true,
+      "role": "Ground & Pools",
+      "subLayer": "Mid",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-paste-po99ua",
+      "name": "Pearl Fern Cluster copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
+      "layerId": "foreground",
+      "x": 19001.272074393157,
+      "y": 4935.853960430616,
+      "width": 1533.9860838264365,
+      "height": 1533.9860838264365,
+      "rotation": 0,
+      "zIndex": 2002,
+      "opacity": 0.62,
+      "visible": true,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-paste-0oar8c",
+      "name": "Magical Thicket With Glowing Foliage copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
+      "layerId": "foreground",
+      "x": 8260.869224948527,
+      "y": 4384.754947699749,
+      "width": 1966.7986664826628,
+      "height": 1966.7986664826628,
+      "rotation": -7,
+      "zIndex": 3000,
+      "opacity": 1,
+      "visible": true,
+      "silhouette": true,
+      "role": "Foreground Masks",
+      "subLayer": "Overlay/Mask",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
+    },
+    {
+      "id": "artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-paste-mk1fed",
+      "name": "Magical Moonlit Botanical Corner Element copy",
+      "assetId": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_moonlit_botanical_corner_element.png",
+      "layerId": "foreground",
+      "x": 11103.538604195895,
+      "y": 4379.858352547212,
+      "width": 1800.4231907017138,
+      "height": 1800.4231907017138,
+      "rotation": 0,
+      "zIndex": 2003,
+      "opacity": 1,
+      "visible": true,
+      "silhouette": true,
+      "role": "Foliage",
+      "subLayer": "Near",
+      "notes": "in front path",
+      "renderBand": "frontOccluder"
     }
   ],
   "gameplay": {
@@ -2708,19 +3119,19 @@ export const defaultProjectData = {
     "mothHeadingMode": "north",
     "routePathVisible": false,
     "cameraExtensionEnabled": true,
-    "cameraExtensionZoomScale": 0.93,
-    "cameraExtensionInnerScale": 0.9,
-    "cameraExtensionRoundness": 0.8,
+    "cameraExtensionZoomScale": 0.83,
+    "cameraExtensionInnerScale": 0.91,
+    "cameraExtensionRoundness": 0.82,
     "cameraExtensionDensity": 2.5,
-    "cameraExtensionBlurAmount": 5.5,
-    "musicEnabled": true,
+    "cameraExtensionBlurAmount": 5,
+    "musicEnabled": false,
     "musicVolume": 0.56,
     "musicMuted": false
   },
   "camera": {
-    "x": 29711.510828599072,
-    "y": 0,
-    "zoom": 0.46399999999999997
+    "x": 6403.907551413502,
+    "y": 932.8421213444534,
+    "zoom": 0.40860183163282066
   },
   "routeGroups": []
 } satisfies EditorProject

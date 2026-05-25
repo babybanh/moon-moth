@@ -15,6 +15,8 @@ const defaultManualScrub = {
   rampMs: 1300,
   topSpeedScale: 0.055,
 }
+const idlePushMaxWaitMs = 5000
+const idlePushMaxDurationMs = 18000
 
 const defaultMothLean = {
   forward: 0.08,
@@ -142,9 +144,8 @@ export function resolveMothLean(signedProgressPerSecond: number, settings: MothL
 }
 
 export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings = {}, shiftKey = false, direction: -1 | 1 = 1) {
-  const directionMultiplier = direction < 0 ? 0.72 : 1
   const shiftMultiplier = shiftKey ? 1.45 : 1
-  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.17) * directionMultiplier * shiftMultiplier)
+  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.17) * shiftMultiplier)
   const start = Math.min(settings.mothManualSpeedMin ?? defaultManualScrub.speedMin, topSpeed * 0.35)
   const rampMs = Math.max(120, settings.mothManualRampMs ?? defaultManualScrub.rampMs)
   const t = clamp(heldMs / rampMs, 0, 1)
@@ -153,16 +154,24 @@ export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings =
 }
 
 export function idleForwardPushWaitMs(pushCount: number) {
-  return 2000 + Math.max(0, pushCount) * 1000
+  return Math.min(2000 + Math.max(0, pushCount) * 1000, idlePushMaxWaitMs)
 }
 
 export function idleForwardPushDurationMs(basePushMs: number, pushCount: number) {
-  return Math.round(Math.max(0, basePushMs) * (1.7 ** (Math.max(0, pushCount) + 1)))
+  const growingDuration = Math.max(0, basePushMs) * (1.7 ** (Math.max(0, pushCount) + 1))
+  return Math.round(Math.min(growingDuration, idlePushMaxDurationMs))
 }
 
 export function advanceRouteProgress(current: number, direction: -1 | 1, deltaSeconds: number, heldMs: number, settings?: ManualScrubSettings, shiftKey = false) {
   const next = current + direction * manualScrubSpeed(heldMs, settings, shiftKey, direction) * deltaSeconds
   return clamp(next, 0, 1)
+}
+
+export function exploreTargetVelocity(direction: -1 | 0 | 1, progress: number, heldMs: number, settings?: ManualScrubSettings) {
+  if (direction === 0 || (direction < 0 && progress <= 0) || (direction > 0 && progress >= 1)) {
+    return 0
+  }
+  return direction * manualScrubSpeed(heldMs, settings, false, direction)
 }
 
 export function buildRoutePolyline(route: RoutePoint[], mode: RouteRenderMode, stepsPerSegment = 18): Point[] {

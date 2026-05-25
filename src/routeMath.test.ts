@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { advanceRouteProgress, appendRoutePoint, buildRoutePolyline, buildRouteSampleData, idleForwardPushDurationMs, idleForwardPushWaitMs, insertRoutePoint, manualScrubSpeed, resolveMothLean, sampleRoute, sampleRouteTangent } from './routeMath'
+import { advanceRouteProgress, appendRoutePoint, buildRoutePolyline, buildRouteSampleData, exploreTargetVelocity, idleForwardPushDurationMs, idleForwardPushWaitMs, insertRoutePoint, manualScrubSpeed, resolveMothLean, sampleRoute, sampleRouteTangent } from './routeMath'
 import type { RoutePoint } from './types'
 
 const route: RoutePoint[] = [
@@ -62,18 +62,33 @@ describe('route math', () => {
     expect(advanceRouteProgress(0.01, -1, 3, 1200, settings)).toBe(0)
   })
 
-  it('uses a lower hidden backward cap for compatibility', () => {
+  it('uses the same speed cap while retracing backward', () => {
     const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
-    expect(manualScrubSpeed(1600, settings, false, -1)).toBeLessThan(manualScrubSpeed(1600, settings, false, 1))
+    expect(manualScrubSpeed(1600, settings, false, -1)).toBeCloseTo(manualScrubSpeed(1600, settings, false, 1))
+  })
+
+  it('lets explore mode target either path direction immediately', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    expect(exploreTargetVelocity(1, 0.5, 800, settings)).toBeGreaterThan(0)
+    expect(exploreTargetVelocity(-1, 0.5, 800, settings)).toBeLessThan(0)
+  })
+
+  it('clamps explore target velocity at route boundaries', () => {
+    const settings = { mothSpeed: 0.25, mothManualSpeedMin: 0.006, mothManualRampMs: 1200 }
+    expect(exploreTargetVelocity(-1, 0, 800, settings)).toBe(0)
+    expect(exploreTargetVelocity(1, 1, 800, settings)).toBe(0)
   })
 
   it('staggers idle forward nudges with longer waits and durations', () => {
     expect(idleForwardPushWaitMs(0)).toBe(2000)
     expect(idleForwardPushWaitMs(1)).toBe(3000)
     expect(idleForwardPushWaitMs(2)).toBe(4000)
+    expect(idleForwardPushWaitMs(3)).toBe(5000)
+    expect(idleForwardPushWaitMs(8)).toBe(5000)
     expect(idleForwardPushDurationMs(2300, 0)).toBe(3910)
     expect(idleForwardPushDurationMs(2300, 1)).toBe(6647)
     expect(idleForwardPushDurationMs(2300, 2)).toBe(11300)
+    expect(idleForwardPushDurationMs(2300, 8)).toBe(18000)
   })
 
   it('samples a normalized route tangent for moth lean direction', () => {

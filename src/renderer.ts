@@ -1,7 +1,7 @@
 import { assetById, mothAsset } from './assets'
-import { isFrontOccluder } from './project'
+import { isFrontOccluder, resolveItemGlowBehaviors, resolveItemGlowTuning } from './project'
 import { resolveMothLean, sampleRouteData, sampleRouteTangent, worldToScreen, type RouteSampleData } from './routeMath'
-import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, LayerId, Point, Selection, Size } from './types'
+import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, GlowBehavior, LayerId, Point, Selection, Size } from './types'
 
 export type ImageMap = Map<string, HTMLImageElement>
 
@@ -152,6 +152,7 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
   context.translate(center.x, center.y)
   context.rotate((item.rotation * Math.PI) / 180)
   context.globalAlpha = opacity
+  drawItemGlow(context, item, width, height, opacity, options, image, layer.silhouette || item.silhouette)
 
   if (options.artworkMode === 'art' && image?.complete) {
     if (layer.silhouette || item.silhouette) {
@@ -167,6 +168,95 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
     context.strokeRect(-width / 2, -height / 2, width, height)
   }
   context.restore()
+}
+
+function drawItemGlow(
+  context: CanvasRenderingContext2D,
+  item: EditorItem,
+  width: number,
+  height: number,
+  opacity: number,
+  options: RenderOptions,
+  image?: HTMLImageElement,
+  isSilhouette = false,
+) {
+  if (opacity <= 0) {
+    return
+  }
+  const behaviors = resolveItemGlowBehaviors(item)
+  if (behaviors.length === 0) {
+    return
+  }
+
+  const time = options.animationTime / 1000
+  const seed = seededUnit(item.id)
+  const phase = seed * Math.PI * 2
+  const hasBehavior = (behavior: GlowBehavior) => behaviors.includes(behavior)
+  const tuning = resolveItemGlowTuning(item)
+  const selected = options.selection?.type === 'item' && options.selection.id === item.id
+    || options.selectedItemIds.includes(item.id)
+
+  const ambient = hasBehavior('ambientBreathing')
+    ? 0.42 + 0.42 * smoothPulse(time, tuning.pulseSpeed * (0.72 + seed * 0.38), phase)
+    : 0
+  const attention = hasBehavior('attentionBloom') ? attentionBloom(time, seed) * tuning.bloom : 0
+  const tap = hasBehavior('tapResponse') && selected
+    ? (0.5 + 0.4 * smoothPulse(time, Math.max(0.18, tuning.pulseSpeed * 4.2), phase + 1.1)) * tuning.bloom
+    : 0
+  const nearby = hasBehavior('nearbyRipple')
+    ? 0.22 + 0.3 * smoothPulse(time, tuning.pulseSpeed * (1.1 + seed * 0.42), phase + 2.4)
+    : 0
+  const strength = Math.min(3.5, (ambient + attention + tap + nearby) * tuning.intensity)
+  if (strength <= 0.02) {
+    return
+  }
+
+  const radius = Math.max(width, height) * (0.5 + tuning.radius * 0.3 + Math.min(strength, 2.4) * 0.055)
+  const innerRadius = Math.min(width, height) * 0.1
+  context.save()
+  context.globalAlpha = 1
+  context.globalCompositeOperation = 'screen'
+
+  const aura = context.createRadialGradient(0, 0, innerRadius, 0, 0, radius)
+  aura.addColorStop(0, `rgba(255, 245, 185, ${0.2 * strength * opacity})`)
+  aura.addColorStop(0.32, `rgba(190, 255, 232, ${0.18 * strength * opacity})`)
+  aura.addColorStop(0.72, `rgba(207, 178, 255, ${0.08 * strength * opacity})`)
+  aura.addColorStop(1, 'rgba(190, 255, 232, 0)')
+  context.fillStyle = aura
+  context.beginPath()
+  context.ellipse(0, 0, radius, radius * 0.72, 0, 0, Math.PI * 2)
+  context.fill()
+
+  if (!isSilhouette && options.artworkMode === 'art' && image?.complete) {
+    context.globalCompositeOperation = 'lighter'
+    context.globalAlpha = Math.min(0.55, (0.1 + strength * 0.13) * tuning.spriteLift) * opacity
+    const scale = 1.01 + Math.min(0.05, strength * 0.012 * Math.max(0.35, tuning.spriteLift))
+    context.drawImage(image, -width * scale / 2, -height * scale / 2, width * scale, height * scale)
+  }
+
+  context.restore()
+}
+
+function smoothPulse(time: number, frequency: number, phase: number) {
+  return 0.5 + 0.5 * Math.sin(time * Math.PI * 2 * frequency + phase)
+}
+
+function attentionBloom(time: number, seed: number) {
+  const period = 6.5 + seed * 4
+  const local = ((time + seed * period) % period) / period
+  if (local > 0.32) {
+    return 0
+  }
+  return Math.sin((local / 0.32) * Math.PI) ** 1.8
+}
+
+function seededUnit(value: string) {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0) / 4294967295
 }
 
 function drawRoute(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {

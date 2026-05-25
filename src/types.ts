@@ -36,6 +36,8 @@ export type SubLayer = 'Far' | 'Mid' | 'Near' | 'Overlay/Mask'
 
 export type RenderBand = 'normal' | 'frontOccluder'
 
+export type GlowBehavior = 'ambientBreathing' | 'attentionBloom' | 'tapResponse' | 'nearbyRipple'
+
 export type MusicCueAction = 'none' | 'start' | 'pause' | 'mute' | 'unmute'
 
 export type MothHeadingMode = 'north' | 'path'
@@ -82,6 +84,12 @@ export type EditorItem = Point & {
   role?: AssetRole
   subLayer?: SubLayer
   renderBand?: RenderBand
+  glowBehaviors?: GlowBehavior[]
+  glowIntensity?: number
+  glowRadius?: number
+  glowPulseSpeed?: number
+  glowBloom?: number
+  glowSpriteLift?: number
   notes?: string
   width: number
   height: number

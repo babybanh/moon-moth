@@ -1,6 +1,6 @@
 import { assetById } from './assets'
 import { defaultProjectData } from './defaultProjectData'
-import type { AssetRole, EditorItem, EditorProject, GameplaySettings, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
+import type { AssetRole, EditorItem, EditorProject, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
 
 export const sandboxIds: SandboxId[] = ['a', 'b', 'c']
 
@@ -8,6 +8,21 @@ const defaultAssetRole: AssetRole = 'Other'
 const defaultSubLayer: SubLayer = 'Mid'
 const defaultRenderBand: RenderBand = 'normal'
 const frontOccluderNotePattern = /\bin\s+front\s+path\b/i
+const glowNotePattern = /\bglow\b/i
+export const glowBehaviorOptions: Array<{ id: GlowBehavior; label: string }> = [
+  { id: 'ambientBreathing', label: 'Ambient Breathing' },
+  { id: 'attentionBloom', label: 'Attention Bloom' },
+  { id: 'tapResponse', label: 'Tap Response' },
+  { id: 'nearbyRipple', label: 'Nearby Ripple' },
+]
+const glowBehaviorIds = glowBehaviorOptions.map((option) => option.id)
+const defaultGlowBehaviors: GlowBehavior[] = [...glowBehaviorIds]
+const glowIntensityDefault = 1
+export const glowTaggedIntensityDefault = 1.8
+export const glowRadiusDefault = 1.25
+export const glowPulseSpeedDefault = 0.18
+export const glowBloomDefault = 1.4
+export const glowSpriteLiftDefault = 0.35
 const manualSpeedMinDefault = 0.006
 const manualSpeedMaxDefault = 0.055
 const manualRampMsDefault = 1300
@@ -29,11 +44,11 @@ const mothTrailWaveAmountDefault = 10
 const mothTrailSparkleDefault = 1
 const routePathVisibleDefault = false
 const cameraExtensionEnabledDefault = true
-const cameraExtensionZoomScaleDefault = 0.93
-const cameraExtensionInnerScaleDefault = 0.9
-const cameraExtensionRoundnessDefault = 0.8
+const cameraExtensionZoomScaleDefault = 0.83
+const cameraExtensionInnerScaleDefault = 0.91
+const cameraExtensionRoundnessDefault = 0.82
 const cameraExtensionDensityDefault = 2.5
-const cameraExtensionBlurAmountDefault = 5.5
+const cameraExtensionBlurAmountDefault = 5
 
 const subLayerZBase: Record<SubLayer, number> = {
   Far: 0,
@@ -149,6 +164,8 @@ export function migrateProject(value: unknown): EditorProject {
         role: resolveItemRole(item),
         subLayer: resolveItemSubLayer(item),
         renderBand: resolveMigratedItemRenderBand(item),
+        glowBehaviors: resolveMigratedItemGlowBehaviors(item),
+        ...resolveMigratedItemGlowTuning(item),
         notes: typeof item.notes === 'string' ? item.notes : '',
       })))
       : fallback.items,
@@ -194,6 +211,31 @@ export function resolveItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'not
     return 'normal'
   }
   return defaultRenderBand
+}
+
+export function resolveItemGlowBehaviors(item: Pick<EditorItem, 'glowBehaviors' | 'notes'>): GlowBehavior[] {
+  if (Array.isArray(item.glowBehaviors)) {
+    return uniqueGlowBehaviors(item.glowBehaviors)
+  }
+  if (typeof item.notes === 'string' && glowNotePattern.test(item.notes)) {
+    return [...defaultGlowBehaviors]
+  }
+  return []
+}
+
+export function hasGlowBehavior(item: Pick<EditorItem, 'glowBehaviors' | 'notes'>, behavior: GlowBehavior) {
+  return resolveItemGlowBehaviors(item).includes(behavior)
+}
+
+export function resolveItemGlowTuning(item: Pick<EditorItem, 'glowBehaviors' | 'notes' | 'glowIntensity' | 'glowRadius' | 'glowPulseSpeed' | 'glowBloom' | 'glowSpriteLift'>) {
+  const hasGlow = resolveItemGlowBehaviors(item).length > 0
+  return {
+    intensity: clampNumber(item.glowIntensity, 0, 4, hasGlow ? glowTaggedIntensityDefault : glowIntensityDefault),
+    radius: clampNumber(item.glowRadius, 0.35, 3, glowRadiusDefault),
+    pulseSpeed: clampNumber(item.glowPulseSpeed, 0.02, 1.5, glowPulseSpeedDefault),
+    bloom: clampNumber(item.glowBloom, 0, 4, glowBloomDefault),
+    spriteLift: clampNumber(item.glowSpriteLift, 0, 1, glowSpriteLiftDefault),
+  }
 }
 
 export function isFrontOccluder(item: Pick<EditorItem, 'renderBand' | 'notes'>) {
@@ -332,6 +374,51 @@ function resolveMigratedItemRenderBand(item: Pick<EditorItem, 'renderBand' | 'no
   return undefined
 }
 
+function resolveMigratedItemGlowBehaviors(item: Pick<EditorItem, 'glowBehaviors' | 'notes'>): GlowBehavior[] | undefined {
+  if (Array.isArray(item.glowBehaviors)) {
+    return uniqueGlowBehaviors(item.glowBehaviors)
+  }
+  const behaviors = resolveItemGlowBehaviors(item)
+  return behaviors.length > 0 ? behaviors : undefined
+}
+
+function resolveMigratedItemGlowTuning(item: Pick<EditorItem, 'glowBehaviors' | 'notes' | 'glowIntensity' | 'glowRadius' | 'glowPulseSpeed' | 'glowBloom' | 'glowSpriteLift'>): Partial<EditorItem> {
+  const hasExplicitTuning = [
+    item.glowIntensity,
+    item.glowRadius,
+    item.glowPulseSpeed,
+    item.glowBloom,
+    item.glowSpriteLift,
+  ].some((value) => typeof value === 'number' && Number.isFinite(value))
+  const hasGlow = resolveItemGlowBehaviors(item).length > 0
+  if (!hasGlow && !hasExplicitTuning) {
+    return {}
+  }
+  const tuning = resolveItemGlowTuning(item)
+  return {
+    glowIntensity: tuning.intensity,
+    glowRadius: tuning.radius,
+    glowPulseSpeed: tuning.pulseSpeed,
+    glowBloom: tuning.bloom,
+    glowSpriteLift: tuning.spriteLift,
+  }
+}
+
+function uniqueGlowBehaviors(value: unknown): GlowBehavior[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const seen = new Set<GlowBehavior>()
+  const next: GlowBehavior[] = []
+  for (const behavior of value) {
+    if (glowBehaviorIds.includes(behavior as GlowBehavior) && !seen.has(behavior as GlowBehavior)) {
+      seen.add(behavior as GlowBehavior)
+      next.push(behavior as GlowBehavior)
+    }
+  }
+  return next
+}
+
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return fallback
@@ -377,6 +464,9 @@ export function formatProjectCommentsSummary(project: EditorProject) {
       subLayer: resolveItemSubLayer(item),
       renderBand: resolveItemRenderBand(item),
       inFrontOfPathAndMoth: isFrontOccluder(item),
+      glowBehaviors: resolveItemGlowBehaviors(item),
+      glowBehaviorLabels: resolveItemGlowBehaviors(item).map((behavior) => glowBehaviorOptions.find((option) => option.id === behavior)?.label ?? behavior),
+      glowTuning: resolveItemGlowTuning(item),
       position: { x: Math.round(item.x), y: Math.round(item.y) },
       size: { width: Math.round(item.width), height: Math.round(item.height) },
       visible: item.visible,
