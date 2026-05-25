@@ -21,12 +21,19 @@ export type RenderOptions = {
   mothTrailVelocity: number
   mothForwardActive: boolean
   hideRoutePath?: boolean
+  hideWorldFrame?: boolean
 }
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
   const { viewport } = options
   context.clearRect(0, 0, viewport.width, viewport.height)
   renderSceneContent(context, project, options, true)
+}
+
+export function renderMothOnly(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
+  const { viewport } = options
+  context.clearRect(0, 0, viewport.width, viewport.height)
+  drawMoth(context, project, options)
 }
 
 function renderSceneContent(
@@ -38,7 +45,9 @@ function renderSceneContent(
   const { viewport } = options
   const showingAll = options.appMode !== 'edit' || options.canvasTargets.length === 0
   drawSky(context, viewport)
-  drawWorldFrame(context, project, options)
+  if (!options.hideWorldFrame) {
+    drawWorldFrame(context, project, options)
+  }
 
   for (const layerId of orderedLayerIds(project).filter((id) => project.layers[id].parallax <= 1)) {
     if (showingAll || options.canvasTargets.includes(layerId)) {
@@ -444,12 +453,12 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   const tangent = sampleRouteTangent(options.routeSampleData, options.playProgress)
   const rawScreen = worldToScreen(moth, options.camera, options.viewport)
   const time = options.animationTime / 1000
-  const bobAmount = project.gameplay.mothBobAmount ?? 5.5
+  const bobAmount = project.gameplay.mothBobAmount ?? 3.5
   const bob = Math.sin(time * Math.PI * 2 * 0.82) * bobAmount
   const drift = Math.sin(time * Math.PI * 2 * 0.37 + 1.2) * bobAmount * 0.28
   const size = Math.max(28, 154 * options.camera.zoom * project.gameplay.mothSize)
-  const flutterAmount = project.gameplay.mothFlutterAmount ?? 0.072
-  const flutterSpeed = project.gameplay.mothFlutterSpeed ?? 0.9
+  const flutterAmount = project.gameplay.mothFlutterAmount ?? 0.07
+  const flutterSpeed = project.gameplay.mothFlutterSpeed ?? 1
   const flutter = Math.sin(time * Math.PI * 2 * flutterSpeed)
   const wingBreath = Math.sin(time * Math.PI * 2 * (flutterSpeed * 0.47) + 0.8)
   const lean = resolveMothLean(options.mothMotionVelocity, project.gameplay)

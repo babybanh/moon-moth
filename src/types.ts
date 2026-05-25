@@ -44,6 +44,21 @@ export type MothHeadingMode = 'north' | 'path'
 
 export type MothTrailStyle = 'mist' | 'bubble' | 'sparkle'
 
+export type GameHudButtonId =
+  | 'home'
+  | 'shuffle'
+  | 'explore'
+  | 'loop'
+  | 'drift'
+  | 'turn'
+  | 'backward'
+  | 'forward'
+  | 'screenshot'
+
+export type GameHudStylePreset = 'modern' | 'soft' | 'clear' | 'handwritten'
+
+export type GameHudSoundPreset = 'none' | 'moonChime' | 'neonPulse' | 'glassTap' | 'softClick'
+
 export type RouteGroup = {
   id: string
   name: string
@@ -132,6 +147,13 @@ export type GameplaySettings = {
   cameraExtensionRoundness?: number
   cameraExtensionDensity?: number
   cameraExtensionBlurAmount?: number
+  gameHudScale?: number
+  gameHudSpread?: number
+  gameHudRoundness?: number
+  gameHudTextScale?: number
+  gameHudStylePreset?: GameHudStylePreset
+  gameHudSoundPreset?: GameHudSoundPreset
+  gameHudButtonScales?: Partial<Record<GameHudButtonId, number>>
   musicEnabled: boolean
   musicVolume: number
   musicTrackId?: string

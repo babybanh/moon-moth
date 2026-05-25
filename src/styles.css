@@ -117,7 +117,7 @@ input[type="range"] {
 
 .checkbox-row {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 8px;
   color: var(--muted);
   font-size: 12px;
@@ -150,6 +150,7 @@ input[type="range"] {
 
 .app-shell.game-workspace {
   grid-template-columns: minmax(0, 1fr);
+  background: #000;
 }
 
 .stage-panel {
@@ -159,10 +160,12 @@ input[type="range"] {
   grid-template-rows: minmax(0, 1fr) auto auto;
   justify-items: center;
   overflow: hidden;
+  background: #000;
 }
 
 .game-workspace .stage-panel {
   grid-template-rows: auto minmax(0, 1fr);
+  background: #000;
 }
 
 .game-topbar {
@@ -173,7 +176,7 @@ input[type="range"] {
   min-height: 54px;
   padding: 10px 16px;
   border-bottom: 1px solid rgba(124, 255, 228, 0.14);
-  background: rgba(5, 12, 22, 0.72);
+  background: rgba(0, 0, 0, 0.78);
 }
 
 .game-status {
@@ -237,43 +240,449 @@ input[type="range"] {
 }
 
 .game-surface {
+  --game-surface-size: 628px;
   display: grid;
-  align-self: center;
+  align-self: start;
   justify-self: center;
   justify-items: center;
-  gap: 9px;
+  gap: 30px;
+  width: min(var(--game-surface-size), 100%, calc(100vw - 430px), calc(100dvh - 198px));
   max-width: 100%;
   max-height: 100%;
   min-width: 0;
   min-height: 0;
 }
 
+.game-workspace .game-surface {
+  width: min(var(--game-surface-size), calc(100vw - 32px), calc(100dvh - 116px));
+}
+
 .canvas-shell {
   position: relative;
-  align-self: center;
+  align-self: start;
   justify-self: center;
-  --game-surface-size: 628px;
-  width: auto;
-  height: min(var(--game-surface-size), 100%, calc(100vw - 430px), calc(100dvh - 198px));
+  width: 100%;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   aspect-ratio: 1 / 1;
   min-width: 0;
   min-height: 0;
+  border-radius: 10px;
   overflow: hidden;
   touch-action: none;
 }
 
 .game-workspace .canvas-shell {
-  height: min(var(--game-surface-size), calc(100vw - 32px), calc(100dvh - 116px));
+  height: auto;
 }
 
 .game-ui-layer {
-  display: flex;
+  --game-hud-scale: 1;
+  --game-hud-roundness: 0.82;
+  --game-hud-gap: 8px;
+  --game-hud-width: 100%;
+  --game-hud-cell-size: 64px;
+  --game-hud-button-size: 58px;
+  --game-hud-font-size: 15px;
+  --game-hud-font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  --game-hud-font-weight: 700;
+  --game-hud-letter-spacing: 0;
+  --game-hud-border-alpha: 0.32;
+  --game-hud-primary-alpha: 0.5;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: var(--game-hud-cell-size);
   justify-content: center;
-  gap: 8px;
-  width: 100%;
+  align-items: start;
+  gap: var(--game-hud-gap);
+  width: min(100%, var(--game-hud-width));
   pointer-events: auto;
+  animation: gameHudRowDissolveIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gameHudRowDissolveIn {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(8px * var(--game-hud-scale))) scale(0.985);
+    filter: blur(5px);
+  }
+
+  58% {
+    opacity: 1;
+    filter: blur(0.8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.game-hud-button,
+.game-hud-button-pair,
+.game-hud-placeholder {
+  min-width: 0;
+  min-height: 0;
+  justify-self: center;
+  align-self: start;
+  width: calc(var(--game-hud-button-size) * var(--game-hud-button-scale, 1));
+  height: calc(var(--game-hud-button-size) * var(--game-hud-button-scale, 1));
+  padding: 0 calc(10px * var(--game-hud-scale));
+  border-radius: calc(var(--game-hud-button-size) * var(--game-hud-button-scale, 1) * var(--game-hud-roundness) * 0.5);
+}
+
+.game-hud-button,
+.game-hud-button-pair {
+  position: relative;
+  isolation: isolate;
+  justify-content: center;
+  align-items: center;
+  border-width: 0;
+  border-color: transparent;
+  color: rgba(238, 255, 250, 0.92);
+  background: transparent;
+  box-shadow:
+    0 12px 28px rgba(70, 220, 255, 0.16),
+    0 0 38px rgba(143, 255, 228, 0.14),
+    0 0 76px rgba(70, 220, 255, 0.08);
+  font-family: var(--game-hud-font-family);
+  font-size: var(--game-hud-font-size);
+  font-weight: var(--game-hud-font-weight);
+  letter-spacing: var(--game-hud-letter-spacing);
+  text-shadow: none;
+  transition:
+    color 520ms ease,
+    opacity 520ms ease,
+    transform 520ms ease,
+    filter 520ms ease,
+    box-shadow 520ms ease;
+}
+
+.game-hud-button::after {
+  display: none;
+}
+
+.game-hud-button svg {
+  transition:
+    color 520ms ease,
+    opacity 520ms ease,
+    transform 520ms ease;
+}
+
+.game-hud-button:hover:not(:disabled) svg,
+.game-hud-button.active svg {
+  color: #ffffff;
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+.game-hud-button:hover:not(:disabled),
+.game-hud-button.active {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+.game-hud-button:active:not(:disabled) svg {
+  color: #ffffff;
+  filter: none;
+  transform: scale(1.08);
+}
+
+.game-hud-button:active:not(:disabled) {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+@keyframes hudTapBloomA {
+  0% {
+    opacity: 0.7;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.92;
+  }
+}
+
+@keyframes hudTapBloomB {
+  0% {
+    opacity: 0.7;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.92;
+  }
+}
+
+@keyframes hudIconTapBloomA {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  42% {
+    color: #ffffff;
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes hudIconTapBloomB {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  42% {
+    color: #ffffff;
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.game-hud-button.tap-bloom-a::after {
+  animation: none;
+}
+
+.game-hud-button.tap-bloom-b::after {
+  animation: none;
+}
+
+.game-hud-button.tap-bloom-a svg {
+  animation: hudIconTapBloomA 1900ms ease-out both;
+}
+
+.game-hud-button.tap-bloom-b svg {
+  animation: hudIconTapBloomB 1900ms ease-out both;
+}
+
+.game-hud-button.tap-bloom-a,
+.game-hud-button.tap-bloom-b {
+  color: #ffffff;
+  text-shadow: none;
+  animation: hudTapBloomA 4800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.game-hud-button-pair {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+
+.game-hud-button-pair .game-hud-button {
+  position: relative;
+  isolation: isolate;
+  width: 50%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.game-hud-button-pair .game-hud-button::before {
+  display: none;
+}
+
+.game-hud-button-pair .game-hud-button:hover:not(:disabled)::before,
+.game-hud-button-pair .game-hud-button.active::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.game-hud-button.primary {
+  background: transparent;
+  text-shadow: none;
+}
+
+.game-hud-button.icon-only {
+  padding: 0;
+}
+
+.game-hud-button.span-2,
+.game-hud-button-pair.span-2,
+.game-hud-placeholder.span-2 {
+  grid-column: span 2;
+  width: calc((100% - (var(--game-hud-cell-size) - var(--game-hud-button-size))) * var(--game-hud-button-scale, 1));
+}
+
+.game-hud-button:hover:not(:disabled) {
+  background: transparent;
+  box-shadow:
+    0 14px 32px rgba(70, 220, 255, 0.24),
+    0 0 52px rgba(143, 255, 228, 0.22),
+    0 0 96px rgba(70, 220, 255, 0.12);
+}
+
+.game-hud-button.active {
+  background: transparent;
+  box-shadow:
+    0 16px 34px rgba(70, 220, 255, 0.28),
+    0 0 58px rgba(143, 255, 228, 0.26),
+    0 0 108px rgba(70, 220, 255, 0.14);
+}
+
+.game-hud-button-pair .game-hud-button:hover:not(:disabled),
+.game-hud-button-pair .game-hud-button.active {
+  background: transparent;
+  box-shadow: none;
+}
+
+@keyframes hudNeonHoldPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 28px rgba(70, 220, 255, 0.16),
+      0 0 38px rgba(143, 255, 228, 0.14),
+      0 0 76px rgba(70, 220, 255, 0.08);
+    opacity: 0.9;
+    filter: none;
+  }
+
+  50% {
+    box-shadow:
+      0 16px 34px rgba(70, 220, 255, 0.28),
+      0 0 58px rgba(143, 255, 228, 0.26),
+      0 0 108px rgba(70, 220, 255, 0.14);
+    opacity: 1;
+    filter: none;
+  }
+}
+
+@keyframes hudAmbientNeonPulse {
+  0%,
+  100% {
+    opacity: 0.86;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes hudReleaseGlowDecay {
+  0% {
+    background: transparent;
+    box-shadow:
+      0 16px 34px rgba(70, 220, 255, 0.28),
+      0 0 58px rgba(143, 255, 228, 0.24),
+      0 0 108px rgba(70, 220, 255, 0.13);
+    opacity: 1;
+    filter: none;
+  }
+
+  100% {
+    background: transparent;
+    box-shadow:
+      0 12px 28px rgba(70, 220, 255, 0.15),
+      0 0 38px rgba(143, 255, 228, 0.12),
+      0 0 76px rgba(70, 220, 255, 0.07);
+    opacity: 0.9;
+    filter: none;
+  }
+}
+
+@keyframes hudNeonInsetPulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+.game-hud-button.hold-pulse {
+  animation: hudNeonHoldPulse var(--game-hud-pulse-ms, 1200ms) ease-in-out infinite;
+}
+
+.game-hud-button.ambient-pulse:not(:disabled):not(.hold-pulse) {
+  animation: hudAmbientNeonPulse 3600ms ease-in-out infinite;
+}
+
+.game-hud-button.release-glow {
+  animation: hudReleaseGlowDecay 3400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.game-hud-button.release-glow svg {
+  color: #f5fffc;
+  filter: none;
+}
+
+.game-hud-button-pair .game-hud-button.hold-pulse::before {
+  animation: hudNeonInsetPulse var(--game-hud-pulse-ms, 1200ms) ease-in-out infinite;
+}
+
+.game-hud-button:disabled {
+  opacity: 0.38;
+}
+
+.menu-moth-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--menu-focus-moth-exit-ms, 1600ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.canvas-shell > canvas:not(.menu-moth-canvas) {
+  filter: none;
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    filter var(--menu-focus-canvas-exit-ms, 1800ms) cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--menu-focus-canvas-exit-ms, 2000ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.canvas-shell.menu-focus-active > canvas:not(.menu-moth-canvas) {
+  filter:
+    blur(var(--menu-focus-blur, 5px))
+    brightness(var(--menu-focus-brightness, 0.64))
+    saturate(0.94);
+  transform: scale(1.018);
+}
+
+.canvas-shell.menu-focus-active .menu-moth-canvas {
+  opacity: 1;
+}
+
+.canvas-shell.menu-focus-active.shuffle-rest-focus-active .menu-moth-canvas {
+  transition:
+    opacity var(--shuffle-rest-moth-enter-ms, 3200ms) cubic-bezier(0.22, 1, 0.36, 1) var(--shuffle-rest-moth-delay-ms, 260ms);
+}
+
+.game-menu-focus {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--menu-focus-dim-exit-ms, 1400ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.game-menu-focus.active {
+  opacity: 1;
+}
+
+.game-menu-focus-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 10, 19, 0.08);
 }
 
 .game-forward-button {
@@ -327,6 +736,14 @@ canvas {
 .camera-extension-vignette {
   position: absolute;
   inset: 0;
+  --camera-extension-inner-left: 0px;
+  --camera-extension-inner-top: 0px;
+  --camera-extension-inner-size-px: 100%;
+  --camera-extension-inner-radius-px: 0px;
+}
+
+.camera-extension-panel {
+  position: absolute;
   background:
     linear-gradient(rgba(4, 11, 20, var(--camera-extension-dim-alpha)), rgba(4, 11, 20, var(--camera-extension-dim-alpha))),
     rgba(4, 11, 20, var(--camera-extension-bg-alpha));
@@ -345,7 +762,68 @@ canvas {
   will-change: auto;
 }
 
-.camera-extension-overlay.moving .camera-extension-vignette {
+.camera-extension-panel-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--camera-extension-inner-top);
+}
+
+.camera-extension-panel-bottom {
+  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.camera-extension-panel-left {
+  top: var(--camera-extension-inner-top);
+  left: 0;
+  width: var(--camera-extension-inner-left);
+  height: var(--camera-extension-inner-size-px);
+}
+
+.camera-extension-panel-right {
+  top: var(--camera-extension-inner-top);
+  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px));
+  right: 0;
+  height: var(--camera-extension-inner-size-px);
+}
+
+.camera-extension-panel-corner {
+  width: var(--camera-extension-inner-radius-px);
+  height: var(--camera-extension-inner-radius-px);
+}
+
+.camera-extension-panel-corner-top-left {
+  top: var(--camera-extension-inner-top);
+  left: var(--camera-extension-inner-left);
+  mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+}
+
+.camera-extension-panel-corner-top-right {
+  top: var(--camera-extension-inner-top);
+  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
+  mask-image: radial-gradient(circle at 0 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+  -webkit-mask-image: radial-gradient(circle at 0 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+}
+
+.camera-extension-panel-corner-bottom-left {
+  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
+  left: var(--camera-extension-inner-left);
+  mask-image: radial-gradient(circle at 100% 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+  -webkit-mask-image: radial-gradient(circle at 100% 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+}
+
+.camera-extension-panel-corner-bottom-right {
+  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
+  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
+  mask-image: radial-gradient(circle at 0 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+  -webkit-mask-image: radial-gradient(circle at 0 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
+}
+
+.camera-extension-overlay.moving .camera-extension-panel {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   transition: none;
@@ -496,6 +974,27 @@ canvas {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.hud-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.hud-selection-grid button {
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.hud-size-list {
+  display: grid;
+  gap: 7px;
+}
+
+.compact-range {
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr) 44px;
+}
+
 .wide-button {
   width: 100%;
   margin-top: 9px;
@@ -551,6 +1050,10 @@ canvas {
 .range-row span {
   color: var(--text);
   text-align: right;
+}
+
+.select-row {
+  grid-template-columns: minmax(76px, auto) minmax(0, 1fr) 82px;
 }
 
 .layer-row {

@@ -1,6 +1,6 @@
 import { assetById } from './assets'
 import { defaultProjectData } from './defaultProjectData'
-import type { AssetRole, EditorItem, EditorProject, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
+import type { AssetRole, EditorItem, EditorProject, GameHudButtonId, GameHudSoundPreset, GameHudStylePreset, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
 
 export const sandboxIds: SandboxId[] = ['a', 'b', 'c']
 
@@ -30,12 +30,12 @@ const manualSwellPeriodMsDefault = 2200
 const mothForwardReleaseCarryMsDefault = 2300
 const mothForwardReleasePushScaleDefault = 0.4
 const mothGlowPulseSpeedDefault = 0.6
-const mothFlutterSpeedDefault = 0.8
+const mothFlutterSpeedDefault = 1
 const mothFlutterAmountDefault = 0.07
-const mothBobAmountDefault = 8
-const mothLeanForwardAmountDefault = 0.08
+const mothBobAmountDefault = 3.5
+const mothLeanForwardAmountDefault = 0.05
 const mothLeanBackwardAmountDefault = 0.04
-const mothStretchAmountDefault = 0.12
+const mothStretchAmountDefault = 0.08
 const mothTrailStyleDefault = 'mist'
 const mothTrailAmountDefault = 0.5
 const mothTrailWaveAmountDefault = 10
@@ -47,6 +47,27 @@ const cameraExtensionInnerScaleDefault = 0.91
 const cameraExtensionRoundnessDefault = 0.82
 const cameraExtensionDensityDefault = 2.5
 const cameraExtensionBlurAmountDefault = 5
+const gameHudScaleDefault = 1
+const gameHudSpreadDefault = 0.75
+const gameHudRoundnessDefault = 0.85
+const gameHudTextScaleDefault = 2
+const gameHudStylePresetDefault: GameHudStylePreset = 'handwritten'
+const gameHudSoundPresetDefault: GameHudSoundPreset = 'none'
+const gameHudButtonScaleDefault = 0.9
+const gameHudButtonIds: GameHudButtonId[] = ['home', 'shuffle', 'explore', 'loop', 'drift', 'turn', 'backward', 'forward', 'screenshot']
+const gameHudButtonScaleDefaults: Record<GameHudButtonId, number> = {
+  home: 0.85,
+  shuffle: 0.85,
+  explore: 0.85,
+  loop: 0.85,
+  drift: 0.85,
+  turn: 0.85,
+  backward: 0.85,
+  forward: 0.85,
+  screenshot: 0.85,
+}
+const gameHudStylePresets = new Set<GameHudStylePreset>(['modern', 'soft', 'clear', 'handwritten'])
+const gameHudSoundPresets = new Set<GameHudSoundPreset>(['none', 'moonChime', 'neonPulse', 'glassTap', 'softClick'])
 
 const subLayerZBase: Record<SubLayer, number> = {
   Far: 0,
@@ -329,12 +350,12 @@ function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): Ga
     mothForwardReleaseCarryMs: Math.round(clampNumber(source.mothForwardReleaseCarryMs, 0, 5000, fallback.mothForwardReleaseCarryMs ?? mothForwardReleaseCarryMsDefault)),
     mothForwardReleasePushScale: clampNumber(source.mothForwardReleasePushScale, 0.1, 1, fallback.mothForwardReleasePushScale ?? mothForwardReleasePushScaleDefault),
     mothGlowPulseSpeed: clampNumber(migrateDefaultLikeNumber(source.mothGlowPulseSpeed, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault, [0.55, 0.65]), 0.05, 2, fallback.mothGlowPulseSpeed ?? mothGlowPulseSpeedDefault),
-    mothFlutterSpeed: clampNumber(migrateDefaultLikeNumber(source.mothFlutterSpeed, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault, [0.6, 0.9]), 0.4, 6, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault),
+    mothFlutterSpeed: clampNumber(migrateDefaultLikeNumber(source.mothFlutterSpeed, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault, [0.6, 0.8, 0.9]), 0.4, 6, fallback.mothFlutterSpeed ?? mothFlutterSpeedDefault),
     mothFlutterAmount: clampNumber(migrateDefaultLikeNumber(source.mothFlutterAmount, fallback.mothFlutterAmount ?? mothFlutterAmountDefault, [0.044, 0.056, 0.072]), 0, 0.2, fallback.mothFlutterAmount ?? mothFlutterAmountDefault),
-    mothBobAmount: clampNumber(migrateDefaultLikeNumber(source.mothBobAmount, fallback.mothBobAmount ?? mothBobAmountDefault, [2.5, 4.5, 5.5]), 0, 12, fallback.mothBobAmount ?? mothBobAmountDefault),
-    mothLeanForwardAmount: clampNumber(migrateDefaultLikeNumber(source.mothLeanForwardAmount, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault, [0.02]), 0, 0.6, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault),
+    mothBobAmount: clampNumber(migrateDefaultLikeNumber(source.mothBobAmount, fallback.mothBobAmount ?? mothBobAmountDefault, [2.5, 4.5, 5.5, 8]), 0, 12, fallback.mothBobAmount ?? mothBobAmountDefault),
+    mothLeanForwardAmount: clampNumber(migrateDefaultLikeNumber(source.mothLeanForwardAmount, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault, [0.02, 0.08]), 0, 0.6, fallback.mothLeanForwardAmount ?? mothLeanForwardAmountDefault),
     mothLeanBackwardAmount: clampNumber(migrateDefaultLikeNumber(source.mothLeanBackwardAmount, fallback.mothLeanBackwardAmount ?? mothLeanBackwardAmountDefault, [0.02]), 0, 0.6, fallback.mothLeanBackwardAmount ?? mothLeanBackwardAmountDefault),
-    mothStretchAmount: clampNumber(migrateDefaultLikeNumber(source.mothStretchAmount, fallback.mothStretchAmount ?? mothStretchAmountDefault, [0, 0.01, 0.015]), 0, 0.3, fallback.mothStretchAmount ?? mothStretchAmountDefault),
+    mothStretchAmount: clampNumber(migrateDefaultLikeNumber(source.mothStretchAmount, fallback.mothStretchAmount ?? mothStretchAmountDefault, [0, 0.01, 0.015, 0.12]), 0, 0.3, fallback.mothStretchAmount ?? mothStretchAmountDefault),
     mothTrailEnabled: source.mothTrailEnabled === undefined ? fallback.mothTrailEnabled ?? true : source.mothTrailEnabled !== false,
     mothTrailStyle: source.mothTrailStyle === 'bubble' || source.mothTrailStyle === 'sparkle' ? source.mothTrailStyle : fallback.mothTrailStyle ?? mothTrailStyleDefault,
     mothTrailAmount: clampNumber(source.mothTrailAmount, 0, 1, fallback.mothTrailAmount ?? mothTrailAmountDefault),
@@ -348,7 +369,41 @@ function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): Ga
     cameraExtensionRoundness: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionRoundness, fallback.cameraExtensionRoundness ?? cameraExtensionRoundnessDefault, [0.18, 0.65]), 0, 1, fallback.cameraExtensionRoundness ?? cameraExtensionRoundnessDefault),
     cameraExtensionDensity: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionDensity, fallback.cameraExtensionDensity ?? cameraExtensionDensityDefault, [0.52, 0.68, 1]), 0, 4, fallback.cameraExtensionDensity ?? cameraExtensionDensityDefault),
     cameraExtensionBlurAmount: clampNumber(migrateDefaultLikeNumber(source.cameraExtensionBlurAmount, fallback.cameraExtensionBlurAmount ?? cameraExtensionBlurAmountDefault, [6]), 0, 20, fallback.cameraExtensionBlurAmount ?? cameraExtensionBlurAmountDefault),
+    gameHudScale: clampNumber(source.gameHudScale, 0.68, 1.3, fallback.gameHudScale ?? gameHudScaleDefault),
+    gameHudSpread: clampNumber(source.gameHudSpread, 0.62, 1, fallback.gameHudSpread ?? gameHudSpreadDefault),
+    gameHudRoundness: clampNumber(source.gameHudRoundness, 0.25, 0.9, fallback.gameHudRoundness ?? gameHudRoundnessDefault),
+    gameHudTextScale: clampNumber(source.gameHudTextScale, 0.7, 2, fallback.gameHudTextScale ?? gameHudTextScaleDefault),
+    gameHudStylePreset: migrateGameHudStylePreset(source.gameHudStylePreset, fallback.gameHudStylePreset),
+    gameHudSoundPreset: migrateGameHudSoundPreset(source.gameHudSoundPreset, fallback.gameHudSoundPreset),
+    gameHudButtonScales: migrateGameHudButtonScales(source.gameHudButtonScales, fallback.gameHudButtonScales),
   }
+}
+
+function migrateGameHudStylePreset(source: unknown, fallback: GameplaySettings['gameHudStylePreset']) {
+  if (typeof source === 'string' && gameHudStylePresets.has(source as GameHudStylePreset)) {
+    return source as GameHudStylePreset
+  }
+  return fallback ?? gameHudStylePresetDefault
+}
+
+function migrateGameHudSoundPreset(source: unknown, fallback: GameplaySettings['gameHudSoundPreset']) {
+  if (typeof source === 'string' && gameHudSoundPresets.has(source as GameHudSoundPreset)) {
+    return source as GameHudSoundPreset
+  }
+  return fallback ?? gameHudSoundPresetDefault
+}
+
+function migrateGameHudButtonScales(source: unknown, fallback: GameplaySettings['gameHudButtonScales']) {
+  const sourceRecord = source && typeof source === 'object' ? source as Partial<Record<GameHudButtonId, unknown>> : {}
+  const fallbackRecord = fallback ?? {}
+  return gameHudButtonIds.reduce<Partial<Record<GameHudButtonId, number>>>((next, id) => {
+    const value = sourceRecord[id]
+    const fallbackValue = fallbackRecord[id]
+    const defaultValue = gameHudButtonScaleDefaults[id] ?? gameHudButtonScaleDefault
+    const migrated = clampNumber(value, 0.5, 1.15, typeof fallbackValue === 'number' ? fallbackValue : defaultValue)
+    next[id] = migrated
+    return next
+  }, {})
 }
 
 function migrateDefaultLikeNumber(value: unknown, fallback: number, previousDefaults: number[]) {

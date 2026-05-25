@@ -1,4 +1,4 @@
-import { Camera as CameraIcon, ChevronLeft, ChevronRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { Home, ChevronLeft, ChevronRight, Copy, Crosshair, Eye, EyeOff, FastForward, Image, MousePointer2, Music, Pause, Play, Plus, Repeat2, Rewind, RotateCcw, Save, Shuffle, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
@@ -38,7 +38,7 @@ import {
   worldToScreen,
   type RouteSampleData,
 } from './routeMath'
-import { itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderScene, resizeHandles, type ImageMap } from './renderer'
+import { itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderMothOnly, renderScene, resizeHandles, type ImageMap } from './renderer'
 import type {
   AppMode,
   ArtworkMode,
@@ -47,6 +47,9 @@ import type {
   DragState,
   EditorItem,
   EditorProject,
+  GameHudButtonId,
+  GameHudSoundPreset,
+  GameHudStylePreset,
   GlowBehavior,
   LayerId,
   MothTrailStyle,
@@ -67,7 +70,7 @@ const editorViewStorageKey = 'moonMothRouteEditor.editorView'
 type EditorView = 'compact' | 'classic'
 type WorkspaceMode = 'editor' | 'game'
 type SelectionBox = { start: Point; current: Point } | null
-type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
+type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'HUD' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
 type ForwardControlState = {
   pressed: boolean
   startedAt: number
@@ -78,6 +81,7 @@ type ForwardControlState = {
   idlePushCount: number
 }
 type GameMode = 'journey' | 'explore' | 'loop'
+type GameScreen = 'menu' | GameMode
 type ExploreControlState = {
   direction: -1 | 0 | 1
   startedAt: number
@@ -92,12 +96,16 @@ type ExploreControlState = {
 type LoopControlState = {
   direction: -1 | 1
   endpointWaitUntil: number
-  releaseStartedAt: number
-  releaseCarryUntil: number
-  idleSince: number
-  idlePushStartedAt: number
-  idlePushUntil: number
-  idlePushCount: number
+  pulseStartedAt: number
+  pulseUntil: number
+  waitStartedAt: number
+  waitUntil: number
+  waitIndex: number
+  turnRestCount: number
+  pushIndex: number
+}
+type ShuffleLoopControlState = LoopControlState & {
+  active: boolean
 }
 type ExploreFinishState = {
   active: boolean
@@ -118,10 +126,88 @@ type EditScrubState = {
   shiftKey: boolean
 }
 
-const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'HUD', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const hudButtonOptions: Array<{ id: GameHudButtonId; label: string }> = [
+  { id: 'home', label: 'Home' },
+  { id: 'shuffle', label: 'Shuffle' },
+  { id: 'explore', label: 'Explore' },
+  { id: 'loop', label: 'Loop' },
+  { id: 'drift', label: 'Drift' },
+  { id: 'turn', label: 'Turn' },
+  { id: 'backward', label: 'Rewind' },
+  { id: 'forward', label: 'Forward' },
+]
+const hudStylePresetOptions: Array<{ id: GameHudStylePreset; label: string }> = [
+  { id: 'modern', label: 'Modern' },
+  { id: 'soft', label: 'Soft' },
+  { id: 'clear', label: 'Clear' },
+  { id: 'handwritten', label: 'Handwritten' },
+]
+const hudSoundPresetOptions: Array<{ id: GameHudSoundPreset; label: string }> = [
+  { id: 'none', label: 'None' },
+  { id: 'moonChime', label: 'Moon Chime' },
+  { id: 'neonPulse', label: 'Neon Pulse' },
+  { id: 'glassTap', label: 'Glass Tap' },
+  { id: 'softClick', label: 'Soft Click' },
+]
+const hudStylePresets: Record<GameHudStylePreset, {
+  fontFamily: string
+  fontWeight: number
+  letterSpacing: string
+  iconStrokeWidth: number
+  borderAlpha: number
+  primaryAlpha: number
+}> = {
+  modern: {
+    fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontWeight: 700,
+    letterSpacing: '0',
+    iconStrokeWidth: 2.15,
+    borderAlpha: 0.32,
+    primaryAlpha: 0.5,
+  },
+  soft: {
+    fontFamily: '"Avenir Next Rounded", "Avenir Next", "Nunito", "Quicksand", ui-rounded, system-ui, sans-serif',
+    fontWeight: 700,
+    letterSpacing: '0',
+    iconStrokeWidth: 1.8,
+    borderAlpha: 0.38,
+    primaryAlpha: 0.56,
+  },
+  clear: {
+    fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+    fontWeight: 650,
+    letterSpacing: '0',
+    iconStrokeWidth: 2.25,
+    borderAlpha: 0.42,
+    primaryAlpha: 0.6,
+  },
+  handwritten: {
+    fontFamily: '"Bradley Hand", "Marker Felt", "Comic Sans MS", "Segoe Print", cursive',
+    fontWeight: 650,
+    letterSpacing: '0',
+    iconStrokeWidth: 1.9,
+    borderAlpha: 0.36,
+    primaryAlpha: 0.54,
+  },
+}
 const mothStoppedVelocityThreshold = 0.00012
 const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
+const loopPulseWaitScheduleMs = [2000, 3000, 4000]
+const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
+const loopInitialPulseDelayMs = 2500
+const exploreRelocationDelayMs = 460
+const exploreIdleFocusDelayMs = 5000
+const exploreIdleFocusResumeDelayMs = 2100
+const shuffleLoopUnlockDelayMs = 5000
+const gameMenuReturnDelayMs = 1050
+const driftReleaseGlowMs = 3400
+const hudTapGlowRiseMs = 1200
+const hudTapGlowFadeMs = 3600
+const hudTapGlowTotalMs = hudTapGlowRiseMs + hudTapGlowFadeMs
+const hudHoldPulseSpeedOptions = [2200, 2800]
+type HudSfxIntent = 'home' | 'mode' | 'hold' | 'turn' | 'release'
 
 function stoppedExploreControl(): ExploreControlState {
   return {
@@ -141,7 +227,27 @@ function stoppedLoopControl(direction: -1 | 1 = 1): LoopControlState {
   return {
     direction,
     endpointWaitUntil: 0,
-    releaseStartedAt: 0,
+    pulseStartedAt: 0,
+    pulseUntil: 0,
+    waitStartedAt: 0,
+    waitUntil: 0,
+    waitIndex: 0,
+    turnRestCount: 0,
+    pushIndex: 0,
+  }
+}
+
+function stoppedShuffleLoopControl(direction: -1 | 1 = 1): ShuffleLoopControlState {
+  return {
+    ...stoppedLoopControl(direction),
+    active: false,
+  }
+}
+
+function stoppedForwardControl(): ForwardControlState {
+  return {
+    pressed: false,
+    startedAt: 0,
     releaseCarryUntil: 0,
     idleSince: 0,
     idlePushStartedAt: 0,
@@ -206,17 +312,37 @@ function App() {
   const [playProgress, setPlayProgress] = useState(0.06)
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
+  const [gameScreen, setGameScreen] = useState<GameScreen>('menu')
+  const [exploreUnlocked, setExploreUnlocked] = useState(false)
+  const [menuFocusDissolving, setMenuFocusDissolving] = useState(false)
   const [forwardPressed, setForwardPressed] = useState(false)
+  const [driftReleaseGlowUntil, setDriftReleaseGlowUntil] = useState(0)
   const [journeyDirection, setJourneyDirection] = useState<-1 | 1>(1)
   const [journeyEndpointWaiting, setJourneyEndpointWaiting] = useState(false)
   const [exploreDirection, setExploreDirection] = useState<-1 | 0 | 1>(0)
   const [exploreFinishing, setExploreFinishing] = useState(false)
   const [exploreSongEnded, setExploreSongEnded] = useState(false)
+  const [exploreIdleFocusActive, setExploreIdleFocusActive] = useState(false)
+  const [exploreIdleFocusVisible, setExploreIdleFocusVisible] = useState(false)
+  const [exploreMenuReturnActive, setExploreMenuReturnActive] = useState(false)
+  const [exploreMenuReturnVisible, setExploreMenuReturnVisible] = useState(false)
+  const [shuffleLoopAvailableAt, setShuffleLoopAvailableAt] = useState(0)
+  const [hudTapGlow, setHudTapGlow] = useState<Record<string, { startedAt: number; nonce: number }>>({})
+  const [hudHoldPulseMs, setHudHoldPulseMs] = useState<Record<string, number>>({})
+  const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
   const [canvasPopoverPosition, setCanvasPopoverPosition] = useState<Point | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const menuMothCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const menuFocusDissolveTimeoutRef = useRef<number | null>(null)
+  const exploreRelocationTimeoutRef = useRef<number | null>(null)
+  const exploreIdleFocusTimeoutRefs = useRef<number[]>([])
+  const exploreIdleFocusResumeTimeoutRef = useRef<number | null>(null)
+  const exploreIdleFocusResumeDirectionRef = useRef<-1 | 1 | null>(null)
+  const exploreIdleFocusResumeHeldRef = useRef(false)
+  const gameMenuReturnTimeoutRef = useRef<number | null>(null)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const jsonTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -227,18 +353,15 @@ function App() {
   const selectedRoutePointIdsRef = useRef(selectedRoutePointIds)
   const playProgressRef = useRef(playProgress)
   const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
-  const forwardControlRef = useRef<ForwardControlState>({
-    pressed: false,
-    startedAt: 0,
-    releaseCarryUntil: 0,
-    idleSince: 0,
-    idlePushStartedAt: 0,
-    idlePushUntil: 0,
-    idlePushCount: 0,
-  })
+  const forwardControlRef = useRef<ForwardControlState>(stoppedForwardControl())
   const exploreControlRef = useRef<ExploreControlState>(stoppedExploreControl())
   const exploreFinishRef = useRef<ExploreFinishState>(stoppedExploreFinish())
+  const exploreHasInteractedRef = useRef(false)
+  const exploreSettledAtRef = useRef(0)
+  const exploreIdleFocusTriggeredRef = useRef(false)
+  const shuffleLoopAvailableAtRef = useRef(0)
   const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
+  const shuffleLoopControlRef = useRef<ShuffleLoopControlState>(stoppedShuffleLoopControl())
   const editScrubRef = useRef<EditScrubState>({
     pressed: false,
     direction: 1,
@@ -252,6 +375,7 @@ function App() {
   const canvasPopoverDragRef = useRef<{ offset: Point; kind: CanvasPopoverKind } | null>(null)
   const copiedItemsRef = useRef<EditorItem[]>([])
   const musicRef = useRef<HTMLAudioElement | null>(null)
+  const hudAudioContextRef = useRef<AudioContext | null>(null)
   const musicLoopGapTimeoutRef = useRef<number | null>(null)
   const gameModeRef = useRef<GameMode>(gameMode)
   const journeyDirectionRef = useRef<-1 | 1>(1)
@@ -271,6 +395,23 @@ function App() {
     cameraRef.current = project.camera
     setJsonDraft(JSON.stringify(project, null, 2))
   }, [project])
+
+  useEffect(() => () => {
+    if (menuFocusDissolveTimeoutRef.current !== null) {
+      window.clearTimeout(menuFocusDissolveTimeoutRef.current)
+    }
+    if (exploreRelocationTimeoutRef.current !== null) {
+      window.clearTimeout(exploreRelocationTimeoutRef.current)
+    }
+    if (exploreIdleFocusResumeTimeoutRef.current !== null) {
+      window.clearTimeout(exploreIdleFocusResumeTimeoutRef.current)
+    }
+    exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    exploreIdleFocusTimeoutRefs.current = []
+    if (gameMenuReturnTimeoutRef.current !== null) {
+      window.clearTimeout(gameMenuReturnTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     routeSampleDataRef.current = routeSampleData
@@ -398,7 +539,7 @@ function App() {
         }
         return
       }
-      if (appMode === 'play' && event.key === 'ArrowRight') {
+      if (appMode === 'play' && gameScreen !== 'menu' && event.key === 'ArrowRight') {
         event.preventDefault()
         if (gameMode === 'explore') {
           if (!event.repeat || exploreControlRef.current.direction !== 1) {
@@ -408,7 +549,7 @@ function App() {
           startForwardControl()
         }
       }
-      if (appMode === 'play' && event.key === 'ArrowLeft') {
+      if (appMode === 'play' && gameScreen !== 'menu' && event.key === 'ArrowLeft') {
         event.preventDefault()
         if (gameMode === 'explore') {
           if (!event.repeat || exploreControlRef.current.direction !== -1) {
@@ -429,7 +570,7 @@ function App() {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
         return
       }
-      if (gameMode === 'explore') {
+      if (gameMode === 'explore' && gameScreen !== 'menu') {
         stopExploreControl(event.key === 'ArrowRight' ? 1 : -1)
         return
       }
@@ -598,9 +739,70 @@ function App() {
       const exploreControl = exploreControlRef.current
       const exploreFinish = exploreFinishRef.current
       let loopControl = loopControlRef.current
+      let shuffleLoopControl = shuffleLoopControlRef.current
       const editScrub = editScrubRef.current
       let targetVelocity = 0
       let shouldAnimate = appMode === 'play' && !playPaused
+      const advanceGlideMotion = (current: number, direction: -1 | 1, onEndpoint: (endpoint: 'start' | 'end') => void) => {
+        const canMoveDirection = !((direction < 0 && current <= 0) || (direction > 0 && current >= 1))
+        let activeControl = forwardControlRef.current
+        const releaseCarryActive = !activeControl.pressed && activeControl.releaseCarryUntil > time
+        let idlePushActive = !activeControl.pressed && !releaseCarryActive && activeControl.idlePushUntil > time
+        if (!activeControl.pressed && !releaseCarryActive && activeControl.idlePushUntil > 0 && activeControl.idlePushUntil <= time) {
+          forwardControlRef.current = {
+            ...forwardControlRef.current,
+            idleSince: activeControl.idlePushUntil,
+            idlePushStartedAt: 0,
+            idlePushUntil: 0,
+          }
+          activeControl = forwardControlRef.current
+          idlePushActive = false
+        }
+        if (
+          !activeControl.pressed
+          && !releaseCarryActive
+          && !idlePushActive
+          && activeControl.idleSince > 0
+          && canMoveDirection
+          && time - activeControl.idleSince >= idleForwardPushWaitMs(activeControl.idlePushCount)
+        ) {
+          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+          const durationMs = idleForwardPushDurationMs(basePushMs, activeControl.idlePushCount)
+          forwardControlRef.current = {
+            ...activeControl,
+            idlePushStartedAt: time,
+            idlePushUntil: time + durationMs,
+            idlePushCount: activeControl.idlePushCount + 1,
+          }
+          activeControl = forwardControlRef.current
+          idlePushActive = durationMs > 0
+          setMessage(`Idle gentle push ${activeControl.idlePushCount}: ${(durationMs / 1000).toFixed(1)}s`)
+        }
+        const movementRequested = (activeControl.pressed || releaseCarryActive || idlePushActive) && canMoveDirection
+        if (movementRequested) {
+          const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
+          const speedMultiplier = activeGroup?.speedMultiplier ?? 1
+          const gentlePushActive = releaseCarryActive || idlePushActive
+          const releasePushScale = gentlePushActive ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4 : 1
+          const heldMs = idlePushActive
+            ? time - forwardControlRef.current.idlePushStartedAt
+            : time - activeControl.startedAt
+          targetVelocity = direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, direction) * speedMultiplier * releasePushScale
+        }
+
+        const response = movementRequested ? 2.8 : 1.35
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+        if (next !== current) {
+          playProgressRef.current = next
+          setPlayProgress(next)
+        }
+        const hitEndpoint = (next >= 1 && direction > 0) || (next <= 0 && direction < 0)
+        if (hitEndpoint) {
+          onEndpoint(next >= 1 ? 'end' : 'start')
+        }
+        return { next, movementRequested }
+      }
       if (appMode === 'edit' && editScrub.pressed) {
         const current = playProgressRef.current
         const heldMs = time - editScrub.startedAt
@@ -626,7 +828,7 @@ function App() {
             mothMotionRef.current.velocity = 0
             mothMotionRef.current.trailVelocity = 0
             stopExploreFinish()
-            setMessage('Explore song ended: moth settled')
+            setMessage('Shuffle song ended: moth settled')
           } else {
             const heldMs = time - exploreFinish.startedAt
             targetVelocity = exploreFinish.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, exploreFinish.direction) * 0.72
@@ -640,70 +842,105 @@ function App() {
             playProgressRef.current = clampedNext
             setPlayProgress(clampedNext)
           }
+        } else if (shuffleLoopControl.active) {
+          const hitEndpointBeforePulse = (current >= 1 && shuffleLoopControl.direction > 0) || (current <= 0 && shuffleLoopControl.direction < 0)
+          if (hitEndpointBeforePulse) {
+            clearShuffleLoopPush()
+            mothMotionRef.current.velocity = 0
+            mothMotionRef.current.trailVelocity = 0
+            setMessage(shuffleLoopControl.direction > 0 ? 'Shuffle loop push reached route end' : 'Shuffle loop push reached route start')
+          } else {
+            const pulseActive = shuffleLoopControl.pulseUntil > time
+            if (pulseActive) {
+              const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
+              const speedMultiplier = activeGroup?.speedMultiplier ?? 1
+              const releasePushScale = projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
+              const heldMs = time - shuffleLoopControl.pulseStartedAt
+              targetVelocity = shuffleLoopControl.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, shuffleLoopControl.direction) * speedMultiplier * releasePushScale
+            }
+            const response = pulseActive ? 2.8 : 1.35
+            mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+            const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+            if (next !== current) {
+              playProgressRef.current = next
+              setPlayProgress(next)
+            }
+            const hitEndpoint = (next >= 1 && shuffleLoopControl.direction > 0) || (next <= 0 && shuffleLoopControl.direction < 0)
+            if (hitEndpoint) {
+              clearShuffleLoopPush()
+              mothMotionRef.current.velocity = 0
+              mothMotionRef.current.trailVelocity = 0
+              setMessage(shuffleLoopControl.direction > 0 ? 'Shuffle loop push reached route end' : 'Shuffle loop push reached route start')
+            } else if (!pulseActive && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold) {
+              mothMotionRef.current.velocity = 0
+              if (shuffleLoopControl.waitUntil <= 0) {
+                const waitMs = loopPulseWaitScheduleMs[shuffleLoopControl.waitIndex % loopPulseWaitScheduleMs.length]
+                shuffleLoopControlRef.current = {
+                  ...shuffleLoopControl,
+                  pulseStartedAt: 0,
+                  pulseUntil: 0,
+                  waitStartedAt: time,
+                  waitUntil: time + waitMs,
+                  waitIndex: (shuffleLoopControl.waitIndex + 1) % loopPulseWaitScheduleMs.length,
+                }
+                setMessage(`Shuffle loop resting before next push: ${(waitMs / 1000).toFixed(0)}s`)
+              } else if (shuffleLoopControl.waitUntil <= time) {
+                triggerShuffleLoopPulse(shuffleLoopControl.direction, time, shuffleLoopControl)
+                shuffleLoopControl = shuffleLoopControlRef.current
+                setMessage(`Shuffle loop push: ${((shuffleLoopControl.pulseUntil - shuffleLoopControl.pulseStartedAt) / 1000).toFixed(1)}s`)
+              }
+            }
+          }
         } else {
-        const canMoveExploreDirection = (direction: -1 | 0 | 1) => direction !== 0 && !((direction < 0 && current <= 0) || (direction > 0 && current >= 1))
-        const releaseCarryActive = exploreControl.direction === 0
-          && exploreControl.releaseDirection !== 0
-          && exploreControl.releaseCarryUntil > time
-          && canMoveExploreDirection(exploreControl.releaseDirection)
-        let idlePushActive = exploreControl.direction === 0
-          && !releaseCarryActive
-          && exploreControl.releaseDirection !== 0
-          && exploreControl.idlePushUntil > time
-          && canMoveExploreDirection(exploreControl.releaseDirection)
-        if (
-          exploreControl.direction === 0
-          && !releaseCarryActive
-          && !idlePushActive
-          && exploreControl.releaseDirection !== 0
-          && exploreControl.idleSince > 0
-          && canMoveExploreDirection(exploreControl.releaseDirection)
-          && time - exploreControl.idleSince >= idleForwardPushWaitMs(exploreControl.idlePushCount)
-        ) {
-          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
-          const durationMs = idleForwardPushDurationMs(basePushMs, exploreControl.idlePushCount)
-          exploreControlRef.current = {
-            ...exploreControl,
-            idlePushStartedAt: time,
-            idlePushUntil: time + durationMs,
-            idlePushCount: exploreControl.idlePushCount + 1,
-          }
-          idlePushActive = durationMs > 0
-          setMessage(`Explore gentle push ${exploreControl.idlePushCount + 1}: ${(durationMs / 1000).toFixed(1)}s`)
-        }
-        if (exploreControl.direction === 0 && !releaseCarryActive && exploreControl.idlePushUntil > 0 && exploreControl.idlePushUntil <= time) {
-          exploreControlRef.current = {
-            ...exploreControlRef.current,
-            idleSince: exploreControl.idlePushUntil,
-            idlePushStartedAt: 0,
-            idlePushUntil: 0,
-          }
-        }
-        const pushDirection = releaseCarryActive || idlePushActive ? exploreControl.releaseDirection : 0
-        const activeDirection = exploreControl.direction || pushDirection
-        const heldMs = exploreControl.direction !== 0
-          ? time - exploreControl.startedAt
-          : idlePushActive
-            ? time - exploreControlRef.current.idlePushStartedAt
+          const canMoveExploreDirection = (direction: -1 | 0 | 1) => direction !== 0 && !((direction < 0 && current <= 0) || (direction > 0 && current >= 1))
+          const releaseCarryActive = exploreControl.direction === 0
+            && exploreControl.releaseDirection !== 0
+            && exploreControl.releaseCarryUntil > time
+            && canMoveExploreDirection(exploreControl.releaseDirection)
+          const activeDirection = exploreControl.direction || (releaseCarryActive ? exploreControl.releaseDirection : 0)
+          const heldMs = exploreControl.direction !== 0
+            ? time - exploreControl.startedAt
             : releaseCarryActive
               ? time - exploreControl.releaseStartedAt
               : 0
-        const pushScale = exploreControl.direction === 0 && activeDirection !== 0
-          ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
-          : 1
-        targetVelocity = exploreTargetVelocity(activeDirection, current, heldMs, projectRef.current.gameplay) * pushScale
-        const movementRequested = activeDirection !== 0 && targetVelocity !== 0
-        const response = movementRequested ? 2.8 : 1.75
-        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
-        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
-        if (next !== current) {
-          playProgressRef.current = next
-          setPlayProgress(next)
-        } else if ((next <= 0 && mothMotionRef.current.velocity < 0) || (next >= 1 && mothMotionRef.current.velocity > 0)) {
-          mothMotionRef.current.velocity = 0
-          mothMotionRef.current.trailVelocity = 0
-          stopExploreControl(undefined, false)
-        }
+          const pushScale = exploreControl.direction === 0 && activeDirection !== 0
+            ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
+            : 1
+          targetVelocity = exploreTargetVelocity(activeDirection, current, heldMs, projectRef.current.gameplay) * pushScale
+          const reversingDirection = activeDirection !== 0
+            && Math.sign(mothMotionRef.current.velocity) !== 0
+            && Math.sign(mothMotionRef.current.velocity) !== activeDirection
+          if (reversingDirection && Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold * 6) {
+            targetVelocity = 0
+          }
+          const movementRequested = activeDirection !== 0 && targetVelocity !== 0
+          const response = reversingDirection ? 1.45 : movementRequested ? 2.8 : 1.75
+          mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+          const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+          if (next !== current) {
+            playProgressRef.current = next
+            setPlayProgress(next)
+          } else if ((next <= 0 && mothMotionRef.current.velocity < 0) || (next >= 1 && mothMotionRef.current.velocity > 0)) {
+            mothMotionRef.current.velocity = 0
+            mothMotionRef.current.trailVelocity = 0
+            stopExploreControl(undefined, false)
+          }
+          const settledAfterInteraction = exploreHasInteractedRef.current
+            && exploreControlRef.current.direction === 0
+            && !releaseCarryActive
+            && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold
+            && !exploreSongEnded
+            && gameMenuReturnTimeoutRef.current === null
+          if (settledAfterInteraction) {
+            if (exploreSettledAtRef.current <= 0) {
+              exploreSettledAtRef.current = time
+            }
+            if (!exploreIdleFocusTriggeredRef.current && time - exploreSettledAtRef.current >= exploreIdleFocusDelayMs) {
+              triggerExploreIdleFocus()
+            }
+          } else {
+            exploreSettledAtRef.current = 0
+          }
         }
       } else if (appMode === 'play' && !playPaused && gameMode === 'loop') {
         const current = playProgressRef.current
@@ -712,77 +949,53 @@ function App() {
           shouldAnimate = true
         } else {
           if (loopControl.endpointWaitUntil > 0) {
-            loopControlRef.current = createLoopNudgeControl(loopControl.direction, time)
+            triggerLoopPulse(loopControl.direction, time, loopControl)
             loopControl = loopControlRef.current
             setMessage(loopControl.direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
           }
-          const atForwardEnd = current >= 1 && loopControl.direction > 0
-          const atBackEnd = current <= 0 && loopControl.direction < 0
-          if (atForwardEnd || atBackEnd) {
-            mothMotionRef.current.velocity = 0
-            mothMotionRef.current.trailVelocity = 0
-            loopControlRef.current = {
-              ...stoppedLoopControl(atForwardEnd ? -1 : 1),
-              endpointWaitUntil: time + loopEndpointPauseMs,
-            }
-            setMessage(atForwardEnd ? 'Loop resting at the moon' : 'Loop resting at the start')
+          const hitEndpointBeforePulse = (current >= 1 && loopControl.direction > 0) || (current <= 0 && loopControl.direction < 0)
+          if (hitEndpointBeforePulse) {
+            stopLoopAtEndpoint(current >= 1 ? 'end' : 'start', time)
           } else {
-            const canMoveLoopDirection = !((loopControl.direction < 0 && current <= 0) || (loopControl.direction > 0 && current >= 1))
-            const releaseCarryActive = loopControl.releaseCarryUntil > time && canMoveLoopDirection
-            let idlePushActive = !releaseCarryActive && loopControl.idlePushUntil > time && canMoveLoopDirection
-            if (
-              !releaseCarryActive
-              && !idlePushActive
-              && loopControl.idleSince > 0
-              && canMoveLoopDirection
-              && time - loopControl.idleSince >= idleForwardPushWaitMs(loopControl.idlePushCount)
-            ) {
-              const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
-              const durationMs = idleForwardPushDurationMs(basePushMs, loopControl.idlePushCount)
-              loopControlRef.current = {
-                ...loopControl,
-                idlePushStartedAt: time,
-                idlePushUntil: time + durationMs,
-                idlePushCount: loopControl.idlePushCount + 1,
-              }
-              loopControl = loopControlRef.current
-              idlePushActive = durationMs > 0
-              setMessage(`Loop gentle push ${loopControl.idlePushCount}: ${(durationMs / 1000).toFixed(1)}s`)
-            }
-            if (!releaseCarryActive && loopControl.idlePushUntil > 0 && loopControl.idlePushUntil <= time) {
-              loopControlRef.current = {
-                ...loopControlRef.current,
-                idleSince: loopControl.idlePushUntil,
-                idlePushStartedAt: 0,
-                idlePushUntil: 0,
-              }
-              loopControl = loopControlRef.current
-            }
-            const loopNudgeActive = releaseCarryActive || idlePushActive
-            if (loopNudgeActive) {
+            const pulseActive = loopControl.pulseUntil > time
+            if (pulseActive) {
               const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
               const speedMultiplier = activeGroup?.speedMultiplier ?? 1
               const releasePushScale = projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
-              const heldMs = idlePushActive
-                ? time - loopControlRef.current.idlePushStartedAt
-                : time - loopControl.releaseStartedAt
+              const heldMs = time - loopControl.pulseStartedAt
               targetVelocity = loopControl.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, loopControl.direction) * speedMultiplier * releasePushScale
             }
-            const response = loopNudgeActive ? 2.8 : 1.35
+            const response = pulseActive ? 2.8 : 1.35
             mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
             const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
             if (next !== current) {
               playProgressRef.current = next
               setPlayProgress(next)
             }
-            if (next >= 1 || next <= 0) {
+            const hitEndpoint = (next >= 1 && loopControl.direction > 0) || (next <= 0 && loopControl.direction < 0)
+            if (hitEndpoint) {
+              stopLoopAtEndpoint(next >= 1 ? 'end' : 'start', time)
+            } else if (!pulseActive && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold) {
               mothMotionRef.current.velocity = 0
-              mothMotionRef.current.trailVelocity = 0
-              loopControlRef.current = {
-                ...stoppedLoopControl(next >= 1 ? -1 : 1),
-                endpointWaitUntil: time + loopEndpointPauseMs,
+              if (loopControl.waitUntil <= 0) {
+                const waitMs = loopPulseWaitScheduleMs[loopControl.waitIndex % loopPulseWaitScheduleMs.length]
+                loopControlRef.current = {
+                  ...loopControl,
+                  pulseStartedAt: 0,
+                  pulseUntil: 0,
+                  waitStartedAt: time,
+                  waitUntil: time + waitMs,
+                  waitIndex: (loopControl.waitIndex + 1) % loopPulseWaitScheduleMs.length,
+                }
+                setMessage(`Loop resting before next push: ${(waitMs / 1000).toFixed(0)}s`)
+              } else if (loopControl.waitUntil <= time) {
+                triggerLoopPulse(loopControl.direction, time, {
+                  ...loopControl,
+                  turnRestCount: loopControl.turnRestCount + 1,
+                })
+                loopControl = loopControlRef.current
+                setMessage(`Loop gentle push: ${((loopControl.pulseUntil - loopControl.pulseStartedAt) / 1000).toFixed(1)}s`)
               }
-              setMessage(next >= 1 ? 'Loop resting at the moon' : 'Loop resting at the start')
             }
           }
         }
@@ -795,7 +1008,7 @@ function App() {
           if (journeyEndpointWaitUntilRef.current > 0) {
             journeyEndpointWaitUntilRef.current = 0
             setJourneyEndpointWaiting(false)
-            setMessage(journeyDirectionRef.current > 0 ? 'Glide ready toward the moon' : 'Glide ready toward the start')
+            setMessage(journeyDirectionRef.current > 0 ? 'Drift ready toward the moon' : 'Drift ready toward the start')
           }
         if (tourHoldUntilRef.current > time) {
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 1.8))
@@ -805,52 +1018,9 @@ function App() {
           frame = requestAnimationFrame(tick)
           return
         }
-        const glideDirection = journeyDirectionRef.current
-        const canMoveGlideDirection = !((glideDirection < 0 && current <= 0) || (glideDirection > 0 && current >= 1))
-        const releaseCarryActive = !forwardControl.pressed && forwardControl.releaseCarryUntil > time
-        let idlePushActive = !forwardControl.pressed && !releaseCarryActive && forwardControl.idlePushUntil > time
-        if (
-          !forwardControl.pressed
-          && !releaseCarryActive
-          && !idlePushActive
-          && forwardControl.idleSince > 0
-          && canMoveGlideDirection
-          && time - forwardControl.idleSince >= idleForwardPushWaitMs(forwardControl.idlePushCount)
-        ) {
-          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
-          const durationMs = idleForwardPushDurationMs(basePushMs, forwardControl.idlePushCount)
-          forwardControlRef.current = {
-            ...forwardControl,
-            idlePushStartedAt: time,
-            idlePushUntil: time + durationMs,
-            idlePushCount: forwardControl.idlePushCount + 1,
-          }
-          idlePushActive = durationMs > 0
-          setMessage(`Idle gentle push ${forwardControl.idlePushCount + 1}: ${(durationMs / 1000).toFixed(1)}s`)
-        }
-        if (!forwardControl.pressed && !releaseCarryActive && forwardControl.idlePushUntil > 0 && forwardControl.idlePushUntil <= time) {
-          forwardControlRef.current = {
-            ...forwardControlRef.current,
-            idleSince: forwardControl.idlePushUntil,
-            idlePushStartedAt: 0,
-            idlePushUntil: 0,
-          }
-        }
-        const forwardRequested = (forwardControl.pressed || releaseCarryActive || idlePushActive) && canMoveGlideDirection
-        if (forwardRequested) {
-          const activeGroup = getActiveRouteGroupAtProgress(projectRef.current, current)
-          const speedMultiplier = activeGroup?.speedMultiplier ?? 1
-          const gentlePushActive = releaseCarryActive || idlePushActive
-          const releasePushScale = gentlePushActive ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4 : 1
-          const heldMs = idlePushActive
-            ? time - forwardControlRef.current.idlePushStartedAt
-            : time - forwardControl.startedAt
-          targetVelocity = glideDirection * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, glideDirection) * speedMultiplier * releasePushScale
-        }
-
-        const response = forwardRequested ? 2.8 : 1.35
-        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
-        const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
+        const { next } = advanceGlideMotion(current, journeyDirectionRef.current, (endpoint) => {
+          beginJourneyEndpointWait(endpoint, time)
+        })
         if (next !== current) {
           const crossedGroup = findCrossedRouteGroup(projectRef.current, current, next, triggeredTourCueIdsRef.current)
           if (crossedGroup) {
@@ -863,21 +1033,14 @@ function App() {
               setMessage(crossedGroup.notes)
             }
           }
-          playProgressRef.current = next
-          setPlayProgress(next)
-          if (next >= 1 || next <= 0) {
-            beginJourneyEndpointWait(next >= 1 ? 'end' : 'start', time)
-          }
-        } else if ((next >= 1 || next <= 0) && (forwardRequested || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold)) {
-          beginJourneyEndpointWait(next >= 1 ? 'end' : 'start', time)
         }
         }
       } else {
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.2))
       }
       mothMotionRef.current.trailVelocity += (mothMotionRef.current.velocity - mothMotionRef.current.trailVelocity) * (1 - Math.exp(-delta * 1.25))
-      const loopActive = gameMode === 'loop' && appMode === 'play' && !playPaused && (loopControlRef.current.endpointWaitUntil > time || playProgressRef.current > 0 || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold)
-      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || loopActive || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
+      const loopPulseActive = gameMode === 'loop' && appMode === 'play' && !playPaused && loopControlRef.current.pulseUntil > time
+      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || exploreControl.releaseCarryUntil > time || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || loopPulseActive || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
       if (motionActive) {
         mothMotionRef.current.blurResumeAt = time + 650
       }
@@ -896,7 +1059,7 @@ function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [appMode, gameMode, playPaused])
+  }, [appMode, exploreSongEnded, gameMode, playPaused, workspaceMode])
 
   const renderCamera = useMemo(() => {
     const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
@@ -925,10 +1088,18 @@ function App() {
     () => cameraForCanvasView(renderCamera, project),
     [project, renderCamera],
   )
+  const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreIdleFocusVisible || exploreMenuReturnVisible
+  const gameFocusActive = gameScreen === 'menu' || exploreIdleFocusActive || exploreMenuReturnActive
+  const shuffleRestFocusActive = workspaceMode === 'game'
+    && gameScreen === 'explore'
+    && exploreIdleFocusActive
+    && !exploreMenuReturnActive
 
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
+    const menuMothCanvas = menuMothCanvasRef.current
+    const menuMothContext = menuMothCanvas?.getContext('2d')
     if (!canvas || !context) {
       return
     }
@@ -949,13 +1120,43 @@ function App() {
       mothMotionVelocity: mothMotionRef.current.velocity,
       mothTrailVelocity: mothMotionRef.current.trailVelocity,
       mothForwardActive: forwardPressed || exploreDirection === 1,
-      hideRoutePath: workspaceMode === 'game' && appMode === 'play',
+      hideRoutePath: workspaceMode === 'game' || appMode === 'play',
+      hideWorldFrame: workspaceMode === 'game' || appMode === 'play',
       selection,
       selectedItemIds,
       canvasTargets,
       viewport,
     })
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
+    if (menuMothCanvas && menuMothContext) {
+      menuMothCanvas.width = Math.floor(viewport.width * scale)
+      menuMothCanvas.height = Math.floor(viewport.height * scale)
+      menuMothCanvas.style.width = `${viewport.width}px`
+      menuMothCanvas.style.height = `${viewport.height}px`
+      menuMothContext.setTransform(scale, 0, 0, scale, 0, 0)
+      if (workspaceMode === 'game' && gameFocusVisible) {
+        renderMothOnly(menuMothContext, project, {
+          appMode,
+          artworkMode,
+          camera: canvasCamera,
+          images,
+          playProgress,
+          routeSampleData,
+          animationTime,
+          mothMotionVelocity: mothMotionRef.current.velocity,
+          mothTrailVelocity: mothMotionRef.current.trailVelocity,
+          mothForwardActive: forwardPressed || exploreDirection === 1,
+          hideRoutePath: true,
+          hideWorldFrame: true,
+          selection: null,
+          selectedItemIds: [],
+          canvasTargets,
+          viewport,
+        })
+      } else {
+        menuMothContext.clearRect(0, 0, viewport.width, viewport.height)
+      }
+    }
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -1040,10 +1241,14 @@ function App() {
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
   const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold || forwardPressed || exploreDirection !== 0 || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
+  const cameraExtensionVisible = project.gameplay.cameraExtensionEnabled !== false
+  const cameraExtensionBlurPaused = workspaceMode !== 'game' && cameraExtensionMotionActive
   const journeyGlideHidden = gameMode === 'journey' && journeyEndpointWaiting
   const journeyGlideDisabled = gameMode !== 'journey'
     || journeyEndpointWaiting
     || (journeyDirection > 0 ? playProgress >= 1 : playProgress <= 0)
+  const loopTurnAvailable = gameMode === 'loop'
+    && loopControlRef.current.turnRestCount >= loopPulseWaitScheduleMs.length
   const exploreBackDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress <= 0
   const exploreForwardDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress >= 1
   const cameraExtensionOverlayStyle = {
@@ -1054,34 +1259,117 @@ function App() {
     '--camera-extension-brightness': `${clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
     '--camera-extension-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
   } as CSSProperties
+  const gameHudScale = clamp(project.gameplay.gameHudScale ?? 1, 0.68, 1.3)
+  const gameHudSpread = clamp(project.gameplay.gameHudSpread ?? 0.75, 0.62, 1)
+  const gameHudTextScale = clamp(project.gameplay.gameHudTextScale ?? 2, 0.7, 2)
+  const gameHudStylePreset = project.gameplay.gameHudStylePreset ?? 'handwritten'
+  const hudStylePreset = hudStylePresets[gameHudStylePreset] ?? hudStylePresets.modern
+  const gameHudIconSize = Math.round(clamp(18 * gameHudScale * gameHudTextScale, 12, 42))
+  const gameHudGap = 8 * gameHudScale
+  const gameHudWidth = Math.max(260, viewport.width * gameHudSpread)
+  const gameHudCellSize = Math.max(48, (gameHudWidth - gameHudGap * 3) / 4)
+  const gameHudInnerScale = clamp((project.gameplay.cameraExtensionInnerScale ?? 0.91) * gameHudScale, 0.5, 0.98)
+  const gameHudStyle = {
+    '--game-hud-scale': `${gameHudScale}`,
+    '--game-hud-roundness': `${clamp(project.gameplay.gameHudRoundness ?? 0.85, 0.25, 0.9)}`,
+    '--game-hud-font-size': `${15 * gameHudScale * gameHudTextScale}px`,
+    '--game-hud-gap': `${gameHudGap}px`,
+    '--game-hud-width': `${gameHudWidth}px`,
+    '--game-hud-cell-size': `${gameHudCellSize}px`,
+    '--game-hud-button-size': `${gameHudCellSize * gameHudInnerScale}px`,
+    '--game-hud-font-family': hudStylePreset.fontFamily,
+    '--game-hud-font-weight': `${hudStylePreset.fontWeight}`,
+    '--game-hud-letter-spacing': hudStylePreset.letterSpacing,
+    '--game-hud-border-alpha': `${hudStylePreset.borderAlpha}`,
+    '--game-hud-primary-alpha': `${hudStylePreset.primaryAlpha}`,
+  } as CSSProperties
+  const hudHoldPulseStyle = (startedAt: number, id: string) => {
+    const heldMs = startedAt > 0 ? Math.max(0, animationTime - startedAt) : 0
+    const progress = clamp(heldMs / 6200, 0, 1)
+    const speedMs = hudHoldPulseMs[id] ?? hudHoldPulseSpeedOptions[1]
+    return {
+      '--game-hud-pulse-alpha': `${0.1 + progress * 0.56}`,
+      '--game-hud-pulse-ms': `${speedMs}ms`,
+    } as CSSProperties
+  }
+  const hudReleaseGlowStyle = (until: number) => {
+    const remaining = clamp((until - animationTime) / driftReleaseGlowMs, 0, 1)
+    const eased = remaining * remaining
+    return {
+      '--game-hud-release-alpha': `${0.08 + eased * 0.44}`,
+      '--game-hud-release-bg-alpha': `${0.04 + eased * 0.18}`,
+    } as CSSProperties
+  }
+  const triggerHudTapGlow = (id: string) => {
+    const now = performance.now()
+    setHudTapGlow((current) => {
+      const existing = current[id]
+      if (existing && now - existing.startedAt < hudTapGlowRiseMs) {
+        return current
+      }
+      return {
+        ...current,
+        [id]: {
+          startedAt: now,
+          nonce: existing ? existing.nonce + 1 : 1,
+        },
+      }
+    })
+  }
+  const randomizeHudHoldPulse = (id: string) => {
+    const speedMs = hudHoldPulseSpeedOptions[Math.floor(Math.random() * hudHoldPulseSpeedOptions.length)]
+    setHudHoldPulseMs((current) => ({ ...current, [id]: speedMs }))
+  }
+  const hudTapGlowClass = (id: string) => {
+    const glow = hudTapGlow[id]
+    if (!glow || animationTime - glow.startedAt > hudTapGlowTotalMs) {
+      return ''
+    }
+    return glow.nonce % 2 === 0 ? ' tap-bloom-a' : ' tap-bloom-b'
+  }
+  const hudButtonScaleDefaults: Record<GameHudButtonId, number> = {
+    home: 0.85,
+    shuffle: 0.85,
+    explore: 0.85,
+    loop: 0.85,
+    drift: 0.85,
+    turn: 0.85,
+    backward: 0.85,
+    forward: 0.85,
+    screenshot: 0.85,
+  }
+  const hudButtonScale = (id: GameHudButtonId) => clamp(project.gameplay.gameHudButtonScales?.[id] ?? hudButtonScaleDefaults[id], 0.5, 1.15)
+  const hudButtonStyle = (id: GameHudButtonId) => ({
+    '--game-hud-button-scale': `${hudButtonScale(id)}`,
+  }) as CSSProperties
+  const hudButtonPairStyle = (ids: GameHudButtonId[]) => ({
+    '--game-hud-button-scale': `${ids.reduce((sum, id) => sum + hudButtonScale(id), 0) / ids.length}`,
+  }) as CSSProperties
+  const selectedHudButtonScale = selectedHudButtonIds.length === 0
+    ? 1
+    : selectedHudButtonIds.reduce((sum, id) => sum + hudButtonScale(id), 0) / selectedHudButtonIds.length
+  const menuFocusStyle = {
+    '--menu-focus-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
+    '--menu-focus-brightness': `${clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
+    '--menu-focus-canvas-exit-ms': '2800ms',
+    '--menu-focus-moth-exit-ms': '2500ms',
+    '--menu-focus-dim-exit-ms': '2300ms',
+    '--shuffle-rest-moth-enter-ms': '3200ms',
+    '--shuffle-rest-moth-delay-ms': '260ms',
+  } as CSSProperties
   const cameraExtensionVignetteStyle = useMemo(() => {
     const edgeBleed = 1
     const canvasWidth = Math.max(1, viewport.width)
     const canvasHeight = Math.max(1, viewport.height)
-    const width = canvasWidth + edgeBleed * 2
-    const height = canvasHeight + edgeBleed * 2
     const inner = Math.min(canvasWidth, canvasHeight) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
     const left = edgeBleed + (canvasWidth - inner) / 2
     const top = edgeBleed + (canvasHeight - inner) / 2
-    const right = left + inner
-    const bottom = top + inner
     const radius = inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5
-    const roundedSquarePath = [
-      `M 0 0 H ${width} V ${height} H 0 Z`,
-      `M ${left + radius} ${top}`,
-      `H ${right - radius}`,
-      `Q ${right} ${top} ${right} ${top + radius}`,
-      `V ${bottom - radius}`,
-      `Q ${right} ${bottom} ${right - radius} ${bottom}`,
-      `H ${left + radius}`,
-      `Q ${left} ${bottom} ${left} ${bottom - radius}`,
-      `V ${top + radius}`,
-      `Q ${left} ${top} ${left + radius} ${top}`,
-      'Z',
-    ].join(' ')
     return {
-      clipPath: `path(evenodd, "${roundedSquarePath}")`,
-      WebkitClipPath: `path(evenodd, "${roundedSquarePath}")`,
+      '--camera-extension-inner-left': `${left}px`,
+      '--camera-extension-inner-top': `${top}px`,
+      '--camera-extension-inner-size-px': `${inner}px`,
+      '--camera-extension-inner-radius-px': `${radius}px`,
     } as CSSProperties
   }, [project.gameplay.cameraExtensionInnerScale, project.gameplay.cameraExtensionRoundness, viewport.height, viewport.width])
 
@@ -1150,13 +1438,25 @@ function App() {
         stopForwardControl(false)
         stopExploreControl(undefined, false)
       }
-      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'explore' ? 'Play resumed: explore freely' : 'Play resumed: hold Glide to move')
+      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'explore' ? 'Shuffle resumed' : 'Play resumed: hold Drift to move')
       return next
     })
   }
 
-  function enterJourneyMode(message = 'Glide mode: hold Glide to move') {
+  function enterJourneyMode(message = 'Explore mode: hold Drift to move') {
+    playHudSfx('mode')
+    triggerHudTapGlow('explore')
+    clearGameMenuReturnTransition()
+    clearExploreRelocationTransition()
+    clearExploreIdleFocus()
+    resetShuffleLoopAvailability()
+    exploreHasInteractedRef.current = false
+    exploreSettledAtRef.current = 0
+    exploreIdleFocusTriggeredRef.current = false
+    startMenuFocusDissolve()
+    setExploreUnlocked(true)
     clearLoopControl()
+    clearShuffleLoopPush()
     clearJourneyEndpointWait(1)
     stopExploreControl(undefined, false)
     stopExploreFinish()
@@ -1173,14 +1473,23 @@ function App() {
     setExploreDirection(0)
     gameModeRef.current = 'journey'
     setGameMode('journey')
+    setGameScreen('journey')
     setAppMode('play')
     setPlayPaused(false)
     handleMusicRestart(false)
     setMessage(message)
   }
 
-  function enterExploreMode(message = 'Explore mode: move freely along the path') {
+  function enterExploreMode(message = 'Shuffle mode: move freely along the path') {
+    playHudSfx('mode')
+    triggerHudTapGlow('shuffle')
+    clearGameMenuReturnTransition()
+    clearExploreRelocationTransition()
+    resetExploreIdleFocusTracking()
+    resetShuffleLoopAvailability()
+    exploreHasInteractedRef.current = false
     clearLoopControl()
+    clearShuffleLoopPush()
     clearJourneyEndpointWait(journeyDirectionRef.current)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
@@ -1193,7 +1502,7 @@ function App() {
       const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, route[randomIndex])
       playProgressRef.current = progress
       setPlayProgress(progress)
-      nextMessage = `Explore mode: checkpoint ${randomIndex + 1}`
+      nextMessage = `Shuffle mode: checkpoint ${randomIndex + 1}`
     }
     mothMotionRef.current.velocity = 0
     mothMotionRef.current.trailVelocity = 0
@@ -1202,18 +1511,43 @@ function App() {
     tourHoldUntilRef.current = 0
     stopExploreFinish()
     setExploreSongEnded(false)
-    gameModeRef.current = 'explore'
-    setGameMode('explore')
-    setAppMode('play')
-    setPlayPaused(false)
-    handleMusicRestart(false)
-    setMessage(nextMessage)
+    const finishExploreEntry = () => {
+      startMenuFocusDissolve()
+      gameModeRef.current = 'explore'
+      setGameMode('explore')
+      setGameScreen('explore')
+      setAppMode('play')
+      setPlayPaused(false)
+      handleMusicRestart(false)
+      setMessage(nextMessage)
+    }
+    if (workspaceMode === 'game' && gameScreen === 'menu') {
+      setMessage('Shuffle view shifting')
+      exploreRelocationTimeoutRef.current = window.setTimeout(() => {
+        exploreRelocationTimeoutRef.current = null
+        finishExploreEntry()
+      }, exploreRelocationDelayMs)
+      return
+    }
+    finishExploreEntry()
   }
 
   function enterLoopMode(message = 'Loop mode: drifting between both ends') {
+    playHudSfx('mode')
+    triggerHudTapGlow('loop')
+    clearGameMenuReturnTransition()
+    clearExploreRelocationTransition()
+    clearExploreIdleFocus()
+    resetShuffleLoopAvailability()
+    exploreHasInteractedRef.current = false
+    exploreSettledAtRef.current = 0
+    exploreIdleFocusTriggeredRef.current = false
+    startMenuFocusDissolve()
+    setExploreUnlocked(true)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
     stopExploreFinish()
+    clearShuffleLoopPush()
     setExploreSongEnded(false)
     clearJourneyEndpointWait(1)
     const now = performance.now()
@@ -1222,13 +1556,17 @@ function App() {
     mothMotionRef.current.velocity = 0
     mothMotionRef.current.trailVelocity = 0
     mothMotionRef.current.blurResumeAt = 0
-    loopControlRef.current = createLoopNudgeControl(1, now)
+    loopControlRef.current = {
+      ...stoppedLoopControl(1),
+      endpointWaitUntil: now + loopInitialPulseDelayMs,
+    }
     triggeredTourCueIdsRef.current.clear()
     tourHoldUntilRef.current = 0
     setForwardPressed(false)
     setExploreDirection(0)
     gameModeRef.current = 'loop'
     setGameMode('loop')
+    setGameScreen('loop')
     setAppMode('play')
     setPlayPaused(false)
     handleMusicRestart(false)
@@ -1240,15 +1578,49 @@ function App() {
     setSelectionBox(null)
     stopEditMothScrub()
     setWorkspaceMode('game')
-    setAppMode('play')
-    setPlayPaused(false)
-    setMessage(gameMode === 'journey' ? 'Game view: hold Glide to move' : 'Game view')
+    enterGameMenu('Game menu')
   }
 
   function enterEditorWorkspace() {
+    clearExploreIdleFocus()
     setWorkspaceMode('editor')
     enterEditModeAtMoth()
     setMessage('Editor view')
+  }
+
+  function enterGameMenu(message = 'Game menu') {
+    clearGameMenuReturnTransition()
+    clearExploreRelocationTransition()
+    clearExploreIdleFocus()
+    resetShuffleLoopAvailability()
+    exploreHasInteractedRef.current = false
+    exploreSettledAtRef.current = 0
+    exploreIdleFocusTriggeredRef.current = false
+    stopMenuFocusDissolve()
+    clearLoopControl()
+    clearShuffleLoopPush()
+    clearJourneyEndpointWait(1)
+    stopForwardControl(false)
+    stopExploreControl(undefined, false)
+    stopExploreFinish()
+    setExploreSongEnded(false)
+    setGameScreen('menu')
+    gameModeRef.current = 'journey'
+    setGameMode('journey')
+    playProgressRef.current = 0
+    setPlayProgress(0)
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+    setForwardPressed(false)
+    setExploreDirection(0)
+    clearShuffleLoopPush()
+    setAppMode('play')
+    setPlayPaused(false)
+    handleMusicPause(false)
+    setMessage(message)
   }
 
   function clearLoopControl(direction: -1 | 1 = 1) {
@@ -1256,18 +1628,231 @@ function App() {
     clearMusicLoopGap()
   }
 
-  function createLoopNudgeControl(direction: -1 | 1, time: number, idlePushCount = 0): LoopControlState {
+  function clearShuffleLoopPush(direction = shuffleLoopControlRef.current.direction) {
+    shuffleLoopControlRef.current = stoppedShuffleLoopControl(direction)
+  }
+
+  function triggerShuffleLoopPulse(direction: -1 | 1, time: number, previousControl = shuffleLoopControlRef.current) {
     const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
-    return {
+    const pushCount = loopPulseDurationCounts[previousControl.pushIndex % loopPulseDurationCounts.length]
+    const durationMs = idleForwardPushDurationMs(releaseCarryMs, pushCount)
+    shuffleLoopControlRef.current = {
+      ...stoppedShuffleLoopControl(direction),
+      active: true,
+      pulseStartedAt: time,
+      pulseUntil: time + durationMs,
+      waitIndex: previousControl.waitIndex,
+      pushIndex: (previousControl.pushIndex + 1) % loopPulseDurationCounts.length,
+    }
+  }
+
+  function startShuffleLoopPush() {
+    if (gameModeRef.current !== 'explore' || exploreSongEnded || exploreFinishRef.current.active) {
+      setMessage('Shuffle loop push is not available right now')
+      return
+    }
+    if (shuffleLoopAvailableAtRef.current <= 0 || performance.now() < shuffleLoopAvailableAtRef.current) {
+      setMessage('Shuffle loop unlocks after moving for a moment')
+      return
+    }
+    const velocityDirection = Math.sign(mothMotionRef.current.velocity)
+    const controlDirection = exploreControlRef.current.direction || exploreControlRef.current.releaseDirection
+    const direction = (controlDirection || (velocityDirection < 0 ? -1 : 1)) as -1 | 1
+    clearExploreIdleFocus()
+    stopExploreControl(undefined, false)
+    if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
+      setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
+      return
+    }
+    setAppMode('play')
+    setPlayPaused(false)
+    setExploreDirection(0)
+    exploreHasInteractedRef.current = true
+    resetShuffleLoopAvailability()
+    resetExploreIdleFocusTracking()
+    playHudSfx('turn')
+    triggerHudTapGlow('shuffle-loop')
+    triggerShuffleLoopPulse(direction, performance.now(), stoppedShuffleLoopControl(direction))
+    setMessage(direction > 0 ? 'Shuffle loop push toward the moon' : 'Shuffle loop push toward the start')
+  }
+
+  function triggerLoopPulse(direction: -1 | 1, time: number, previousControl = loopControlRef.current) {
+    const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+    const pushCount = loopPulseDurationCounts[previousControl.pushIndex % loopPulseDurationCounts.length]
+    const durationMs = idleForwardPushDurationMs(releaseCarryMs, pushCount)
+    loopControlRef.current = {
       direction,
       endpointWaitUntil: 0,
-      releaseStartedAt: time,
-      releaseCarryUntil: time + releaseCarryMs,
-      idleSince: time + releaseCarryMs,
-      idlePushStartedAt: 0,
-      idlePushUntil: 0,
-      idlePushCount,
+      pulseStartedAt: time,
+      pulseUntil: time + durationMs,
+      waitStartedAt: 0,
+      waitUntil: 0,
+      waitIndex: previousControl.waitIndex,
+      turnRestCount: previousControl.turnRestCount,
+      pushIndex: (previousControl.pushIndex + 1) % loopPulseDurationCounts.length,
     }
+    setForwardPressed(false)
+  }
+
+  function stopLoopAtEndpoint(endpoint: 'start' | 'end', time: number) {
+    const nextDirection = endpoint === 'end' ? -1 : 1
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    loopControlRef.current = {
+      ...stoppedLoopControl(nextDirection),
+      endpointWaitUntil: time + loopEndpointPauseMs,
+      waitIndex: loopControlRef.current.waitIndex,
+      turnRestCount: loopControlRef.current.turnRestCount,
+      pushIndex: loopControlRef.current.pushIndex,
+    }
+    setMessage(endpoint === 'end' ? 'Loop resting at the moon' : 'Loop resting at the start')
+  }
+
+  function startMenuFocusDissolve() {
+    if (workspaceMode !== 'game' || gameScreen !== 'menu') {
+      return
+    }
+    if (menuFocusDissolveTimeoutRef.current !== null) {
+      window.clearTimeout(menuFocusDissolveTimeoutRef.current)
+    }
+    setMenuFocusDissolving(true)
+    menuFocusDissolveTimeoutRef.current = window.setTimeout(() => {
+      setMenuFocusDissolving(false)
+      menuFocusDissolveTimeoutRef.current = null
+    }, 2900)
+  }
+
+  function clearExploreRelocationTransition() {
+    if (exploreRelocationTimeoutRef.current !== null) {
+      window.clearTimeout(exploreRelocationTimeoutRef.current)
+      exploreRelocationTimeoutRef.current = null
+    }
+  }
+
+  function clearGameMenuReturnTransition() {
+    if (gameMenuReturnTimeoutRef.current !== null) {
+      window.clearTimeout(gameMenuReturnTimeoutRef.current)
+      gameMenuReturnTimeoutRef.current = null
+    }
+    setExploreMenuReturnActive(false)
+    setExploreMenuReturnVisible(false)
+  }
+
+  function resetShuffleLoopAvailability() {
+    shuffleLoopAvailableAtRef.current = 0
+    setShuffleLoopAvailableAt(0)
+  }
+
+  function scheduleShuffleLoopAvailability() {
+    const unlockAt = performance.now() + shuffleLoopUnlockDelayMs
+    shuffleLoopAvailableAtRef.current = unlockAt
+    setShuffleLoopAvailableAt(unlockAt)
+  }
+
+  function clearExploreIdleFocus() {
+    exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    exploreIdleFocusTimeoutRefs.current = []
+    clearExploreIdleFocusResume()
+    setExploreIdleFocusActive(false)
+    setExploreIdleFocusVisible(false)
+  }
+
+  function clearExploreIdleFocusResume() {
+    if (exploreIdleFocusResumeTimeoutRef.current !== null) {
+      window.clearTimeout(exploreIdleFocusResumeTimeoutRef.current)
+      exploreIdleFocusResumeTimeoutRef.current = null
+    }
+    exploreIdleFocusResumeDirectionRef.current = null
+    exploreIdleFocusResumeHeldRef.current = false
+  }
+
+  function resetExploreIdleFocusTracking() {
+    exploreSettledAtRef.current = 0
+    exploreIdleFocusTriggeredRef.current = false
+    clearExploreIdleFocus()
+  }
+
+  function triggerExploreIdleFocus() {
+    if (workspaceMode !== 'game' || gameModeRef.current !== 'explore' || gameMenuReturnTimeoutRef.current !== null) {
+      return
+    }
+    exploreIdleFocusTriggeredRef.current = true
+    setExploreIdleFocusVisible(true)
+    setExploreIdleFocusActive(true)
+    setMessage('Shuffle resting')
+    exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    exploreIdleFocusTimeoutRefs.current = []
+  }
+
+  function startExploreIdleFocusReturn(direction: -1 | 1) {
+    clearExploreIdleFocusResume()
+    exploreIdleFocusResumeDirectionRef.current = direction
+    exploreIdleFocusResumeHeldRef.current = true
+    setExploreIdleFocusActive(false)
+    setMessage(direction > 0 ? 'Shuffle waking forward' : 'Shuffle waking back')
+    exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
+      exploreIdleFocusResumeTimeoutRef.current = null
+      const resumeDirection = exploreIdleFocusResumeDirectionRef.current
+      if (!resumeDirection) {
+        return
+      }
+      const wasHeld = exploreIdleFocusResumeHeldRef.current
+      exploreIdleFocusResumeDirectionRef.current = null
+      exploreIdleFocusResumeHeldRef.current = false
+      setExploreIdleFocusVisible(false)
+      exploreIdleFocusTriggeredRef.current = false
+      exploreSettledAtRef.current = 0
+      if (wasHeld) {
+        startExploreControl(resumeDirection, true)
+      } else {
+        nudgeExploreFromRest(resumeDirection)
+      }
+    }, exploreIdleFocusResumeDelayMs)
+  }
+
+  function wakeExploreIdleFocusReturn() {
+    clearExploreIdleFocusResume()
+    playHudSfx('mode')
+    setExploreIdleFocusActive(false)
+    setMessage('Shuffle waking')
+    exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
+      exploreIdleFocusResumeTimeoutRef.current = null
+      setExploreIdleFocusVisible(false)
+      exploreIdleFocusTriggeredRef.current = false
+      exploreSettledAtRef.current = performance.now()
+      setMessage('Shuffle ready')
+    }, exploreIdleFocusResumeDelayMs)
+  }
+
+  function returnToGameMenu(message = 'Game menu') {
+    playHudSfx('home')
+    const softenExploreReturn = workspaceMode === 'game' && gameScreen === 'explore'
+    if (!softenExploreReturn) {
+      enterGameMenu(message)
+      return
+    }
+    clearGameMenuReturnTransition()
+    stopExploreControl(undefined, false)
+    stopExploreFinish()
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    handleMusicPause(false)
+    setExploreMenuReturnVisible(true)
+    setExploreMenuReturnActive(true)
+    setMessage('Returning to menu')
+    gameMenuReturnTimeoutRef.current = window.setTimeout(() => {
+      gameMenuReturnTimeoutRef.current = null
+      enterGameMenu(message)
+    }, gameMenuReturnDelayMs)
+  }
+
+  function stopMenuFocusDissolve() {
+    if (menuFocusDissolveTimeoutRef.current !== null) {
+      window.clearTimeout(menuFocusDissolveTimeoutRef.current)
+      menuFocusDissolveTimeoutRef.current = null
+    }
+    setMenuFocusDissolving(false)
   }
 
   function clearJourneyEndpointWait(direction: -1 | 1 = 1) {
@@ -1287,18 +1872,21 @@ function App() {
     setJourneyDirection(nextDirection)
     setJourneyEndpointWaiting(true)
     setForwardPressed(false)
-    setMessage(endpoint === 'end' ? 'Glide resting at the moon' : 'Glide resting at the start')
+    setMessage(endpoint === 'end' ? 'Drift resting at the moon' : 'Drift resting at the start')
   }
 
   function turnLoopDirection() {
+    playHudSfx('turn')
     if (gameMode !== 'loop') {
       enterLoopMode()
       return
     }
+    setGameScreen('loop')
+    setExploreUnlocked(true)
     const now = performance.now()
     const loopControl = loopControlRef.current
     const nextDirection = loopControl.direction > 0 ? -1 : 1
-    loopControlRef.current = createLoopNudgeControl(nextDirection, now)
+    triggerLoopPulse(nextDirection, now, { ...loopControl, turnRestCount: 0 })
     handleMusicPlay(false)
     setPlayPaused(false)
     setMessage(nextDirection > 0 ? 'Loop turned toward the moon' : 'Loop turned toward the start')
@@ -1307,12 +1895,17 @@ function App() {
   function resetRuntimeToJourney() {
     clearLoopControl()
     clearJourneyEndpointWait(1)
+    clearExploreIdleFocus()
+    exploreHasInteractedRef.current = false
+    exploreSettledAtRef.current = 0
+    exploreIdleFocusTriggeredRef.current = false
     stopForwardControl(false)
     stopExploreControl(undefined, false)
     stopExploreFinish()
     setExploreSongEnded(false)
     gameModeRef.current = 'journey'
     setGameMode('journey')
+    setGameScreen('menu')
     setPlayPaused(false)
     setForwardPressed(false)
     setExploreDirection(0)
@@ -1323,6 +1916,8 @@ function App() {
     if (gameMode !== 'journey') {
       return
     }
+    setExploreUnlocked(true)
+    setGameScreen('journey')
     const direction = journeyDirectionRef.current
     if (journeyEndpointWaitUntilRef.current > performance.now()) {
       return
@@ -1334,6 +1929,9 @@ function App() {
     setAppMode('play')
     setPlayPaused(false)
     if (!forwardControlRef.current.pressed) {
+      triggerHudTapGlow('drift')
+      randomizeHudHoldPulse('drift')
+      playHudSfx('hold')
       const now = performance.now()
       const currentControl = forwardControlRef.current
       forwardControlRef.current = {
@@ -1346,7 +1944,7 @@ function App() {
         idlePushCount: 0,
       }
       setForwardPressed(true)
-      setMessage(direction > 0 ? 'Glide held: moth easing toward the moon' : 'Glide held: moth easing toward the start')
+      setMessage(direction > 0 ? 'Drift held: moth easing toward the moon' : 'Drift held: moth easing toward the start')
     }
   }
 
@@ -1367,6 +1965,8 @@ function App() {
       return
     }
     const now = performance.now()
+    playHudSfx('release')
+    setDriftReleaseGlowUntil(now + driftReleaseGlowMs)
     const heldMs = now - currentControl.startedAt
     const releaseCarryMs = useReleaseCarry && !playPaused
       ? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
@@ -1382,23 +1982,28 @@ function App() {
     }
     setForwardPressed(false)
     if (releaseCarryMs > 0) {
-      setMessage(`Glide released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
+      setMessage(`Drift released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
       return
     }
     if (appMode === 'play' && !playPaused && heldMs < 180) {
       mothMotionRef.current.velocity = journeyDirectionRef.current * Math.max(Math.abs(mothMotionRef.current.velocity), 0.01)
-      setMessage('Glide tap: small drift')
+      setMessage('Drift tap: small drift')
       return
     }
-    setMessage('Glide released: moth drifting')
+    setMessage('Drift released: moth drifting')
   }
 
-  function startExploreControl(direction: -1 | 1) {
+  function startExploreControl(direction: -1 | 1, fromIdleFocusReturn = false) {
     if (gameMode !== 'explore') {
       return
     }
+    setGameScreen('explore')
     if (exploreSongEnded || exploreFinishRef.current.active) {
-      setMessage('Explore song ended: controls locked')
+      setMessage('Shuffle song ended: controls locked')
+      return
+    }
+    if (!fromIdleFocusReturn && (exploreIdleFocusVisible || exploreIdleFocusActive)) {
+      startExploreIdleFocusReturn(direction)
       return
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
@@ -1407,6 +2012,18 @@ function App() {
     }
     setAppMode('play')
     setPlayPaused(false)
+    clearShuffleLoopPush(direction)
+    triggerHudTapGlow(direction > 0 ? 'forward' : 'backward')
+    randomizeHudHoldPulse(direction > 0 ? 'forward' : 'backward')
+    playHudSfx('hold')
+    exploreHasInteractedRef.current = true
+    scheduleShuffleLoopAvailability()
+    if (fromIdleFocusReturn) {
+      exploreSettledAtRef.current = 0
+      exploreIdleFocusTriggeredRef.current = false
+    } else {
+      resetExploreIdleFocusTracking()
+    }
     exploreControlRef.current = {
       direction,
       startedAt: performance.now(),
@@ -1419,10 +2036,42 @@ function App() {
       idlePushCount: 0,
     }
     setExploreDirection(direction)
-    setMessage(direction > 0 ? 'Explore: moving forward' : 'Explore: moving back')
+    setMessage(direction > 0 ? 'Shuffle: moving forward' : 'Shuffle: moving back')
+  }
+
+  function nudgeExploreFromRest(direction: -1 | 1) {
+    if (gameModeRef.current !== 'explore' || exploreSongEnded || exploreFinishRef.current.active) {
+      return
+    }
+    if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
+      setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
+      return
+    }
+    const now = performance.now()
+    const nudgeMs = clamp((projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300) * 0.48, 700, 1400)
+    setAppMode('play')
+    setPlayPaused(false)
+    exploreHasInteractedRef.current = true
+    exploreControlRef.current = {
+      direction: 0,
+      startedAt: 0,
+      releaseDirection: direction,
+      releaseStartedAt: now,
+      releaseCarryUntil: now + nudgeMs,
+      idleSince: now + nudgeMs,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount: 0,
+    }
+    setExploreDirection(0)
+    setMessage(direction > 0 ? 'Shuffle nudge forward' : 'Shuffle nudge back')
   }
 
   function stopExploreControl(direction?: -1 | 1, useReleaseCarry = true) {
+    if (direction && exploreIdleFocusResumeDirectionRef.current === direction) {
+      exploreIdleFocusResumeHeldRef.current = false
+      return
+    }
     if (direction && exploreControlRef.current.direction !== direction) {
       return
     }
@@ -1435,6 +2084,7 @@ function App() {
       return
     }
     const now = performance.now()
+    playHudSfx('release')
     const releaseCarryMs = useReleaseCarry && !playPaused
       ? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
       : 0
@@ -1450,7 +2100,7 @@ function App() {
       idlePushCount: 0,
     }
     setExploreDirection(0)
-    setMessage(releaseCarryMs > 0 ? 'Explore released: gentle push' : 'Explore: drifting to a stop')
+    setMessage(releaseCarryMs > 0 ? 'Shuffle released: gentle push' : 'Shuffle: drifting to a stop')
   }
 
   function stopExploreFinish() {
@@ -1459,6 +2109,7 @@ function App() {
     }
     exploreFinishRef.current = stoppedExploreFinish()
     setExploreFinishing(false)
+    exploreSettledAtRef.current = 0
   }
 
   function beginExploreSongFinish() {
@@ -1478,8 +2129,8 @@ function App() {
       mothMotionRef.current.velocity = 0
       mothMotionRef.current.trailVelocity = 0
       setExploreSongEnded(true)
-      updateGameplay({ musicEnabled: false }, 'Explore song ended', false)
-      setMessage('Explore song ended: moth resting')
+      updateGameplay({ musicEnabled: false }, 'Shuffle song ended', false)
+      setMessage('Shuffle song ended: moth resting')
       return
     }
     const direction: -1 | 1 = control.direction !== 0
@@ -1499,8 +2150,8 @@ function App() {
     }
     setExploreFinishing(true)
     setExploreSongEnded(true)
-    updateGameplay({ musicEnabled: false }, 'Explore song ended', false)
-    setMessage(direction > 0 ? 'Explore song ended: settling forward' : 'Explore song ended: settling back')
+    updateGameplay({ musicEnabled: false }, 'Shuffle song ended', false)
+    setMessage(direction > 0 ? 'Shuffle song ended: settling forward' : 'Shuffle song ended: settling back')
   }
 
   function findClosestRoutePointProgressInDirection(current: number, direction: -1 | 1) {
@@ -2351,13 +3002,16 @@ function App() {
     }
 
     if (gameMode === 'loop') {
+      if (!loopTurnAvailable) {
+        return null
+      }
       return (
         <button
           className={className(false)}
           type="button"
           onClick={turnLoopDirection}
         >
-          <RotateCcw size={iconSize} /> Turn
+          Turn
         </button>
       )
     }
@@ -2376,8 +3030,171 @@ function App() {
         onPointerCancel={handleForwardPointerEnd}
         onContextMenu={(event) => event.preventDefault()}
       >
-        {journeyDirection > 0 ? <ChevronRight size={iconSize} /> : <ChevronLeft size={iconSize} />} Glide
+        Drift
       </button>
+    )
+  }
+
+  const renderGameHud = () => {
+    const iconSize = gameHudIconSize
+    const iconStrokeWidth = hudStylePreset.iconStrokeWidth
+    const backButton = (
+      <button
+        className={`game-hud-button icon-only${hudTapGlowClass('home')}`}
+        type="button"
+        aria-label="Home"
+        title="Home"
+        style={hudButtonStyle('home')}
+        onClick={() => {
+          triggerHudTapGlow('home')
+          returnToGameMenu('Game menu')
+        }}
+      >
+        <Home size={iconSize} strokeWidth={iconStrokeWidth} />
+      </button>
+    )
+    if (gameScreen === 'menu') {
+      return (
+        <div key="game-hud-menu" className="game-ui-layer" style={gameHudStyle} aria-label="Game menu controls">
+          <button
+            className={`game-hud-button icon-only${hudTapGlowClass('loop')}`}
+            type="button"
+            aria-label="Loop"
+            title="Loop"
+            style={hudButtonStyle('loop')}
+            onClick={() => enterLoopMode()}
+          >
+            <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+          <button
+            className={`game-hud-button span-2 primary ambient-pulse${hudTapGlowClass('explore')}`}
+            type="button"
+            style={hudButtonStyle('explore')}
+            onClick={() => enterJourneyMode('Explore started')}
+          >
+            Explore
+          </button>
+          <button
+            className={`game-hud-button icon-only${hudTapGlowClass('shuffle')}`}
+            type="button"
+            aria-label={exploreUnlocked ? 'Shuffle' : 'Shuffle locked'}
+            title={exploreUnlocked ? 'Shuffle' : 'Shuffle unlocks after Explore or Loop'}
+            disabled={!exploreUnlocked}
+            style={hudButtonStyle('shuffle')}
+            onClick={() => enterExploreMode()}
+          >
+            <Shuffle size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+        </div>
+      )
+    }
+
+    if (gameScreen === 'explore') {
+      const showWakeButton = exploreIdleFocusVisible || exploreIdleFocusActive
+      const shuffleLoopLocked = shuffleLoopAvailableAt <= 0 || animationTime < shuffleLoopAvailableAt
+      return (
+        <div key={showWakeButton ? 'game-hud-shuffle-wake' : 'game-hud-shuffle-move'} className="game-ui-layer" style={gameHudStyle} aria-label="Shuffle controls">
+          <button
+            className={`game-hud-button icon-only${hudTapGlowClass('shuffle-loop')}`}
+            type="button"
+            aria-label="Shuffle loop push"
+            title={showWakeButton ? 'Wake the moth before starting loop push' : shuffleLoopLocked ? 'Loop push unlocks 5 seconds after moving' : 'Loop push'}
+            disabled={showWakeButton || shuffleLoopLocked || exploreSongEnded || exploreFinishRef.current.active}
+            style={hudButtonStyle('loop')}
+            onClick={startShuffleLoopPush}
+          >
+            <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+          {showWakeButton ? (
+            <button
+              className={`game-hud-button span-2 primary ambient-pulse${hudTapGlowClass('wake')}`}
+              type="button"
+              style={hudButtonPairStyle(['backward', 'forward'])}
+              onClick={() => {
+                triggerHudTapGlow('wake')
+                wakeExploreIdleFocusReturn()
+              }}
+            >
+              Wake
+            </button>
+          ) : (
+            <>
+              <button
+                className={`${exploreDirection === -1 ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${hudTapGlowClass('backward')}`}
+                type="button"
+                aria-label="Move backward"
+                title="Back"
+                disabled={exploreBackDisabled}
+                style={exploreDirection === -1 ? { ...hudButtonStyle('backward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'backward') } : hudButtonStyle('backward')}
+                onPointerDown={(event) => handleExplorePointerDown(-1, event)}
+                onPointerUp={(event) => handleExplorePointerEnd(-1, event)}
+                onPointerCancel={(event) => handleExplorePointerEnd(-1, event)}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <Rewind size={iconSize} strokeWidth={iconStrokeWidth} />
+              </button>
+              <button
+                className={`${exploreDirection === 1 ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${hudTapGlowClass('forward')}`}
+                type="button"
+                aria-label="Move forward"
+                title="Forward"
+                disabled={exploreForwardDisabled}
+                style={exploreDirection === 1 ? { ...hudButtonStyle('forward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'forward') } : hudButtonStyle('forward')}
+                onPointerDown={(event) => handleExplorePointerDown(1, event)}
+                onPointerUp={(event) => handleExplorePointerEnd(1, event)}
+                onPointerCancel={(event) => handleExplorePointerEnd(1, event)}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <FastForward size={iconSize} strokeWidth={iconStrokeWidth} />
+              </button>
+            </>
+          )}
+          {backButton}
+        </div>
+      )
+    }
+
+    if (gameScreen === 'loop') {
+      return (
+        <div key="game-hud-loop" className="game-ui-layer" style={gameHudStyle} aria-label="Loop controls">
+          <div className="game-hud-placeholder" aria-hidden="true" />
+          <div className="game-hud-placeholder span-2" aria-hidden="true" />
+          {backButton}
+        </div>
+      )
+    }
+
+    const driftReleasing = driftReleaseGlowUntil > animationTime
+
+    return (
+      <div key={journeyGlideHidden ? 'game-hud-journey-hidden' : 'game-hud-journey-drift'} className="game-ui-layer" style={gameHudStyle} aria-label="Explore controls">
+        <div className="game-hud-placeholder" aria-hidden="true" />
+        {journeyGlideHidden ? (
+          <div className="game-hud-placeholder span-2" aria-hidden="true" />
+        ) : (
+          <button
+            className={`${forwardPressed
+              ? 'game-hud-button span-2 primary active hold-pulse'
+              : driftReleasing
+                ? 'game-hud-button span-2 primary release-glow'
+                : 'game-hud-button span-2 primary ambient-pulse'}${hudTapGlowClass('drift')}`}
+            type="button"
+            disabled={journeyGlideDisabled}
+            style={forwardPressed
+              ? { ...hudButtonStyle('drift'), ...hudHoldPulseStyle(forwardControlRef.current.startedAt, 'drift') }
+              : driftReleasing
+                ? { ...hudButtonStyle('drift'), ...hudReleaseGlowStyle(driftReleaseGlowUntil) }
+                : hudButtonStyle('drift')}
+            onPointerDown={handleForwardPointerDown}
+            onPointerUp={handleForwardPointerEnd}
+            onPointerCancel={handleForwardPointerEnd}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            Drift
+          </button>
+        )}
+        {backButton}
+      </div>
     )
   }
 
@@ -2421,7 +3238,15 @@ function App() {
           </div>
         )}
         <div className="game-surface">
-          <div className="canvas-shell" ref={shellRef}>
+          <div
+            className={[
+              'canvas-shell',
+              workspaceMode === 'game' && gameFocusActive ? 'menu-focus-active' : '',
+              shuffleRestFocusActive ? 'shuffle-rest-focus-active' : '',
+            ].filter(Boolean).join(' ')}
+            style={menuFocusStyle}
+            ref={shellRef}
+          >
             <canvas
               ref={canvasRef}
               onDoubleClick={handleDoubleClick}
@@ -2433,10 +3258,25 @@ function App() {
               onDragOver={handleCanvasDragOver}
               onDrop={handleCanvasDrop}
             />
-            {project.gameplay.cameraExtensionEnabled !== false && (
-              <div className={`camera-extension-overlay${cameraExtensionMotionActive ? ' moving' : ''}`} style={cameraExtensionOverlayStyle} aria-hidden="true">
-                <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle} />
+            <canvas className="menu-moth-canvas" ref={menuMothCanvasRef} aria-hidden="true" />
+            {cameraExtensionVisible && (
+              <div className={`camera-extension-overlay${cameraExtensionBlurPaused ? ' moving' : ''}`} style={cameraExtensionOverlayStyle} aria-hidden="true">
+                <div className="camera-extension-vignette" style={cameraExtensionVignetteStyle}>
+                  <div className="camera-extension-panel camera-extension-panel-top" />
+                  <div className="camera-extension-panel camera-extension-panel-bottom" />
+                  <div className="camera-extension-panel camera-extension-panel-left" />
+                  <div className="camera-extension-panel camera-extension-panel-right" />
+                  <div className="camera-extension-panel camera-extension-panel-corner camera-extension-panel-corner-top-left" />
+                  <div className="camera-extension-panel camera-extension-panel-corner camera-extension-panel-corner-top-right" />
+                  <div className="camera-extension-panel camera-extension-panel-corner camera-extension-panel-corner-bottom-left" />
+                  <div className="camera-extension-panel camera-extension-panel-corner camera-extension-panel-corner-bottom-right" />
+                </div>
                 <div className="camera-extension-frame" />
+              </div>
+            )}
+            {workspaceMode === 'game' && (
+              <div className={`game-menu-focus${gameFocusActive ? ' active' : ''}`} aria-hidden="true">
+                <div className="game-menu-focus-backdrop" />
               </div>
             )}
             {workspaceMode === 'editor' && selectionBox && (
@@ -2480,12 +3320,7 @@ function App() {
               />
             )}
           </div>
-          <div className="game-ui-layer" aria-label="Game controls">
-            {renderPlayMovementButtons('hud')}
-            <button className="game-screenshot-button" type="button" onClick={handleScreenshot}>
-              <CameraIcon size={16} /> Screenshot
-            </button>
-          </div>
+          {renderGameHud()}
         </div>
         {workspaceMode === 'editor' && (
         <div className="stage-topbar">
@@ -2498,7 +3333,7 @@ function App() {
               stopEditMothScrub()
               setAppMode('play')
               setPlayPaused(false)
-              setMessage(gameMode === 'journey' ? 'Play ready: hold Glide to move' : 'Play ready')
+              setMessage(gameMode === 'journey' ? 'Play ready: hold Drift to move' : 'Play ready')
             }}><Play size={15} /> Play</button>
             {appMode === 'play' && (
               <button className={playPaused ? 'active' : ''} type="button" onClick={togglePlayPaused}>
@@ -2692,16 +3527,16 @@ function App() {
             <button
               className={gameMode === 'journey' ? 'active' : ''}
               type="button"
-              onClick={() => enterJourneyMode('Glide restarted from route start')}
+              onClick={() => enterJourneyMode('Explore restarted from route start')}
             >
-              Glide
+              Explore
             </button>
             <button
               className={gameMode === 'explore' ? 'active' : ''}
               type="button"
               onClick={() => enterExploreMode()}
             >
-              Explore
+              Shuffle
             </button>
             <button
               className={gameMode === 'loop' ? 'active' : ''}
@@ -2767,10 +3602,10 @@ function App() {
               max="4"
               step="0.1"
               type="range"
-              value={project.gameplay.mothFlutterSpeed ?? 0.9}
+              value={project.gameplay.mothFlutterSpeed ?? 1}
               onChange={(event) => updateGameplay({ mothFlutterSpeed: Number(event.target.value) }, 'Updated flutter speed')}
             />
-            <span>{(project.gameplay.mothFlutterSpeed ?? 0.9).toFixed(1)}Hz</span>
+            <span>{(project.gameplay.mothFlutterSpeed ?? 1).toFixed(1)}Hz</span>
           </label>
           <label className="range-row">
             Flutter Amount
@@ -2779,10 +3614,10 @@ function App() {
               max="0.08"
               step="0.002"
               type="range"
-              value={project.gameplay.mothFlutterAmount ?? 0.072}
+              value={project.gameplay.mothFlutterAmount ?? 0.07}
               onChange={(event) => updateGameplay({ mothFlutterAmount: Number(event.target.value) }, 'Updated flutter amount')}
             />
-            <span>{(project.gameplay.mothFlutterAmount ?? 0.072).toFixed(3)}</span>
+            <span>{(project.gameplay.mothFlutterAmount ?? 0.07).toFixed(3)}</span>
           </label>
           <label className="range-row">
             Bob
@@ -2791,10 +3626,10 @@ function App() {
               max="8"
               step="0.25"
               type="range"
-              value={project.gameplay.mothBobAmount ?? 5.5}
+              value={project.gameplay.mothBobAmount ?? 3.5}
               onChange={(event) => updateGameplay({ mothBobAmount: Number(event.target.value) }, 'Updated moth bob')}
             />
-            <span>{(project.gameplay.mothBobAmount ?? 5.5).toFixed(1)}px</span>
+            <span>{(project.gameplay.mothBobAmount ?? 3.5).toFixed(1)}px</span>
           </label>
           <label className="range-row">
             Forward Lean
@@ -2803,10 +3638,10 @@ function App() {
               max="0.08"
               step="0.005"
               type="range"
-              value={project.gameplay.mothLeanForwardAmount ?? 0.08}
+              value={project.gameplay.mothLeanForwardAmount ?? 0.05}
               onChange={(event) => updateGameplay({ mothLeanForwardAmount: Number(event.target.value) }, 'Updated forward micro drift')}
             />
-            <span>{(project.gameplay.mothLeanForwardAmount ?? 0.08).toFixed(3)}</span>
+            <span>{(project.gameplay.mothLeanForwardAmount ?? 0.05).toFixed(3)}</span>
           </label>
           <label className="range-row">
             Back Lean
@@ -2815,10 +3650,10 @@ function App() {
               max="0.08"
               step="0.005"
               type="range"
-              value={project.gameplay.mothLeanBackwardAmount ?? 0.02}
+              value={project.gameplay.mothLeanBackwardAmount ?? 0.04}
               onChange={(event) => updateGameplay({ mothLeanBackwardAmount: Number(event.target.value) }, 'Updated backward micro drift')}
             />
-            <span>{(project.gameplay.mothLeanBackwardAmount ?? 0.02).toFixed(3)}</span>
+            <span>{(project.gameplay.mothLeanBackwardAmount ?? 0.04).toFixed(3)}</span>
           </label>
           <label className="range-row">
             Stretch
@@ -2827,10 +3662,10 @@ function App() {
               max="0.12"
               step="0.005"
               type="range"
-              value={project.gameplay.mothStretchAmount ?? 0.015}
+              value={project.gameplay.mothStretchAmount ?? 0.08}
               onChange={(event) => updateGameplay({ mothStretchAmount: Number(event.target.value) }, 'Updated moth stretch')}
             />
-            <span>{(project.gameplay.mothStretchAmount ?? 0.015).toFixed(3)}</span>
+            <span>{(project.gameplay.mothStretchAmount ?? 0.08).toFixed(3)}</span>
           </label>
           <label className="checkbox-row">
             <input
@@ -2992,6 +3827,126 @@ function App() {
           )}
         </EditorSection>
 
+        <EditorSection title="HUD" {...panelSectionProps('HUD')}>
+          <div className="mini-section-label">Button Selection</div>
+          <div className="hud-selection-grid">
+            {hudButtonOptions.map((option) => (
+              <button
+                key={option.id}
+                className={selectedHudButtonIds.includes(option.id) ? 'active' : ''}
+                type="button"
+                onClick={() => toggleHudButtonSelection(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="button-grid">
+            <button type="button" onClick={() => setSelectedHudButtonIds(hudButtonOptions.map((option) => option.id))}>All</button>
+            <button type="button" onClick={() => setSelectedHudButtonIds([])}>None</button>
+            <button
+              type="button"
+              disabled={selectedHudButtonIds.length === 0}
+              onClick={() => updateHudButtonScales(selectedHudButtonIds, 0.9, 'Reset selected HUD button sizes')}
+            >
+              Reset Selected
+            </button>
+          </div>
+          <label className="range-row">
+            Selected Size
+            <input
+              min="0.5"
+              max="1.15"
+              step="0.01"
+              type="range"
+              value={selectedHudButtonScale}
+              disabled={selectedHudButtonIds.length === 0}
+              onChange={(event) => updateHudButtonScales(selectedHudButtonIds, Number(event.target.value), 'Updated selected HUD button sizes')}
+            />
+            <span>{selectedHudButtonIds.length === 0 ? '-' : `${Math.round(selectedHudButtonScale * 100)}%`}</span>
+          </label>
+          <label className="range-row">
+            Pull In
+            <input
+              min="0.62"
+              max="1"
+              step="0.01"
+              type="range"
+              value={project.gameplay.gameHudSpread ?? 0.75}
+              onChange={(event) => updateGameplay({ gameHudSpread: Number(event.target.value) }, 'Updated HUD button spacing')}
+            />
+            <span>{Math.round((1 - (project.gameplay.gameHudSpread ?? 0.75)) * 100)}%</span>
+          </label>
+          <label className="range-row">
+            Roundness
+            <input
+              min="0.25"
+              max="0.9"
+              step="0.01"
+              type="range"
+              value={project.gameplay.gameHudRoundness ?? 0.85}
+              onChange={(event) => updateGameplay({ gameHudRoundness: Number(event.target.value) }, 'Updated HUD button roundness')}
+            />
+            <span>{Math.round((project.gameplay.gameHudRoundness ?? 0.85) * 100)}%</span>
+          </label>
+          <label className="range-row select-row">
+            Style
+            <select
+              value={project.gameplay.gameHudStylePreset ?? 'handwritten'}
+              onChange={(event) => updateGameplay({ gameHudStylePreset: event.target.value as GameHudStylePreset }, 'Updated HUD style')}
+            >
+              {hudStylePresetOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+            <span>{hudStylePresetOptions.find((option) => option.id === (project.gameplay.gameHudStylePreset ?? 'handwritten'))?.label ?? 'Handwritten'}</span>
+          </label>
+          <label className="range-row select-row">
+            SFX
+            <select
+              value={project.gameplay.gameHudSoundPreset ?? 'none'}
+              onChange={(event) => updateGameplay({ gameHudSoundPreset: event.target.value as GameHudSoundPreset }, 'Updated HUD sound')}
+            >
+              {hudSoundPresetOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+            <span>{hudSoundPresetOptions.find((option) => option.id === (project.gameplay.gameHudSoundPreset ?? 'none'))?.label ?? 'None'}</span>
+          </label>
+          <label className="range-row">
+            Text/Icon
+            <input
+              min="0.7"
+              max="2"
+              step="0.01"
+              type="range"
+              value={project.gameplay.gameHudTextScale ?? 2}
+              onChange={(event) => updateGameplay({ gameHudTextScale: Number(event.target.value) }, 'Updated HUD text and icon size')}
+            />
+            <span>{Math.round((project.gameplay.gameHudTextScale ?? 2) * 100)}%</span>
+          </label>
+          <div className="mini-section-label">Individual Sizes</div>
+          <div className="hud-size-list">
+            {hudButtonOptions.map((option) => {
+              const scale = hudButtonScale(option.id)
+              return (
+                <label key={option.id} className="range-row compact-range">
+                  {option.label}
+                  <input
+                    min="0.5"
+                    max="1.15"
+                    step="0.01"
+                    type="range"
+                    value={scale}
+                    onChange={(event) => updateHudButtonScales([option.id], Number(event.target.value), `Updated ${option.label} button size`)}
+                  />
+                  <span>{Math.round(scale * 100)}%</span>
+                </label>
+              )
+            })}
+          </div>
+        </EditorSection>
+
         <EditorSection title="View" {...panelSectionProps('View')}>
           <label className="checkbox-row">
             <input
@@ -3084,6 +4039,18 @@ function App() {
               onChange={(event) => updateGameplay({ cameraExtensionBlurAmount: Number(event.target.value) }, 'Updated camera extension blur')}
             />
             <span>{project.gameplay.cameraExtensionBlurAmount ?? 6}px</span>
+          </label>
+          <label className="range-row">
+            HUD Size
+            <input
+              min="0.68"
+              max="1.3"
+              step="0.01"
+              type="range"
+              value={project.gameplay.gameHudScale ?? 1}
+              onChange={(event) => updateGameplay({ gameHudScale: Number(event.target.value) }, 'Updated game HUD size')}
+            />
+            <span>{Math.round((project.gameplay.gameHudScale ?? 1) * 100)}%</span>
           </label>
         </EditorSection>
 
@@ -3328,6 +4295,82 @@ function App() {
         ...patch,
       },
     }), { message, history })
+  }
+
+  function toggleHudButtonSelection(id: GameHudButtonId) {
+    setSelectedHudButtonIds((current) => (
+      current.includes(id)
+        ? current.filter((currentId) => currentId !== id)
+        : [...current, id]
+    ))
+  }
+
+  function updateHudButtonScales(ids: GameHudButtonId[], value: number, message = 'Updated HUD button size') {
+    if (ids.length === 0) {
+      return
+    }
+    const nextScale = clamp(value, 0.5, 1.15)
+    const nextScales = {
+      ...(projectRef.current.gameplay.gameHudButtonScales ?? {}),
+    }
+    ids.forEach((id) => {
+      nextScales[id] = nextScale
+    })
+    updateGameplay({ gameHudButtonScales: nextScales }, message)
+  }
+
+  function playHudSfx(intent: HudSfxIntent) {
+    const preset = projectRef.current.gameplay.gameHudSoundPreset ?? 'none'
+    if (preset === 'none') {
+      return
+    }
+    const AudioContextConstructor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioContextConstructor) {
+      return
+    }
+    const context = hudAudioContextRef.current ?? new AudioContextConstructor()
+    hudAudioContextRef.current = context
+    void context.resume()
+
+    const now = context.currentTime
+    const master = context.createGain()
+    master.gain.setValueAtTime(0.0001, now)
+    master.gain.exponentialRampToValueAtTime(0.12, now + 0.012)
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.42)
+    master.connect(context.destination)
+
+    const playTone = (frequency: number, offset: number, duration: number, type: OscillatorType, gain = 1) => {
+      const oscillator = context.createOscillator()
+      const toneGain = context.createGain()
+      const start = now + offset
+      oscillator.type = type
+      oscillator.frequency.setValueAtTime(frequency, start)
+      toneGain.gain.setValueAtTime(0.0001, start)
+      toneGain.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), start + 0.01)
+      toneGain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+      oscillator.connect(toneGain)
+      toneGain.connect(master)
+      oscillator.start(start)
+      oscillator.stop(start + duration + 0.02)
+    }
+
+    const intentLift = intent === 'mode' ? 1.12 : intent === 'turn' ? 0.82 : intent === 'home' ? 0.72 : intent === 'release' ? 0.64 : 1
+    if (preset === 'moonChime') {
+      playTone(660 * intentLift, 0, 0.24, 'sine', 0.9)
+      playTone(990 * intentLift, 0.055, 0.22, 'sine', 0.55)
+      return
+    }
+    if (preset === 'neonPulse') {
+      playTone(165 * intentLift, 0, 0.18, 'sawtooth', 0.32)
+      playTone(330 * intentLift, 0.018, 0.2, 'triangle', 0.5)
+      return
+    }
+    if (preset === 'glassTap') {
+      playTone(1180 * intentLift, 0, 0.12, 'sine', 0.7)
+      playTone(1760 * intentLift, 0.026, 0.1, 'sine', 0.45)
+      return
+    }
+    playTone(420 * intentLift, 0, 0.08, 'triangle', 0.46)
   }
 
   function clearMusicLoopGap() {

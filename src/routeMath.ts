@@ -15,12 +15,12 @@ const defaultManualScrub = {
   rampMs: 1300,
   topSpeedScale: 0.055,
 }
-const idlePushMaxWaitMs = 5000
 const idlePushMaxDurationMs = 18000
+const idlePushWaitScheduleMs = [2000, 3000, 4000, 5000, 6000, 7000, 8000]
 
 const defaultMothLean = {
-  forward: 0.08,
-  backward: 0.02,
+  forward: 0.05,
+  backward: 0.04,
   referenceSpeed: 0.055,
 }
 
@@ -154,11 +154,11 @@ export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings =
 }
 
 export function idleForwardPushWaitMs(pushCount: number) {
-  return Math.min(2000 + Math.max(0, pushCount) * 1000, idlePushMaxWaitMs)
+  return idlePushWaitScheduleMs[Math.min(Math.max(0, pushCount), idlePushWaitScheduleMs.length - 1)]
 }
 
 export function idleForwardPushDurationMs(basePushMs: number, pushCount: number) {
-  const growingDuration = Math.max(0, basePushMs) * (1.7 ** (Math.max(0, pushCount) + 1))
+  const growingDuration = Math.max(0, basePushMs) * (1.3 ** (Math.max(0, pushCount) + 1))
   return Math.round(Math.min(growingDuration, idlePushMaxDurationMs))
 }
 
