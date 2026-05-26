@@ -2993,7 +2993,7 @@ export const defaultProjectData = {
     "gameHudSpread": 0.75,
     "gameHudRoundness": 0.85,
     "gameHudTextScale": 2,
-    "gameHudStylePreset": "handwritten",
+    "gameHudStylePreset": "soft",
     "gameHudSoundPreset": "none",
     "gameHudButtonScales": {
       "home": 0.85,

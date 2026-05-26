@@ -22,6 +22,7 @@ export type RenderOptions = {
   mothForwardActive: boolean
   hideRoutePath?: boolean
   hideWorldFrame?: boolean
+  suppressMissingArtwork?: boolean
 }
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
@@ -162,15 +163,27 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
   context.save()
   context.translate(center.x, center.y)
   context.rotate((item.rotation * Math.PI) / 180)
+  const isSilhouette = layer.silhouette || item.silhouette
   context.globalAlpha = opacity
-  drawItemGlow(context, item, width, height, opacity, options, image, layer.silhouette || item.silhouette)
+  drawItemGlow(context, item, width, height, opacity, options, image, isSilhouette)
 
   if (options.artworkMode === 'art' && image?.complete) {
-    if (layer.silhouette || item.silhouette) {
-      context.filter = 'brightness(0)'
+    if (isSilhouette) {
+      context.save()
+      context.globalAlpha = opacity
+      context.drawImage(image, -width / 2, -height / 2, width, height)
+      context.globalCompositeOperation = 'source-in'
+      context.globalAlpha = 1
+      context.fillStyle = '#000'
+      context.fillRect(-width / 2, -height / 2, width, height)
+      context.restore()
+    } else {
+      context.globalAlpha = opacity
+      context.drawImage(image, -width / 2, -height / 2, width, height)
     }
-    context.drawImage(image, -width / 2, -height / 2, width, height)
-    context.filter = 'none'
+  } else if (options.suppressMissingArtwork) {
+    context.restore()
+    return
   } else {
     context.fillStyle = item.layerId === 'background' ? 'rgba(93, 188, 214, 0.24)' : 'rgba(235, 211, 255, 0.28)'
     context.strokeStyle = item.layerId === 'background' ? 'rgba(158, 240, 255, 0.72)' : 'rgba(246, 218, 255, 0.78)'
@@ -496,6 +509,9 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   context.shadowBlur = 10 + 10 * glow
   if (options.artworkMode === 'art' && image?.complete) {
     context.drawImage(image, -size / 2, -size / 2, size, size)
+  } else if (options.suppressMissingArtwork) {
+    context.restore()
+    return
   } else {
     context.fillStyle = '#dfffee'
     context.beginPath()

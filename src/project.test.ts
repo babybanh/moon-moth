@@ -52,7 +52,7 @@ const defaultGameplay = {
   gameHudSpread: 0.75,
   gameHudRoundness: 0.85,
   gameHudTextScale: 2,
-  gameHudStylePreset: 'handwritten',
+  gameHudStylePreset: 'soft',
   gameHudSoundPreset: 'none',
   gameHudButtonScales: {
     home: 0.85,
@@ -219,7 +219,7 @@ describe('project helpers', () => {
 
   it('migrates HUD style presets safely', () => {
     expect(migrateProject({ gameplay: { gameHudStylePreset: 'handwritten' } }).gameplay.gameHudStylePreset).toBe('handwritten')
-    expect(migrateProject({ gameplay: { gameHudStylePreset: 'unknown' } }).gameplay.gameHudStylePreset).toBe('handwritten')
+    expect(migrateProject({ gameplay: { gameHudStylePreset: 'unknown' } }).gameplay.gameHudStylePreset).toBe('soft')
   })
 
   it('migrates HUD sound presets safely', () => {

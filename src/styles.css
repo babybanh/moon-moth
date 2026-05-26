@@ -27,6 +27,12 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
+  background: #000;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 button,
@@ -49,6 +55,11 @@ button {
   color: var(--text);
   cursor: pointer;
   text-overflow: ellipsis;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   white-space: nowrap;
 }
 
@@ -151,6 +162,8 @@ input[type="range"] {
 .app-shell.game-workspace {
   grid-template-columns: minmax(0, 1fr);
   background: #000;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .stage-panel {
@@ -257,17 +270,37 @@ input[type="range"] {
   width: min(var(--game-surface-size), calc(100vw - 32px), calc(100dvh - 116px));
 }
 
+.game-surface-frame {
+  display: contents;
+}
+
 .app-shell.public-game .stage-panel {
   grid-template-rows: minmax(0, 1fr);
+  width: 100vw;
+  height: 100dvh;
   place-items: center;
 }
 
+.app-shell.public-game .public-game-frame {
+  --game-surface-size: 628px;
+  position: relative;
+  width: calc(var(--game-surface-size) * var(--public-game-scale, 1));
+  height: calc(var(--game-surface-size) * var(--public-game-scale, 1));
+  max-width: 100vw;
+  max-height: 100dvh;
+  justify-self: center;
+  align-self: center;
+}
+
 .app-shell.public-game .game-surface {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: var(--game-surface-size);
   max-width: none;
   max-height: none;
   transform: scale(var(--public-game-scale, 1));
-  transform-origin: center center;
+  transform-origin: top left;
 }
 
 .canvas-shell {
@@ -281,9 +314,35 @@ input[type="range"] {
   aspect-ratio: 1 / 1;
   min-width: 0;
   min-height: 0;
-  border-radius: 10px;
+  border-radius: 18px;
   overflow: hidden;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.canvas-shell.public-game-loading {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(123, 246, 222, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(8, 18, 32, 0.98), rgba(4, 9, 16, 0.98));
+}
+
+.canvas-shell.public-game-loading > canvas,
+.canvas-shell.public-game-loading .menu-moth-canvas {
+  opacity: 0;
+}
+
+.public-game-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: rgba(220, 248, 243, 0.78);
+  font-family: Nunito, "Avenir Next Rounded", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
+  font-size: 15px;
+  letter-spacing: 0;
 }
 
 .game-workspace .canvas-shell {
@@ -307,7 +366,7 @@ input[type="range"] {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-rows: var(--game-hud-cell-size);
   justify-content: center;
-  align-items: start;
+  align-items: center;
   gap: var(--game-hud-gap);
   width: min(100%, var(--game-hud-width));
   pointer-events: auto;
@@ -339,7 +398,7 @@ input[type="range"] {
   min-width: 0;
   min-height: 0;
   justify-self: center;
-  align-self: start;
+  align-self: center;
   width: calc(var(--game-hud-button-size) * var(--game-hud-button-scale, 1));
   height: calc(var(--game-hud-button-size) * var(--game-hud-button-scale, 1));
   padding: 0 calc(10px * var(--game-hud-scale));
@@ -642,6 +701,54 @@ input[type="range"] {
 
 .game-hud-button:disabled {
   opacity: 0.38;
+  box-shadow: none;
+}
+
+.game-hud-button.visual-disabled {
+  opacity: 0.36;
+  box-shadow: none;
+}
+
+.game-hud-button.visual-disabled:hover:not(:disabled),
+.game-hud-button.visual-disabled:active:not(:disabled) {
+  opacity: 0.72;
+}
+
+.game-ui-layer.shuffle-loop-active .game-hud-button.visual-disabled,
+.game-ui-layer.shuffle-loop-active .game-hud-button.visual-disabled:hover:not(:disabled),
+.game-ui-layer.shuffle-loop-active .game-hud-button.visual-disabled:active:not(:disabled) {
+  color: rgba(211, 232, 230, 0.46);
+  opacity: 0.32;
+  animation: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.game-ui-layer.shuffle-loop-active .game-hud-button.visual-disabled svg {
+  color: rgba(211, 232, 230, 0.46);
+  opacity: 0.72;
+  animation: none;
+  transform: none;
+}
+
+.game-hud-button.long-hold-other,
+.game-hud-placeholder.long-hold-other,
+.game-hud-button.long-hold-other:hover:not(:disabled),
+.game-hud-button.long-hold-other:active:not(:disabled) {
+  color: rgba(211, 232, 230, 0.4);
+  opacity: 0.3;
+  animation: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.game-hud-button.long-hold-other svg {
+  color: rgba(211, 232, 230, 0.42);
+  opacity: 0.7;
+  animation: none;
+  transform: none;
 }
 
 .menu-moth-canvas {
@@ -753,10 +860,7 @@ canvas {
   --camera-extension-inner-top: 0px;
   --camera-extension-inner-size-px: 100%;
   --camera-extension-inner-radius-px: 0px;
-}
-
-.camera-extension-panel {
-  position: absolute;
+  --camera-extension-mask-image: none;
   background:
     linear-gradient(rgba(4, 11, 20, var(--camera-extension-dim-alpha)), rgba(4, 11, 20, var(--camera-extension-dim-alpha))),
     rgba(4, 11, 20, var(--camera-extension-bg-alpha));
@@ -772,71 +876,17 @@ canvas {
     background-color 180ms ease,
     backdrop-filter 180ms ease,
     -webkit-backdrop-filter 180ms ease;
+  mask-image: var(--camera-extension-mask-image);
+  -webkit-mask-image: var(--camera-extension-mask-image);
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-mode: alpha;
   will-change: auto;
 }
 
-.camera-extension-panel-top {
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--camera-extension-inner-top);
-}
-
-.camera-extension-panel-bottom {
-  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px));
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.camera-extension-panel-left {
-  top: var(--camera-extension-inner-top);
-  left: 0;
-  width: var(--camera-extension-inner-left);
-  height: var(--camera-extension-inner-size-px);
-}
-
-.camera-extension-panel-right {
-  top: var(--camera-extension-inner-top);
-  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px));
-  right: 0;
-  height: var(--camera-extension-inner-size-px);
-}
-
-.camera-extension-panel-corner {
-  width: var(--camera-extension-inner-radius-px);
-  height: var(--camera-extension-inner-radius-px);
-}
-
-.camera-extension-panel-corner-top-left {
-  top: var(--camera-extension-inner-top);
-  left: var(--camera-extension-inner-left);
-  mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-}
-
-.camera-extension-panel-corner-top-right {
-  top: var(--camera-extension-inner-top);
-  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
-  mask-image: radial-gradient(circle at 0 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-  -webkit-mask-image: radial-gradient(circle at 0 100%, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-}
-
-.camera-extension-panel-corner-bottom-left {
-  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
-  left: var(--camera-extension-inner-left);
-  mask-image: radial-gradient(circle at 100% 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-  -webkit-mask-image: radial-gradient(circle at 100% 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-}
-
-.camera-extension-panel-corner-bottom-right {
-  top: calc(var(--camera-extension-inner-top) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
-  left: calc(var(--camera-extension-inner-left) + var(--camera-extension-inner-size-px) - var(--camera-extension-inner-radius-px));
-  mask-image: radial-gradient(circle at 0 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-  -webkit-mask-image: radial-gradient(circle at 0 0, transparent calc(var(--camera-extension-inner-radius-px) - 0.5px), #000 var(--camera-extension-inner-radius-px));
-}
-
-.camera-extension-overlay.moving .camera-extension-panel {
+.camera-extension-overlay.moving .camera-extension-vignette {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   transition: none;

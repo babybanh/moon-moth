@@ -22,7 +22,7 @@ const approvedAssetLibrary = [
   {
     "id": "foreground-mist",
     "label": "Foreground Mist",
-    "src": "/assets/moon-moth/runtime/atmosphere/foreground-mist.png",
+    "src": "/assets/moon-moth/runtime/atmosphere/foreground-mist.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -48,7 +48,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch4/misty_conifer_grove.png",
     "label": "Misty Conifer Grove",
-    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch4-misty-conifer-grove.png",
+    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch4-misty-conifer-grove.webp",
     "layerIds": [
       "background"
     ],
@@ -74,7 +74,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch4/predawn_treetop_haze.png",
     "label": "Predawn Treetop Haze",
-    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze.png",
+    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch4-predawn-treetop-haze.webp",
     "layerIds": [
       "background"
     ],
@@ -99,7 +99,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch2/soft_pastel_mist_veil.png",
     "label": "Soft Pastel Mist Veil",
-    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch2-soft-pastel-mist-veil.png",
+    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch2-soft-pastel-mist-veil.webp",
     "layerIds": [
       "background"
     ],
@@ -125,7 +125,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch8/upper_canopy_light_gap.png",
     "label": "Upper Canopy Light Gap",
-    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch8-upper-canopy-light-gap.png",
+    "src": "/assets/moon-moth/runtime/atmosphere/moon-moth-new-assets-3-3d-batch8-upper-canopy-light-gap.webp",
     "layerIds": [
       "background"
     ],
@@ -152,7 +152,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-moon-glow.png",
     "label": "2d Moon Glow",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow.webp",
     "layerIds": [
       "background"
     ],
@@ -176,7 +176,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch7/crescent_moon_soft_glow.png",
     "label": "Crescent Moon Soft Glow",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow.webp",
     "layerIds": [
       "background"
     ],
@@ -202,7 +202,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch7/full_moon_soft_glow.png",
     "label": "Full Moon Soft Glow",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow.webp",
     "layerIds": [
       "background"
     ],
@@ -228,7 +228,7 @@ const approvedAssetLibrary = [
   {
     "id": "moon",
     "label": "Moon",
-    "src": "/assets/moon-moth/runtime/moonlight/moon.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon.webp",
     "layerIds": [
       "background"
     ],
@@ -249,7 +249,7 @@ const approvedAssetLibrary = [
   {
     "id": "moon-glow",
     "label": "Moon Glow",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-glow.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-glow.webp",
     "layerIds": [
       "background"
     ],
@@ -273,7 +273,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch7/moon_halo_ring.png",
     "label": "Moon Halo Ring",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-moon-halo-ring.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-moon-halo-ring.webp",
     "layerIds": [
       "background"
     ],
@@ -297,7 +297,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch7/silver_light_trail.png",
     "label": "Silver Light Trail",
-    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-silver-light-trail.png",
+    "src": "/assets/moon-moth/runtime/moonlight/moon-moth-new-assets-3-3d-batch7-silver-light-trail.webp",
     "layerIds": [
       "background"
     ],
@@ -322,7 +322,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch3/broken_moonstone_fragments.png",
     "label": "Broken Moonstone Fragments",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments.webp",
     "layerIds": [
       "background"
     ],
@@ -347,7 +347,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/glowing_enchanted_forest_floor_vignette.png",
     "label": "Glowing Enchanted Forest Floor Vignette",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette.webp",
     "layerIds": [
       "background"
     ],
@@ -374,7 +374,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth/moon-moth-landmark-moon-stone.png",
     "label": "Landmark Moon Stone",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-moon-moth-landmark-moon-stone.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-moon-moth-landmark-moon-stone.webp",
     "layerIds": [
       "background"
     ],
@@ -398,7 +398,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_mossy_rock_garden.png",
     "label": "Magical Mossy Rock Garden",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden.webp",
     "layerIds": [
       "foreground"
     ],
@@ -423,7 +423,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 1/moon-moth-pathside-moss-rock-cameo.png",
     "label": "Pathside Moss Rock Cameo",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo.webp",
     "layerIds": [
       "foreground"
     ],
@@ -449,7 +449,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 1/moon-moth-pathside-star-petal-bed.png",
     "label": "Pathside Star Petal Bed",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed.webp",
     "layerIds": [
       "background"
     ],
@@ -475,7 +475,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch3/purple_path_grass_strip_right.png",
     "label": "Purple Path Grass Strip Right",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right.webp",
     "layerIds": [
       "background"
     ],
@@ -502,7 +502,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/silver_grass_plumes.png",
     "label": "Silver Grass Plumes",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch6-silver-grass-plumes.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch6-silver-grass-plumes.webp",
     "layerIds": [
       "background"
     ],
@@ -527,7 +527,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/slender_moon_reed_cluster.png",
     "label": "Slender Moon Reed Cluster",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster.webp",
     "layerIds": [
       "background"
     ],
@@ -553,7 +553,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch7/soft_moonlight_pool.png",
     "label": "Soft Moonlight Pool",
-    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool.png",
+    "src": "/assets/moon-moth/runtime/ground/moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -580,7 +580,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/blush_violet_blossom_mound.png",
     "label": "Blush Violet Blossom Mound",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-blush-violet-blossom-mound.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-blush-violet-blossom-mound.webp",
     "layerIds": [
       "background"
     ],
@@ -606,7 +606,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch2/crescent_vine_with_glowing_leaves.png",
     "label": "Crescent Vine With Glowing Leaves",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-crescent-vine-with-glowing-leaves.webp",
     "layerIds": [
       "foreground"
     ],
@@ -634,7 +634,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch4/crooked_sapling_pair.png",
     "label": "Crooked Sapling Pair",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair.webp",
     "layerIds": [
       "background"
     ],
@@ -658,7 +658,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/drooping_bellflower_cluster.png",
     "label": "Drooping Bellflower Cluster",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster.webp",
     "layerIds": [
       "foreground"
     ],
@@ -683,7 +683,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/enchanted_pastel_leaf_vine.png",
     "label": "Enchanted Pastel Leaf Vine",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -710,7 +710,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/firefly_flower_patch.png",
     "label": "Firefly Flower Patch",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-firefly-flower-patch.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-firefly-flower-patch.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -737,7 +737,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch2/glowing_botanical_vine.png",
     "label": "Glowing Botanical Vine",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine.webp",
     "layerIds": [
       "foreground"
     ],
@@ -763,7 +763,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/glowing_garden_of_starry_flowers.png",
     "label": "Glowing Garden Of Starry Flowers",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers.webp",
     "layerIds": [
       "background"
     ],
@@ -790,7 +790,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch2/hanging_vine_lanterns.png",
     "label": "Hanging Vine Lanterns",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns.webp",
     "layerIds": [
       "foreground"
     ],
@@ -815,7 +815,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_moonlit_botanical_corner_element.png",
     "label": "Magical Moonlit Botanical Corner Element",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element.webp",
     "layerIds": [
       "foreground"
     ],
@@ -842,7 +842,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_twisting_vine_with_glowing_accents.png",
     "label": "Magical Twisting Vine With Glowing Accents",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents.webp",
     "layerIds": [
       "background"
     ],
@@ -871,7 +871,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/mini_mooncup_blossom.png",
     "label": "Mini Mooncup Blossom",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -898,7 +898,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/opaline_vine_arch.png",
     "label": "Opaline Vine Arch",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-opaline-vine-arch.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-opaline-vine-arch.webp",
     "layerIds": [
       "background"
     ],
@@ -923,7 +923,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/pale_lavender_sapling.png",
     "label": "Pale Lavender Sapling",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling.webp",
     "layerIds": [
       "background"
     ],
@@ -947,7 +947,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 1/moon-moth-pathside-fern-mound-cameo.png",
     "label": "Pathside Fern Mound Cameo",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo.webp",
     "layerIds": [
       "foreground"
     ],
@@ -974,7 +974,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 1/moon-moth-pathside-orchid-spill-cameo.png",
     "label": "Pathside Orchid Spill Cameo",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -1002,7 +1002,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch6/pearl_fern_cluster.png",
     "label": "Pearl Fern Cluster",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -1028,7 +1028,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/spiral_crystal_vine_accent.png",
     "label": "Spiral Crystal Vine Accent",
-    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent.png",
+    "src": "/assets/moon-moth/runtime/foliage/moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent.webp",
     "layerIds": [
       "background"
     ],
@@ -1054,7 +1054,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-landmark-glow-flower.png",
     "label": "2d Landmark Glow Flower",
-    "src": "/assets/moon-moth/runtime/landmark/moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower.png",
+    "src": "/assets/moon-moth/runtime/landmark/moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower.webp",
     "layerIds": [
       "foreground"
     ],
@@ -1081,7 +1081,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth/moon-moth-landmark-cocoon-shrine.png",
     "label": "Landmark Cocoon Shrine",
-    "src": "/assets/moon-moth/runtime/landmark/moon-moth-moon-moth-landmark-cocoon-shrine.png",
+    "src": "/assets/moon-moth/runtime/landmark/moon-moth-moon-moth-landmark-cocoon-shrine.webp",
     "layerIds": [
       "foreground"
     ],
@@ -1106,7 +1106,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch5/low_cocoon_bud.png",
     "label": "Low Cocoon Bud",
-    "src": "/assets/moon-moth/runtime/landmark/moon-moth-new-assets-3-3d-batch5-low-cocoon-bud.png",
+    "src": "/assets/moon-moth/runtime/landmark/moon-moth-new-assets-3-3d-batch5-low-cocoon-bud.webp",
     "layerIds": [
       "foreground"
     ],
@@ -1130,7 +1130,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-foreground-vine-cluster-b.png",
     "label": "2d Foreground Vine Cluster B",
-    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b.png",
+    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b.webp",
     "layerIds": [
       "background"
     ],
@@ -1157,7 +1157,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 2.5D/moon-moth-2d-near-foliage-cluster-a.png",
     "label": "2d Near Foliage Cluster A",
-    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a.png",
+    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a.webp",
     "layerIds": [
       "background",
       "foreground"
@@ -1185,7 +1185,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 3 - 3D/batch1/magical_thicket_with_glowing_foliage.png",
     "label": "Magical Thicket With Glowing Foliage",
-    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage.png",
+    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage.webp",
     "layerIds": [
       "foreground"
     ],
@@ -1213,7 +1213,7 @@ const approvedAssetLibrary = [
   {
     "id": "artwork:Moon Moth New Assets 1/moon-moth-scenery-b02-conifer-silhouette-group.png",
     "label": "Scenery B02 Conifer Silhouette Group",
-    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group.png",
+    "src": "/assets/moon-moth/runtime/foreground-mask/moon-moth-new-assets-1-moon-moth-scenery-b02-conifer-silhouette-group.webp",
     "layerIds": [
       "background"
     ],
@@ -1245,7 +1245,7 @@ export const assetLibrary: AssetDefinition[] = approvedAssetLibrary
 export const mothAsset = {
   "id": "moth",
   "label": "Moon Moth",
-  "src": "/assets/moon-moth/runtime/character/moon-moth.png",
+  "src": "/assets/moon-moth/runtime/character/moon-moth.webp",
   "layerIds": [
     "foreground"
   ],
