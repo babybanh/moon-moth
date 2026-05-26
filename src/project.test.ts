@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { assetById, assetLibrary, assetRoles, subLayers } from './assets'
+import { assetById, assetLibrary, assetRoles, mothAsset, subLayers } from './assets'
+import { collectProjectImageSources, collectPublicCriticalImageSources } from './App'
 import {
   createDefaultProject,
   duplicateItem,
@@ -87,6 +88,17 @@ describe('project helpers', () => {
     const missingAssetIds = Array.from(new Set(project.items.map((item) => item.assetId)))
       .filter((assetId) => !assetById.has(assetId))
     expect(missingAssetIds).toEqual([])
+  })
+
+  it('loads scenery assets in the public critical start set', () => {
+    const project = createDefaultProject()
+    const allSources = collectProjectImageSources(project)
+    const criticalSources = collectPublicCriticalImageSources(project)
+    const criticalScenerySources = Array.from(criticalSources).filter((src) => src !== mothAsset.src)
+
+    expect(criticalSources.has(mothAsset.src)).toBe(true)
+    expect(criticalScenerySources.length).toBeGreaterThan(5)
+    expect(criticalSources.size).toBeLessThan(allSources.size)
   })
 
   it('keeps approved runtime asset metadata clean', () => {

@@ -5,6 +5,8 @@ import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, Glow
 
 export type ImageMap = Map<string, HTMLImageElement>
 
+const silhouetteBufferCache = new Map<string, HTMLCanvasElement>()
+
 export type RenderOptions = {
   camera: Camera
   viewport: Size
@@ -27,14 +29,32 @@ export type RenderOptions = {
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
   const { viewport } = options
+  resetCanvasState(context)
   context.clearRect(0, 0, viewport.width, viewport.height)
+  resetCanvasState(context)
   renderSceneContent(context, project, options, true)
 }
 
 export function renderMothOnly(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
   const { viewport } = options
+  resetCanvasState(context)
   context.clearRect(0, 0, viewport.width, viewport.height)
+  resetCanvasState(context)
   drawMoth(context, project, options)
+}
+
+function resetCanvasState(context: CanvasRenderingContext2D) {
+  context.globalAlpha = 1
+  context.globalCompositeOperation = 'source-over'
+  context.shadowColor = 'rgba(0, 0, 0, 0)'
+  context.shadowBlur = 0
+  context.shadowOffsetX = 0
+  context.shadowOffsetY = 0
+  context.lineDashOffset = 0
+  context.lineCap = 'butt'
+  context.lineJoin = 'miter'
+  context.setLineDash([])
+  context.filter = 'none'
 }
 
 function renderSceneContent(
@@ -100,6 +120,11 @@ export function parallaxWorldToScreen(point: Point, camera: Camera, viewport: Si
 }
 
 function drawSky(context: CanvasRenderingContext2D, viewport: Size) {
+  context.globalAlpha = 1
+  context.globalCompositeOperation = 'source-over'
+  context.shadowBlur = 0
+  context.setLineDash([])
+  context.filter = 'none'
   const gradient = context.createLinearGradient(0, 0, 0, viewport.height)
   gradient.addColorStop(0, '#061126')
   gradient.addColorStop(0.5, '#18244a')
@@ -169,14 +194,7 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
 
   if (options.artworkMode === 'art' && image?.complete) {
     if (isSilhouette) {
-      context.save()
-      context.globalAlpha = opacity
-      context.drawImage(image, -width / 2, -height / 2, width, height)
-      context.globalCompositeOperation = 'source-in'
-      context.globalAlpha = 1
-      context.fillStyle = '#000'
-      context.fillRect(-width / 2, -height / 2, width, height)
-      context.restore()
+      drawSilhouetteImage(context, image, -width / 2, -height / 2, width, height, opacity)
     } else {
       context.globalAlpha = opacity
       context.drawImage(image, -width / 2, -height / 2, width, height)
@@ -191,6 +209,42 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
     context.fillRect(-width / 2, -height / 2, width, height)
     context.strokeRect(-width / 2, -height / 2, width, height)
   }
+  context.restore()
+}
+
+function drawSilhouetteImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  opacity: number,
+) {
+  const bufferWidth = Math.max(1, Math.ceil(Math.abs(width)))
+  const bufferHeight = Math.max(1, Math.ceil(Math.abs(height)))
+  const cacheKey = `${image.src}:${bufferWidth}x${bufferHeight}`
+  let buffer = silhouetteBufferCache.get(cacheKey)
+  if (!buffer) {
+    buffer = document.createElement('canvas')
+    buffer.width = bufferWidth
+    buffer.height = bufferHeight
+    const bufferContext = buffer.getContext('2d')
+    if (!bufferContext) {
+      return
+    }
+
+    bufferContext.clearRect(0, 0, bufferWidth, bufferHeight)
+    bufferContext.drawImage(image, 0, 0, bufferWidth, bufferHeight)
+    bufferContext.globalCompositeOperation = 'source-in'
+    bufferContext.fillStyle = '#000'
+    bufferContext.fillRect(0, 0, bufferWidth, bufferHeight)
+    silhouetteBufferCache.set(cacheKey, buffer)
+  }
+
+  context.save()
+  context.globalAlpha = opacity
+  context.drawImage(buffer, x, y, width, height)
   context.restore()
 }
 

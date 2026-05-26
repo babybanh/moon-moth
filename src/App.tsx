@@ -41,6 +41,7 @@ import {
 import { itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderMothOnly, renderScene, resizeHandles, type ImageMap } from './renderer'
 import type {
   AppMode,
+  AssetDefinition,
   ArtworkMode,
   Camera,
   CanvasTarget,
@@ -101,6 +102,7 @@ type ForwardControlState = {
 }
 type GameMode = 'journey' | 'explore' | 'loop'
 type GameScreen = 'menu' | GameMode
+type GameHudScreen = GameScreen | 'shuffle-wake'
 type ExploreControlState = {
   direction: -1 | 0 | 1
   startedAt: number
@@ -218,6 +220,8 @@ const hudStylePresets: Record<GameHudStylePreset, {
 const mothStoppedVelocityThreshold = 0.00012
 const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
+const musicFadeOutMs = 180
+const musicFadeInMs = 420
 const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
@@ -315,7 +319,7 @@ function loadImageElement(src: string): Promise<[string, HTMLImageElement | null
   })
 }
 
-function collectProjectImageSources(project: EditorProject) {
+export function collectProjectImageSources(project: EditorProject) {
   const sources = new Set<string>([mothAsset.src])
   for (const item of project.items) {
     const asset = assetById.get(item.assetId)
@@ -326,8 +330,50 @@ function collectProjectImageSources(project: EditorProject) {
   return sources
 }
 
-function collectPublicCriticalImageSources(project: EditorProject) {
-  return collectProjectImageSources(project)
+export function collectPublicCriticalImageSources(project: EditorProject) {
+  const sources = new Set<string>([mothAsset.src])
+  const routeStart = project.route[0] ?? { x: project.camera.x, y: project.camera.y }
+  const bounds = {
+    minX: routeStart.x - 3600,
+    maxX: routeStart.x + 5600,
+    minY: routeStart.y - 3600,
+    maxY: routeStart.y + 3600,
+  }
+  const nearbyItems = project.items
+    .map((item) => {
+      const asset = assetById.get(item.assetId)
+      if (!item.visible || !asset) {
+        return null
+      }
+      const left = item.x - item.width / 2
+      const right = item.x + item.width / 2
+      const top = item.y - item.height / 2
+      const bottom = item.y + item.height / 2
+      const intersectsStartView = right >= bounds.minX && left <= bounds.maxX && bottom >= bounds.minY && top <= bounds.maxY
+      return {
+        asset,
+        intersectsStartView,
+        distanceToStart: distance({ x: item.x, y: item.y }, routeStart),
+      }
+    })
+    .filter((entry): entry is { asset: AssetDefinition; intersectsStartView: boolean; distanceToStart: number } => Boolean(entry))
+    .sort((a, b) => {
+      if (a.intersectsStartView !== b.intersectsStartView) {
+        return a.intersectsStartView ? -1 : 1
+      }
+      return a.distanceToStart - b.distanceToStart
+    })
+
+  for (const entry of nearbyItems.slice(0, 32)) {
+    sources.add(entry.asset.src)
+  }
+  for (const entry of nearbyItems) {
+    if (sources.size >= 10) {
+      break
+    }
+    sources.add(entry.asset.src)
+  }
+  return sources
 }
 
 function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPopoverKind): Point {
@@ -361,6 +407,7 @@ function App() {
   const [openEditorPanels, setOpenEditorPanels] = useState<EditorPanelTitle[]>(['Moth', 'Route', 'Layers'])
   const [images, setImages] = useState<ImageMap>(() => new Map())
   const [publicGameCriticalReady, setPublicGameCriticalReady] = useState(!publicGameBuild)
+  const [publicGameHudReady, setPublicGameHudReady] = useState(!publicGameBuild)
   const [publicGameLoadFailed, setPublicGameLoadFailed] = useState(false)
   const [viewport, setViewport] = useState(publicGameBuild ? { width: gameSurfaceSize, height: gameSurfaceSize } : defaultViewport)
   const [publicGameScale, setPublicGameScale] = useState(() => calculatePublicGameScale())
@@ -370,6 +417,7 @@ function App() {
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
   const [gameScreen, setGameScreen] = useState<GameScreen>('menu')
+  const [gameHudScreen, setGameHudScreen] = useState<GameHudScreen>('menu')
   const [exploreUnlocked, setExploreUnlocked] = useState(false)
   const [menuFocusDissolving, setMenuFocusDissolving] = useState(false)
   const [forwardPressed, setForwardPressed] = useState(false)
@@ -440,6 +488,9 @@ function App() {
   const hudAudioContextRef = useRef<AudioContext | null>(null)
   const musicLoopGapTimeoutRef = useRef<number | null>(null)
   const musicResumeAfterHiddenRef = useRef(false)
+  const musicPendingGestureResumeRef = useRef(false)
+  const musicFadeFrameRef = useRef<number | null>(null)
+  const recentShufflePointIndicesRef = useRef<number[]>([])
   const gameModeRef = useRef<GameMode>(gameMode)
   const journeyDirectionRef = useRef<-1 | 1>(1)
   const journeyEndpointWaitUntilRef = useRef(0)
@@ -664,17 +715,54 @@ function App() {
       return
     }
 
+    if (images.has(mothAsset.src) || failedImageSourcesRef.current.has(mothAsset.src)) {
+      return
+    }
+
+    let cancelled = false
+    loadImageElement(mothAsset.src).then(([src, image]) => {
+      if (cancelled) {
+        return
+      }
+      if (!image || image.naturalWidth === 0) {
+        failedImageSourcesRef.current.add(src)
+        setPublicGameLoadFailed(true)
+        return
+      }
+      setImages((current) => {
+        if (current.has(src)) {
+          return current
+        }
+        const next = new Map(current)
+        next.set(src, image)
+        return next
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [images])
+
+  useEffect(() => {
+    if (!publicGameBuild) {
+      return
+    }
+
     const criticalSources = collectPublicCriticalImageSources(project)
     const missingSources = Array.from(criticalSources).filter((src) => (
       !failedImageSourcesRef.current.has(src) && !images.has(src)
     ))
+    const loadedCriticalSources = Array.from(criticalSources).filter((src) => images.has(src))
+    const hasLoadedMoth = loadedCriticalSources.includes(mothAsset.src)
+    const hasLoadedScenery = loadedCriticalSources.some((src) => src !== mothAsset.src)
     if (missingSources.length === 0) {
-      setPublicGameCriticalReady(true)
-      setPublicGameLoadFailed(false)
+      setPublicGameCriticalReady(hasLoadedMoth && hasLoadedScenery)
+      setPublicGameHudReady(hasLoadedMoth && hasLoadedScenery)
+      setPublicGameLoadFailed(!(hasLoadedMoth && hasLoadedScenery))
       return
     }
 
-    setPublicGameCriticalReady(false)
+    setPublicGameCriticalReady(hasLoadedMoth && hasLoadedScenery)
     setPublicGameLoadFailed(false)
     let cancelled = false
     Promise.all(missingSources.map(loadImageElement)).then((loadedImages) => {
@@ -682,11 +770,13 @@ function App() {
         return
       }
       const successfulImages: [string, HTMLImageElement][] = []
-      let failedCritical = false
+      let mothFailed = false
       for (const [src, image] of loadedImages) {
         if (!image || image.naturalWidth === 0) {
           failedImageSourcesRef.current.add(src)
-          failedCritical = true
+          if (src === mothAsset.src) {
+            mothFailed = true
+          }
         } else {
           successfulImages.push([src, image])
         }
@@ -700,8 +790,15 @@ function App() {
           return next
         })
       }
-      setPublicGameLoadFailed(failedCritical)
-      setPublicGameCriticalReady(!failedCritical)
+      const nextLoadedSources = new Set(loadedCriticalSources)
+      for (const [src] of successfulImages) {
+        nextLoadedSources.add(src)
+      }
+      const nextHasMoth = !mothFailed && nextLoadedSources.has(mothAsset.src)
+      const nextHasScenery = Array.from(nextLoadedSources).some((src) => src !== mothAsset.src)
+      setPublicGameLoadFailed(!(nextHasMoth && nextHasScenery))
+      setPublicGameCriticalReady(nextHasMoth && nextHasScenery)
+      setPublicGameHudReady(nextHasMoth && nextHasScenery)
     })
     return () => {
       cancelled = true
@@ -801,6 +898,7 @@ function App() {
     }
     return () => {
       clearMusicLoopGap()
+      clearMusicFade()
       music.removeEventListener('ended', handleEnded)
       music.pause()
       musicRef.current = null
@@ -813,33 +911,40 @@ function App() {
       return
     }
     music.loop = shouldNativeLoopMusic(gameMode)
-    music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
+    if (musicFadeFrameRef.current === null) {
+      music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
+    }
     if (gameMode !== 'loop' || !project.gameplay.musicEnabled || project.gameplay.musicMuted) {
       clearMusicLoopGap()
     }
     if (!project.gameplay.musicEnabled) {
-      music.pause()
+      fadeMusicToPause('settings')
       return
     }
     if (!project.gameplay.musicMuted && music.paused && musicLoopGapTimeoutRef.current === null) {
-      void music.play().catch(() => {
+      music.volume = 0
+      void music.play().then(() => {
+        setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
+      }).catch(() => {
+        musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
   }, [gameMode, project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
 
   useEffect(() => {
-    const pauseForBackground = () => {
+    const pauseForBackground = (immediate = false) => {
       const music = musicRef.current
-      musicResumeAfterHiddenRef.current = Boolean(
+      const wasPlaying = Boolean(
         music
         && !music.paused
         && !music.ended
         && projectRef.current.gameplay.musicEnabled
         && !projectRef.current.gameplay.musicMuted,
       )
+      musicResumeAfterHiddenRef.current = musicResumeAfterHiddenRef.current || wasPlaying
       clearMusicLoopGap()
-      music?.pause()
+      fadeMusicToPause('background', immediate)
     }
     const resumeFromBackground = () => {
       if (typeof document !== 'undefined' && document.hidden) {
@@ -855,10 +960,13 @@ function App() {
         return
       }
       music.loop = shouldNativeLoopMusic()
-      music.volume = gameplay.musicVolume
+      music.volume = 0
       void music.play().then(() => {
         musicResumeAfterHiddenRef.current = false
+        musicPendingGestureResumeRef.current = false
+        setMusicVolumeSmooth(gameplay.musicVolume, musicFadeInMs)
       }).catch(() => {
+        musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; tap a game button to resume audio')
       })
     }
@@ -869,16 +977,18 @@ function App() {
         resumeFromBackground()
       }
     }
+    const handlePageHide = () => pauseForBackground(true)
+    const handleWindowBlur = () => pauseForBackground(false)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('pagehide', pauseForBackground)
+    window.addEventListener('pagehide', handlePageHide)
     window.addEventListener('pageshow', resumeFromBackground)
-    window.addEventListener('blur', pauseForBackground)
+    window.addEventListener('blur', handleWindowBlur)
     window.addEventListener('focus', resumeFromBackground)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('pagehide', pauseForBackground)
+      window.removeEventListener('pagehide', handlePageHide)
       window.removeEventListener('pageshow', resumeFromBackground)
-      window.removeEventListener('blur', pauseForBackground)
+      window.removeEventListener('blur', handleWindowBlur)
       window.removeEventListener('focus', resumeFromBackground)
     }
   }, [])
@@ -1283,6 +1393,7 @@ function App() {
     () => cameraForCanvasView(renderCamera, project),
     [project, renderCamera],
   )
+  const publicGameMothReady = !publicGameBuild || images.has(mothAsset.src)
   const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreIdleFocusVisible || exploreMenuReturnVisible || loopFocusVisible
   const gameFocusActive = gameScreen === 'menu' || exploreIdleFocusActive || exploreMenuReturnActive || loopFocusActive
   const shuffleRestFocusActive = workspaceMode === 'game'
@@ -1329,7 +1440,7 @@ function App() {
       menuMothCanvas.style.width = `${viewport.width}px`
       menuMothCanvas.style.height = `${viewport.height}px`
       menuMothContext.setTransform(scale, 0, 0, scale, 0, 0)
-      if (workspaceMode === 'game' && gameFocusVisible) {
+      if (workspaceMode === 'game' && (gameFocusVisible || (publicGameBuild && publicGameMothReady && !publicGameCriticalReady))) {
         renderMothOnly(menuMothContext, project, {
           appMode,
           artworkMode,
@@ -1353,7 +1464,7 @@ function App() {
         menuMothContext.clearRect(0, 0, viewport.width, viewport.height)
       }
     }
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothReady, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -1545,13 +1656,19 @@ function App() {
   const hudButtonPairStyle = (ids: GameHudButtonId[]) => ({
     '--game-hud-button-scale': `${ids.reduce((sum, id) => sum + hudButtonScale(id), 0) / ids.length}`,
   }) as CSSProperties
-  const setGameScreenWithHomeGrace = (screen: GameScreen) => {
-    setGameScreen(screen)
+  const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
+    setGameHudScreen(screen)
     if (screen === 'menu') {
       setGameHudHomeDisabledUntil(0)
       return
     }
     setGameHudHomeDisabledUntil(performance.now() + gameHudHomeGraceMs)
+  }
+  const setGameScreenWithHomeGrace = (screen: GameScreen, syncHud = true) => {
+    setGameScreen(screen)
+    if (syncHud) {
+      setGameHudScreenWithHomeGrace(screen)
+    }
   }
   const longHeldDrift = forwardControlRef.current.pressed
     && forwardControlRef.current.startedAt > 0
@@ -1582,13 +1699,13 @@ function App() {
     '--shuffle-rest-moth-delay-ms': '260ms',
   } as CSSProperties
   const cameraExtensionVignetteStyle = useMemo(() => {
-    const edgeBleed = 1
+    const edgeBleed = 2
     const canvasWidth = Math.max(1, viewport.width)
     const canvasHeight = Math.max(1, viewport.height)
-    const inner = Math.min(canvasWidth, canvasHeight) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
-    const left = edgeBleed + (canvasWidth - inner) / 2
-    const top = edgeBleed + (canvasHeight - inner) / 2
-    const radius = inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5
+    const inner = Math.round(Math.min(canvasWidth, canvasHeight) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96))
+    const left = Math.round(edgeBleed + (canvasWidth - inner) / 2)
+    const top = Math.round(edgeBleed + (canvasHeight - inner) / 2)
+    const radius = Math.round(inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5)
     const maskWidth = canvasWidth + edgeBleed * 2
     const maskHeight = canvasHeight + edgeBleed * 2
     const right = left + inner
@@ -1744,7 +1861,16 @@ function App() {
     if (route.length > 0) {
       const minIndex = Math.min(14, route.length - 1)
       const maxIndex = Math.min(34, route.length - 1)
-      const randomIndex = minIndex + Math.floor(Math.random() * (Math.max(0, maxIndex - minIndex) + 1))
+      const shufflePool = Array.from(
+        { length: Math.max(0, maxIndex - minIndex) + 1 },
+        (_, index) => minIndex + index,
+      )
+      const recentLimit = Math.max(1, Math.ceil(shufflePool.length / 2))
+      const recentIndices = recentShufflePointIndicesRef.current.slice(-recentLimit)
+      const freshPool = shufflePool.filter((index) => !recentIndices.includes(index))
+      const candidates = freshPool.length > 0 ? freshPool : shufflePool
+      const randomIndex = candidates[Math.floor(Math.random() * candidates.length)]
+      recentShufflePointIndicesRef.current = [...recentIndices, randomIndex].slice(-recentLimit)
       const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, route[randomIndex])
       playProgressRef.current = progress
       setPlayProgress(progress)
@@ -1768,6 +1894,7 @@ function App() {
       setMessage(nextMessage)
     }
     if (workspaceMode === 'game' && gameScreen === 'menu') {
+      setGameHudScreenWithHomeGrace('explore')
       setMessage('Shuffle view shifting')
       exploreRelocationTimeoutRef.current = window.setTimeout(() => {
         exploreRelocationTimeoutRef.current = null
@@ -2035,6 +2162,7 @@ function App() {
       return
     }
     exploreIdleFocusTriggeredRef.current = true
+    setGameHudScreen('shuffle-wake')
     setExploreIdleFocusVisible(true)
     setExploreIdleFocusActive(true)
     setMessage('Shuffle resting')
@@ -2046,6 +2174,7 @@ function App() {
     clearExploreIdleFocusResume()
     exploreIdleFocusResumeDirectionRef.current = direction
     exploreIdleFocusResumeHeldRef.current = true
+    setGameHudScreenWithHomeGrace('explore')
     setExploreIdleFocusActive(false)
     setMessage(direction > 0 ? 'Shuffle waking forward' : 'Shuffle waking back')
     exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
@@ -2072,6 +2201,7 @@ function App() {
   function wakeExploreIdleFocusReturn() {
     clearExploreIdleFocusResume()
     playHudSfx('mode')
+    setGameHudScreenWithHomeGrace('explore')
     setExploreIdleFocusActive(false)
     setMessage('Shuffle waking')
     exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
@@ -2087,6 +2217,7 @@ function App() {
   function returnToGameMenu(message = 'Game menu') {
     playHudSfx('home')
     const softenExploreReturn = workspaceMode === 'game' && gameScreen === 'explore'
+    setGameHudScreenWithHomeGrace('menu')
     if (!softenExploreReturn) {
       enterGameMenu(message)
       return
@@ -3430,14 +3561,13 @@ function App() {
   const renderGameHud = () => {
     const iconSize = gameHudIconSize
     const iconStrokeWidth = hudStylePreset.iconStrokeWidth
-    const homeGraceQuiet = gameScreen !== 'menu' && gameHudHomeDisabledUntil > animationTime
+    const homeGraceQuiet = gameHudScreen !== 'menu' && gameHudHomeDisabledUntil > animationTime
     const menuModeQuiet = !exploreUnlocked
-    const backButton = (
+    const backButton = (extraClassName = '', suppressLongHoldOther = false, forceVisualQuiet = false) => (
       <button
-        className={`game-hud-button icon-only${homeGraceQuiet ? ' visual-disabled' : hudTapGlowClass('home')}${hudLongHoldActiveId ? ' long-hold-other' : ''}`}
+        className={`game-hud-button icon-only${homeGraceQuiet || forceVisualQuiet ? ' visual-disabled' : hudTapGlowClass('home')}${hudLongHoldActiveId && !suppressLongHoldOther ? ' long-hold-other' : ''}${extraClassName}`}
         type="button"
         aria-label="Home"
-        title="Home"
         style={hudButtonStyle('home')}
         onClick={() => {
           triggerHudTapGlow('home')
@@ -3447,14 +3577,13 @@ function App() {
         <Home size={iconSize} strokeWidth={iconStrokeWidth} />
       </button>
     )
-    if (gameScreen === 'menu') {
+    if (gameHudScreen === 'menu') {
       return (
-        <div key="game-hud-menu" className={gameHudLayerClass()} style={gameHudStyle} aria-label="Game menu controls">
+        <div key="game-hud-menu" className={gameHudLayerClass(menuModeQuiet ? 'first-menu-glow' : undefined)} style={gameHudStyle} aria-label="Game menu controls">
           <button
             className={`game-hud-button icon-only${menuModeQuiet ? ' visual-disabled' : hudTapGlowClass('loop')}`}
             type="button"
             aria-label="Loop"
-            title="Loop"
             style={hudButtonStyle('loop')}
             onClick={() => enterLoopMode()}
           >
@@ -3472,7 +3601,6 @@ function App() {
             className={`game-hud-button icon-only${menuModeQuiet ? ' visual-disabled' : hudTapGlowClass('shuffle')}`}
             type="button"
             aria-label="Shuffle"
-            title="Shuffle"
             style={hudButtonStyle('shuffle')}
             onClick={() => enterExploreMode()}
           >
@@ -3482,18 +3610,18 @@ function App() {
       )
     }
 
-    if (gameScreen === 'explore') {
-      const showWakeButton = exploreIdleFocusVisible || exploreIdleFocusActive
+    if (gameHudScreen === 'explore' || gameHudScreen === 'shuffle-wake') {
+      const showWakeButton = gameHudScreen === 'shuffle-wake'
       const shuffleLoopButtonDisabled = !shuffleLoopActive && (exploreSongEnded || exploreFinishRef.current.active)
-      const longHoldBackwardDim = hudLongHoldActiveId !== null && hudLongHoldActiveId !== 'backward'
-      const longHoldForwardDim = hudLongHoldActiveId !== null && hudLongHoldActiveId !== 'forward'
-      const longHoldShuffleLoopDim = hudLongHoldActiveId !== null
+      const shuffleDirectionPressed = !showWakeButton && exploreDirection !== 0 && !shuffleLoopActive
+      const oppositeBackwardDim = shuffleDirectionPressed && exploreDirection > 0
+      const oppositeForwardDim = shuffleDirectionPressed && exploreDirection < 0
       const shuffleLoopButtonClass = [
         'game-hud-button icon-only',
+        showWakeButton && !shuffleLoopActive ? 'middle-control' : '',
         shuffleLoopActive ? 'active hold-pulse' : '',
-        !shuffleLoopActive && homeGraceQuiet ? 'visual-disabled' : '',
-        longHoldShuffleLoopDim ? 'long-hold-other' : '',
-        !shuffleLoopActive && homeGraceQuiet ? '' : hudTapGlowClass('shuffle-loop'),
+        !shuffleLoopActive ? 'visual-disabled' : '',
+        shuffleLoopActive ? hudTapGlowClass('shuffle-loop') : '',
       ].filter(Boolean).join(' ')
       const shuffleLoopButtonStyle = shuffleLoopActive
         ? { ...hudButtonStyle('loop'), ...hudHoldPulseStyle(shuffleLoopControlRef.current.pulseStartedAt || animationTime - 1, 'shuffle-loop') }
@@ -3502,23 +3630,18 @@ function App() {
       const backwardActive = exploreDirection === -1 && !shuffleLoopActive
       const forwardActive = exploreDirection === 1 && !shuffleLoopActive
       return (
-        <div key={showWakeButton ? 'game-hud-shuffle-wake' : 'game-hud-shuffle-move'} className={gameHudLayerClass(shuffleLoopActive ? 'shuffle-loop-active' : '')} style={gameHudStyle} aria-label="Shuffle controls">
-          {showWakeButton ? (
-            <div className="game-hud-placeholder icon-only" aria-hidden="true" />
-          ) : (
-            <button
-              className={shuffleLoopButtonClass}
-              type="button"
-              aria-label={shuffleLoopActive ? 'Stop shuffle loop push' : 'Shuffle loop push'}
-              aria-pressed={shuffleLoopActive}
-              title={shuffleLoopActive ? 'Stop loop push' : 'Loop push'}
-              disabled={shuffleLoopButtonDisabled}
-              style={shuffleLoopButtonStyle}
-              onClick={startShuffleLoopPush}
-            >
-              <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
-            </button>
-          )}
+        <div key="game-hud-shuffle" className={gameHudLayerClass(shuffleLoopActive ? 'shuffle-loop-active' : '')} style={gameHudStyle} aria-label="Shuffle controls">
+          <button
+            className={shuffleLoopButtonClass}
+            type="button"
+            aria-label={shuffleLoopActive ? 'Stop shuffle loop push' : 'Shuffle loop push'}
+            aria-pressed={shuffleLoopActive}
+            disabled={shuffleLoopButtonDisabled}
+            style={shuffleLoopButtonStyle}
+            onClick={startShuffleLoopPush}
+          >
+            <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
           {showWakeButton ? (
             <button
               className={`game-hud-button span-2 primary ambient-pulse${hudTapGlowClass('wake')}`}
@@ -3534,10 +3657,9 @@ function App() {
           ) : (
             <>
               <button
-                className={`${backwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${longHoldBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
+                className={`${backwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${oppositeBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
                 type="button"
                 aria-label="Move backward"
-                title="Back"
                 disabled={exploreBackDisabled}
                 style={backwardActive ? { ...hudButtonStyle('backward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'backward') } : hudButtonStyle('backward')}
                 onPointerDown={(event) => handleExplorePointerDown(-1, event)}
@@ -3548,10 +3670,9 @@ function App() {
                 <ChevronsLeft size={iconSize} strokeWidth={iconStrokeWidth} />
               </button>
               <button
-                className={`${forwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${longHoldForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
+                className={`${forwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${oppositeForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
                 type="button"
                 aria-label="Move forward"
-                title="Forward"
                 disabled={exploreForwardDisabled}
                 style={forwardActive ? { ...hudButtonStyle('forward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'forward') } : hudButtonStyle('forward')}
                 onPointerDown={(event) => handleExplorePointerDown(1, event)}
@@ -3563,12 +3684,12 @@ function App() {
               </button>
             </>
           )}
-          {backButton}
+          {backButton('', shuffleDirectionPressed, true)}
         </div>
       )
     }
 
-    if (gameScreen === 'loop') {
+    if (gameHudScreen === 'loop') {
       const loopStatusActive = gameMode === 'loop' && !playPaused
       const loopStatusClass = [
         'game-hud-button icon-only',
@@ -3585,14 +3706,13 @@ function App() {
             type="button"
             aria-label={loopStatusActive ? 'Pause loop motion' : 'Resume loop motion'}
             aria-pressed={loopStatusActive}
-            title={loopStatusActive ? 'Pause loop' : 'Resume loop'}
             style={loopStatusStyle}
             onClick={toggleLoopMotion}
           >
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
           <div className="game-hud-placeholder span-2" aria-hidden="true" />
-          {backButton}
+          {backButton()}
         </div>
       )
     }
@@ -3626,9 +3746,9 @@ function App() {
             Drift
           </button>
         )}
-        {backButton}
-      </div>
-    )
+          {backButton()}
+        </div>
+      )
   }
 
   const handleScreenshot = () => {
@@ -3659,7 +3779,9 @@ function App() {
     }
   }
 
-  const publicGameBootReady = !publicGameBuild || publicGameCriticalReady
+  const publicGameBootReady = !publicGameBuild || publicGameHudReady
+  const publicGameWaitingForMoth = publicGameBuild && !publicGameMothReady
+  const publicGameWaitingForScene = publicGameBuild && publicGameMothReady && !publicGameHudReady
 
   return (
     <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}${publicGameBuild ? ' public-game' : ''}`}>
@@ -3677,7 +3799,9 @@ function App() {
             <div
               className={[
                 'canvas-shell',
-                !publicGameBootReady ? 'public-game-loading' : '',
+                publicGameWaitingForMoth ? 'public-game-loading' : '',
+                publicGameWaitingForScene ? 'public-game-waiting-scene' : '',
+                !publicGameWaitingForMoth && !publicGameWaitingForScene ? 'public-game-scene-visible' : '',
                 workspaceMode === 'game' && gameFocusActive ? 'menu-focus-active' : '',
                 shuffleRestFocusActive ? 'shuffle-rest-focus-active' : '',
               ].filter(Boolean).join(' ')}
@@ -3705,11 +3829,6 @@ function App() {
               {workspaceMode === 'game' && (
                 <div className={`game-menu-focus${gameFocusActive ? ' active' : ''}`} aria-hidden="true">
                   <div className="game-menu-focus-backdrop" />
-                </div>
-              )}
-              {publicGameBuild && !publicGameBootReady && (
-                <div className="public-game-loader" role="status" aria-live="polite">
-                  <span>{publicGameLoadFailed ? 'Moonlight is taking a little longer' : 'Gathering moonlight'}</span>
                 </div>
               )}
               {workspaceMode === 'editor' && selectionBox && (
@@ -4754,6 +4873,7 @@ function App() {
   }
 
   function playHudSfx(intent: HudSfxIntent) {
+    tryResumePendingMusic()
     const preset = projectRef.current.gameplay.gameHudSoundPreset ?? 'none'
     if (preset === 'none') {
       return
@@ -4814,6 +4934,81 @@ function App() {
     }
   }
 
+  function clearMusicFade() {
+    if (musicFadeFrameRef.current !== null) {
+      window.cancelAnimationFrame(musicFadeFrameRef.current)
+      musicFadeFrameRef.current = null
+    }
+  }
+
+  function setMusicVolumeSmooth(targetVolume: number, durationMs: number, onComplete?: () => void) {
+    const music = musicRef.current
+    if (!music) {
+      onComplete?.()
+      return
+    }
+    clearMusicFade()
+    const startVolume = music.volume
+    const startedAt = performance.now()
+    const target = clamp(targetVolume, 0, 1)
+    const duration = Math.max(0, durationMs)
+    if (duration <= 0) {
+      music.volume = target
+      onComplete?.()
+      return
+    }
+    const tick = (time: number) => {
+      const progress = clamp((time - startedAt) / duration, 0, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      music.volume = startVolume + (target - startVolume) * eased
+      if (progress < 1) {
+        musicFadeFrameRef.current = window.requestAnimationFrame(tick)
+        return
+      }
+      musicFadeFrameRef.current = null
+      onComplete?.()
+    }
+    musicFadeFrameRef.current = window.requestAnimationFrame(tick)
+  }
+
+  function fadeMusicToPause(_reason: 'background' | 'menu' | 'settings' | 'track-change', immediate = false) {
+    const music = musicRef.current
+    if (!music) {
+      return
+    }
+    clearMusicLoopGap()
+    if (immediate || music.paused) {
+      clearMusicFade()
+      music.volume = 0
+      music.pause()
+      return
+    }
+    setMusicVolumeSmooth(0, musicFadeOutMs, () => {
+      music.pause()
+    })
+  }
+
+  function tryResumePendingMusic() {
+    if (!musicPendingGestureResumeRef.current) {
+      return
+    }
+    const music = musicRef.current
+    const gameplay = projectRef.current.gameplay
+    if (!music || !gameplay.musicEnabled || gameplay.musicMuted) {
+      musicPendingGestureResumeRef.current = false
+      return
+    }
+    music.loop = shouldNativeLoopMusic()
+    music.volume = 0
+    void music.play().then(() => {
+      musicPendingGestureResumeRef.current = false
+      musicResumeAfterHiddenRef.current = false
+      setMusicVolumeSmooth(gameplay.musicVolume, musicFadeInMs)
+    }).catch(() => {
+      setMessage('Music is ready; tap a game button to resume audio')
+    })
+  }
+
   function shouldNativeLoopMusic(mode = gameModeRef.current) {
     return mode === 'journey'
   }
@@ -4821,11 +5016,15 @@ function App() {
   function handleMusicPlay(history = true) {
     clearMusicLoopGap()
     musicResumeAfterHiddenRef.current = false
+    musicPendingGestureResumeRef.current = false
     const music = musicRef.current
     if (music) {
       music.loop = shouldNativeLoopMusic()
-      music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
-      void music.play().catch(() => {
+      music.volume = 0
+      void music.play().then(() => {
+        setMusicVolumeSmooth(projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume, musicFadeInMs)
+      }).catch(() => {
+        musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
@@ -4835,19 +5034,24 @@ function App() {
   function handleMusicPause(history = true) {
     clearMusicLoopGap()
     musicResumeAfterHiddenRef.current = false
-    musicRef.current?.pause()
+    musicPendingGestureResumeRef.current = false
+    fadeMusicToPause('menu')
     updateGameplay({ musicEnabled: false }, 'Moon Moth music paused', history)
   }
 
   function handleMusicRestart(history = true) {
     clearMusicLoopGap()
     musicResumeAfterHiddenRef.current = false
+    musicPendingGestureResumeRef.current = false
     const music = musicRef.current
     if (music) {
       music.loop = shouldNativeLoopMusic()
-      music.volume = projectRef.current.gameplay.musicVolume
       music.currentTime = 0
-      void music.play().catch(() => {
+      music.volume = 0
+      void music.play().then(() => {
+        setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
+      }).catch(() => {
+        musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
