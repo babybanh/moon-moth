@@ -885,6 +885,7 @@ function App() {
     music.loop = shouldNativeLoopMusic()
     music.preload = 'auto'
     music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
+    music.muted = Boolean(projectRef.current.gameplay.musicMuted)
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
     const handleEnded = () => {
       clearMusicLoopGap()
@@ -897,6 +898,7 @@ function App() {
           }
           music.currentTime = 0
           music.volume = gameplay.musicMuted ? 0 : gameplay.musicVolume
+          music.muted = Boolean(gameplay.musicMuted)
           void music.play().catch(() => {
             musicPendingGestureResumeRef.current = true
             setMessage('Music is ready; tap a game button to resume audio')
@@ -933,6 +935,7 @@ function App() {
     if (musicFadeFrameRef.current === null) {
       music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
     }
+    music.muted = Boolean(project.gameplay.musicMuted)
     if (!shouldManualLoopMusic() || !project.gameplay.musicEnabled || project.gameplay.musicMuted) {
       clearMusicLoopGap()
     }
@@ -942,6 +945,7 @@ function App() {
     }
     if (!project.gameplay.musicMuted && music.paused && musicLoopGapTimeoutRef.current === null) {
       music.volume = 0
+      music.muted = false
       void music.play().then(() => {
         setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
       }).catch(() => {
@@ -980,6 +984,7 @@ function App() {
       }
       music.loop = shouldNativeLoopMusic()
       music.volume = 0
+      music.muted = Boolean(gameplay.musicMuted)
       void music.play().then(() => {
         musicResumeAfterHiddenRef.current = false
         musicPendingGestureResumeRef.current = false
@@ -5052,6 +5057,7 @@ function App() {
     if (immediate || music.paused) {
       clearMusicFade()
       music.volume = 0
+      music.muted = true
       music.pause()
       return
     }
@@ -5072,6 +5078,7 @@ function App() {
     }
     music.loop = shouldNativeLoopMusic()
     music.volume = 0
+    music.muted = false
     void music.play().then(() => {
       musicPendingGestureResumeRef.current = false
       musicResumeAfterHiddenRef.current = false
@@ -5097,8 +5104,9 @@ function App() {
     if (music) {
       music.loop = shouldNativeLoopMusic()
       music.volume = 0
+      music.muted = false
       void music.play().then(() => {
-        setMusicVolumeSmooth(projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume, musicFadeInMs)
+        setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
       }).catch(() => {
         musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; press Play Music when the browser allows it')
@@ -5117,14 +5125,18 @@ function App() {
       music.loop = shouldNativeLoopMusic()
       if (music.paused || music.ended) {
         music.volume = 0
+        music.muted = false
         void music.play().then(() => {
-          setMusicVolumeSmooth(gameplay.musicMuted ? 0 : gameplay.musicVolume, musicFadeInMs)
+          setMusicVolumeSmooth(gameplay.musicVolume, musicFadeInMs)
         }).catch(() => {
           musicPendingGestureResumeRef.current = true
           setMessage('Music is ready; tap a game button to resume audio')
         })
-      } else if (!gameplay.musicMuted && music.volume < gameplay.musicVolume - 0.02) {
-        setMusicVolumeSmooth(gameplay.musicVolume, 180)
+      } else {
+        music.muted = false
+        if (music.volume < gameplay.musicVolume - 0.02) {
+          setMusicVolumeSmooth(gameplay.musicVolume, 180)
+        }
       }
     }
     updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music playing', history)
@@ -5147,6 +5159,7 @@ function App() {
       music.loop = shouldNativeLoopMusic()
       music.currentTime = 0
       music.volume = 0
+      music.muted = false
       void music.play().then(() => {
         setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
       }).catch(() => {
@@ -5161,6 +5174,7 @@ function App() {
     const muted = !projectRef.current.gameplay.musicMuted
     const music = musicRef.current
     if (music) {
+      music.muted = muted
       music.volume = muted ? 0 : projectRef.current.gameplay.musicVolume
     }
     updateGameplay({ musicMuted: muted }, muted ? 'Moon Moth music muted' : 'Moon Moth music unmuted', history)
