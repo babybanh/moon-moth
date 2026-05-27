@@ -445,6 +445,7 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const menuMothCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const menuFocusDissolveTimeoutRef = useRef<number | null>(null)
+  const firstExploreAutoDriftTimeoutRef = useRef<number | null>(null)
   const exploreRelocationTimeoutRef = useRef<number | null>(null)
   const exploreIdleFocusTimeoutRefs = useRef<number[]>([])
   const exploreIdleFocusResumeTimeoutRef = useRef<number | null>(null)
@@ -457,6 +458,8 @@ function App() {
   const dragRef = useRef<DragState | null>(null)
   const historyRef = useRef<{ past: EditorProject[]; future: EditorProject[] }>({ past: [], future: [] })
   const projectRef = useRef(project)
+  const workspaceModeRef = useRef<WorkspaceMode>(workspaceMode)
+  const appModeRef = useRef<AppMode>(appMode)
   const selectionRef = useRef(selection)
   const selectedItemIdsRef = useRef(selectedItemIds)
   const selectedRoutePointIdsRef = useRef(selectedRoutePointIds)
@@ -468,6 +471,7 @@ function App() {
   const exploreHasInteractedRef = useRef(false)
   const exploreSettledAtRef = useRef(0)
   const exploreIdleFocusTriggeredRef = useRef(false)
+  const hasAutoDriftedOnFirstExploreRef = useRef(false)
   const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
   const shuffleLoopControlRef = useRef<ShuffleLoopControlState>(stoppedShuffleLoopControl())
   const gameCanvasGestureRef = useRef<GameCanvasGestureState | null>(null)
@@ -492,6 +496,8 @@ function App() {
   const musicFadeFrameRef = useRef<number | null>(null)
   const recentShufflePointIndicesRef = useRef<number[]>([])
   const gameModeRef = useRef<GameMode>(gameMode)
+  const gameScreenRef = useRef<GameScreen>(gameScreen)
+  const playPausedRef = useRef(playPaused)
   const journeyDirectionRef = useRef<-1 | 1>(1)
   const journeyEndpointWaitUntilRef = useRef(0)
   const failedImageSourcesRef = useRef<Set<string>>(new Set())
@@ -510,9 +516,20 @@ function App() {
     setJsonDraft(JSON.stringify(project, null, 2))
   }, [project])
 
+  useEffect(() => {
+    workspaceModeRef.current = workspaceMode
+    appModeRef.current = appMode
+    gameModeRef.current = gameMode
+    gameScreenRef.current = gameScreen
+    playPausedRef.current = playPaused
+  }, [appMode, gameMode, gameScreen, playPaused, workspaceMode])
+
   useEffect(() => () => {
     if (menuFocusDissolveTimeoutRef.current !== null) {
       window.clearTimeout(menuFocusDissolveTimeoutRef.current)
+    }
+    if (firstExploreAutoDriftTimeoutRef.current !== null) {
+      window.clearTimeout(firstExploreAutoDriftTimeoutRef.current)
     }
     if (exploreRelocationTimeoutRef.current !== null) {
       window.clearTimeout(exploreRelocationTimeoutRef.current)
@@ -1831,8 +1848,13 @@ function App() {
   }
 
   function enterJourneyMode(message = 'Explore mode: hold Drift to move') {
+    const shouldScheduleFirstExploreAutoDrift = workspaceMode === 'game'
+      && gameScreen === 'menu'
+      && !hasAutoDriftedOnFirstExploreRef.current
+      && projectRef.current.route.length > 1
     playHudSfx('mode')
     triggerHudTapGlow('explore')
+    clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
     clearExploreIdleFocus()
@@ -1865,12 +1887,16 @@ function App() {
     setPlayPaused(false)
     handleMusicRestart(false)
     randomizeHudHoldPulse('loop')
+    if (shouldScheduleFirstExploreAutoDrift) {
+      scheduleFirstExploreAutoDrift()
+    }
     setMessage(message)
   }
 
   function enterExploreMode(message = 'Shuffle mode: move freely along the path') {
     playHudSfx('mode')
     triggerHudTapGlow('shuffle')
+    clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
     resetExploreIdleFocusTracking()
@@ -1935,6 +1961,7 @@ function App() {
   function enterLoopMode(message = 'Loop mode: drifting between both ends') {
     playHudSfx('mode')
     triggerHudTapGlow('loop')
+    clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
     clearExploreIdleFocus()
@@ -1987,6 +2014,7 @@ function App() {
       enterGameMenu('Game menu')
       return
     }
+    clearFirstExploreAutoDrift()
     clearExploreIdleFocus()
     setWorkspaceMode('editor')
     enterEditModeAtMoth()
@@ -1994,6 +2022,7 @@ function App() {
   }
 
   function enterGameMenu(message = 'Game menu') {
+    clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
     clearExploreIdleFocus()
@@ -2158,6 +2187,57 @@ function App() {
       setMenuFocusDissolving(false)
       menuFocusDissolveTimeoutRef.current = null
     }, 2900)
+  }
+
+  function clearFirstExploreAutoDrift() {
+    if (firstExploreAutoDriftTimeoutRef.current !== null) {
+      window.clearTimeout(firstExploreAutoDriftTimeoutRef.current)
+      firstExploreAutoDriftTimeoutRef.current = null
+    }
+  }
+
+  function scheduleFirstExploreAutoDrift() {
+    hasAutoDriftedOnFirstExploreRef.current = true
+    clearFirstExploreAutoDrift()
+    firstExploreAutoDriftTimeoutRef.current = window.setTimeout(() => {
+      firstExploreAutoDriftTimeoutRef.current = null
+      if (
+        workspaceModeRef.current !== 'game'
+        || gameModeRef.current !== 'journey'
+        || gameScreenRef.current !== 'journey'
+        || appModeRef.current !== 'play'
+        || playPausedRef.current
+        || routeSampleDataRef.current.totalLength <= 0
+      ) {
+        return
+      }
+      const currentForwardControl = forwardControlRef.current
+      const time = performance.now()
+      if (
+        currentForwardControl.pressed
+        || currentForwardControl.releaseCarryUntil > time
+        || currentForwardControl.idlePushUntil > time
+      ) {
+        return
+      }
+      const direction = journeyDirectionRef.current
+      if ((direction > 0 && playProgressRef.current >= 1) || (direction < 0 && playProgressRef.current <= 0)) {
+        return
+      }
+      const now = time
+      const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+      forwardControlRef.current = {
+        pressed: false,
+        startedAt: now,
+        releaseCarryUntil: now + releaseCarryMs,
+        idleSince: now + releaseCarryMs,
+        idlePushStartedAt: 0,
+        idlePushUntil: 0,
+        idlePushCount: 0,
+      }
+      setDriftReleaseGlowUntil(now + driftReleaseGlowMs)
+      setMessage(`First drift: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
+    }, 3000)
   }
 
   function clearExploreRelocationTransition() {
