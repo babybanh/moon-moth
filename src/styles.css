@@ -254,6 +254,7 @@ input[type="range"] {
 
 .game-surface {
   --game-surface-size: 628px;
+  position: relative;
   display: grid;
   align-self: start;
   justify-self: center;
@@ -279,6 +280,13 @@ input[type="range"] {
   width: 100vw;
   height: 100dvh;
   place-items: center;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
 }
 
 .app-shell.public-game .public-game-frame {
@@ -301,6 +309,26 @@ input[type="range"] {
   max-height: none;
   transform: scale(var(--public-game-scale, 1));
   transform-origin: top left;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.app-shell.public-game .canvas-shell,
+.app-shell.public-game canvas,
+.app-shell.public-game .game-ui-layer,
+.app-shell.public-game .game-hud-button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.app-shell.public-game .game-hud-button:focus {
+  outline: none;
 }
 
 .canvas-shell {
@@ -367,6 +395,20 @@ input[type="range"] {
   touch-action: none;
 }
 
+.game-top-ui-layer {
+  position: absolute;
+  top: calc(-1 * (var(--game-hud-cell-size) + (18px * var(--game-hud-scale))));
+  left: 50%;
+  z-index: 12;
+  translate: -50% 0;
+}
+
+.game-top-ui-layer.preloaded-hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 @keyframes gameHudRowDissolveIn {
   0% {
     opacity: 0;
@@ -401,6 +443,7 @@ input[type="range"] {
 
 .game-hud-button,
 .game-hud-button-pair {
+  display: inline-flex;
   position: relative;
   isolation: isolate;
   justify-content: center;
@@ -756,6 +799,7 @@ input[type="range"] {
 .game-hud-button.visual-disabled:hover:not(:disabled),
 .game-hud-button.visual-disabled:active:not(:disabled) {
   opacity: 0.72;
+  box-shadow: none;
 }
 
 .game-ui-layer.shuffle-loop-active .game-hud-button.middle-control.visual-disabled,

@@ -747,6 +747,25 @@ function App() {
     if (!publicGameBuild) {
       return
     }
+    const preventNativeGesture = (event: Event) => {
+      event.preventDefault()
+    }
+    document.addEventListener('gesturestart', preventNativeGesture)
+    document.addEventListener('gesturechange', preventNativeGesture)
+    document.addEventListener('gestureend', preventNativeGesture)
+    document.addEventListener('dblclick', preventNativeGesture, { capture: true })
+    return () => {
+      document.removeEventListener('gesturestart', preventNativeGesture)
+      document.removeEventListener('gesturechange', preventNativeGesture)
+      document.removeEventListener('gestureend', preventNativeGesture)
+      document.removeEventListener('dblclick', preventNativeGesture, { capture: true })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!publicGameBuild) {
+      return
+    }
 
     const criticalSources = collectPublicCriticalImageSources(project)
     const missingSources = Array.from(criticalSources).filter((src) => (
@@ -869,25 +888,25 @@ function App() {
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
     const handleEnded = () => {
       clearMusicLoopGap()
+      if (shouldManualLoopMusic()) {
+        musicLoopGapTimeoutRef.current = window.setTimeout(() => {
+          const latestMusic = musicRef.current
+          const gameplay = projectRef.current.gameplay
+          if (!shouldManualLoopMusic() || latestMusic !== music || !gameplay.musicEnabled || gameplay.musicMuted) {
+            return
+          }
+          music.currentTime = 0
+          music.volume = gameplay.musicMuted ? 0 : gameplay.musicVolume
+          void music.play().catch(() => {
+            musicPendingGestureResumeRef.current = true
+            setMessage('Music is ready; tap a game button to resume audio')
+          })
+        }, musicLoopGapMs)
+        return
+      }
       if (gameModeRef.current === 'explore') {
         beginExploreSongFinish()
-        return
       }
-      if (gameModeRef.current !== 'loop') {
-        return
-      }
-      musicLoopGapTimeoutRef.current = window.setTimeout(() => {
-        const latestMusic = musicRef.current
-        const gameplay = projectRef.current.gameplay
-        if (gameModeRef.current !== 'loop' || latestMusic !== music || !gameplay.musicEnabled || gameplay.musicMuted) {
-          return
-        }
-        music.currentTime = 0
-        music.volume = gameplay.musicMuted ? 0 : gameplay.musicVolume
-        void music.play().catch(() => {
-          setMessage('Music is ready; press Play Music when the browser allows it')
-        })
-      }, musicLoopGapMs)
     }
     music.addEventListener('ended', handleEnded)
     musicRef.current = music
@@ -914,7 +933,7 @@ function App() {
     if (musicFadeFrameRef.current === null) {
       music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
     }
-    if (gameMode !== 'loop' || !project.gameplay.musicEnabled || project.gameplay.musicMuted) {
+    if (!shouldManualLoopMusic() || !project.gameplay.musicEnabled || project.gameplay.musicMuted) {
       clearMusicLoopGap()
     }
     if (!project.gameplay.musicEnabled) {
@@ -933,7 +952,7 @@ function App() {
   }, [gameMode, project.gameplay.musicEnabled, project.gameplay.musicMuted, project.gameplay.musicVolume])
 
   useEffect(() => {
-    const pauseForBackground = (immediate = false) => {
+    const pauseForBackground = (immediate = true) => {
       const music = musicRef.current
       const wasPlaying = Boolean(
         music
@@ -972,20 +991,23 @@ function App() {
     }
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        pauseForBackground()
+        pauseForBackground(true)
       } else {
         resumeFromBackground()
       }
     }
     const handlePageHide = () => pauseForBackground(true)
-    const handleWindowBlur = () => pauseForBackground(false)
+    const handleWindowBlur = () => pauseForBackground(true)
+    const handleFreeze = () => pauseForBackground(true)
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('freeze', handleFreeze)
     window.addEventListener('pagehide', handlePageHide)
     window.addEventListener('pageshow', resumeFromBackground)
     window.addEventListener('blur', handleWindowBlur)
     window.addEventListener('focus', resumeFromBackground)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener('freeze', handleFreeze)
       window.removeEventListener('pagehide', handlePageHide)
       window.removeEventListener('pageshow', resumeFromBackground)
       window.removeEventListener('blur', handleWindowBlur)
@@ -2037,24 +2059,35 @@ function App() {
   }
 
   function startShuffleLoopPush() {
-    if (gameModeRef.current !== 'explore' || exploreSongEnded || exploreFinishRef.current.active) {
+    if (gameModeRef.current !== 'explore') {
       setMessage('Shuffle loop push is not available right now')
       return
     }
     if (shuffleLoopControlRef.current.active) {
       const direction = shuffleLoopControlRef.current.direction
       clearShuffleLoopPush(direction)
-      mothMotionRef.current.velocity = 0
-      mothMotionRef.current.trailVelocity = 0
-      playHudSfx('release')
       triggerHudTapGlow('shuffle-loop')
       setMessage('Shuffle loop push stopped')
       return
     }
+    const restartMusic = exploreSongEnded || exploreFinishRef.current.active || Boolean(musicRef.current?.ended)
+    if (exploreSongEnded) {
+      setExploreSongEnded(false)
+    }
+    if (exploreFinishRef.current.active) {
+      stopExploreFinish()
+    }
     const velocityDirection = Math.sign(mothMotionRef.current.velocity)
     const controlDirection = exploreControlRef.current.direction || exploreControlRef.current.releaseDirection
-    const direction = (controlDirection || (velocityDirection < 0 ? -1 : 1)) as -1 | 1
+    let direction = (controlDirection || (velocityDirection < 0 ? -1 : 1)) as -1 | 1
+    if (direction < 0 && playProgressRef.current <= 0) {
+      direction = 1
+    }
+    if (direction > 0 && playProgressRef.current >= 1) {
+      direction = -1
+    }
     clearExploreIdleFocus()
+    setGameHudScreenWithHomeGrace('explore')
     stopExploreControl(undefined, false)
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
       setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
@@ -2065,7 +2098,11 @@ function App() {
     setExploreDirection(0)
     exploreHasInteractedRef.current = true
     resetExploreIdleFocusTracking()
-    playHudSfx('turn')
+    if (restartMusic) {
+      handleMusicRestart(false)
+    } else {
+      ensureMusicPlaying(false)
+    }
     triggerHudTapGlow('shuffle-loop')
     randomizeHudHoldPulse('shuffle-loop')
     triggerShuffleLoopPulse(direction, performance.now(), stoppedShuffleLoopControl(direction))
@@ -2138,6 +2175,7 @@ function App() {
     exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
     exploreIdleFocusTimeoutRefs.current = []
     clearExploreIdleFocusResume()
+    exploreIdleFocusTriggeredRef.current = false
     setExploreIdleFocusActive(false)
     setExploreIdleFocusVisible(false)
   }
@@ -2161,6 +2199,13 @@ function App() {
     if (workspaceMode !== 'game' || gameModeRef.current !== 'explore' || gameMenuReturnTimeoutRef.current !== null) {
       return
     }
+    const directionBeforeWake = (
+      exploreControlRef.current.direction
+      || exploreControlRef.current.releaseDirection
+      || lastShuffleDirectionRef.current
+      || -1
+    ) as -1 | 1
+    exploreIdleFocusResumeDirectionRef.current = directionBeforeWake
     exploreIdleFocusTriggeredRef.current = true
     setGameHudScreen('shuffle-wake')
     setExploreIdleFocusVisible(true)
@@ -2199,43 +2244,23 @@ function App() {
   }
 
   function wakeExploreIdleFocusReturn() {
+    const directionBeforeWake = exploreIdleFocusResumeDirectionRef.current ?? lastShuffleDirectionRef.current ?? -1
+    const wakeDirection = (directionBeforeWake > 0 ? -1 : 1) as -1 | 1
     clearExploreIdleFocusResume()
     playHudSfx('mode')
     setGameHudScreenWithHomeGrace('explore')
     setExploreIdleFocusActive(false)
-    setMessage('Shuffle waking')
-    exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
-      exploreIdleFocusResumeTimeoutRef.current = null
-      setExploreIdleFocusVisible(false)
-      exploreIdleFocusTriggeredRef.current = false
-      exploreHasInteractedRef.current = false
-      exploreSettledAtRef.current = 0
-      setMessage('Shuffle ready')
-    }, exploreIdleFocusResumeDelayMs)
+    setExploreIdleFocusVisible(false)
+    exploreIdleFocusTriggeredRef.current = false
+    exploreHasInteractedRef.current = false
+    exploreSettledAtRef.current = 0
+    nudgeExploreFromRest(wakeDirection)
   }
 
   function returnToGameMenu(message = 'Game menu') {
     playHudSfx('home')
-    const softenExploreReturn = workspaceMode === 'game' && gameScreen === 'explore'
-    setGameHudScreenWithHomeGrace('menu')
-    if (!softenExploreReturn) {
-      enterGameMenu(message)
-      return
-    }
     clearGameMenuReturnTransition()
-    stopExploreControl(undefined, false)
-    stopExploreFinish()
-    mothMotionRef.current.velocity = 0
-    mothMotionRef.current.trailVelocity = 0
-    mothMotionRef.current.blurResumeAt = 0
-    handleMusicPause(false)
-    setExploreMenuReturnVisible(true)
-    setExploreMenuReturnActive(true)
-    setMessage('Returning to menu')
-    gameMenuReturnTimeoutRef.current = window.setTimeout(() => {
-      gameMenuReturnTimeoutRef.current = null
-      enterGameMenu(message)
-    }, gameMenuReturnDelayMs)
+    enterGameMenu(message)
   }
 
   function stopMenuFocusDissolve() {
@@ -2460,7 +2485,7 @@ function App() {
       setMessage('Shuffle song ended: controls locked')
       return
     }
-    if (!fromIdleFocusReturn && (exploreIdleFocusVisible || exploreIdleFocusActive)) {
+    if (!fromIdleFocusReturn && exploreIdleFocusTriggeredRef.current) {
       startExploreIdleFocusReturn(direction)
       return
     }
@@ -2510,6 +2535,7 @@ function App() {
     setAppMode('play')
     setPlayPaused(false)
     exploreHasInteractedRef.current = true
+    lastShuffleDirectionRef.current = direction
     exploreControlRef.current = {
       direction: 0,
       startedAt: 0,
@@ -3612,15 +3638,17 @@ function App() {
 
     if (gameHudScreen === 'explore' || gameHudScreen === 'shuffle-wake') {
       const showWakeButton = gameHudScreen === 'shuffle-wake'
-      const shuffleLoopButtonDisabled = !shuffleLoopActive && (exploreSongEnded || exploreFinishRef.current.active)
+      const shuffleSongEndedInvite = !shuffleLoopActive && !showWakeButton && (exploreSongEnded || exploreFinishRef.current.active)
+      const shuffleLoopButtonDisabled = false
       const shuffleDirectionPressed = !showWakeButton && exploreDirection !== 0 && !shuffleLoopActive
       const oppositeBackwardDim = shuffleDirectionPressed && exploreDirection > 0
       const oppositeForwardDim = shuffleDirectionPressed && exploreDirection < 0
       const shuffleLoopButtonClass = [
         'game-hud-button icon-only',
         showWakeButton && !shuffleLoopActive ? 'middle-control' : '',
+        shuffleSongEndedInvite ? 'ambient-pulse' : '',
         shuffleLoopActive ? 'active hold-pulse' : '',
-        !shuffleLoopActive ? 'visual-disabled' : '',
+        !shuffleLoopActive && !shuffleSongEndedInvite ? 'visual-disabled' : '',
         shuffleLoopActive ? hudTapGlowClass('shuffle-loop') : '',
       ].filter(Boolean).join(' ')
       const shuffleLoopButtonStyle = shuffleLoopActive
@@ -3684,7 +3712,7 @@ function App() {
               </button>
             </>
           )}
-          {backButton('', shuffleDirectionPressed, true)}
+          {backButton(shuffleSongEndedInvite ? ' ambient-pulse' : '', shuffleDirectionPressed, !showWakeButton && !shuffleSongEndedInvite)}
         </div>
       )
     }
@@ -3751,6 +3779,44 @@ function App() {
       )
   }
 
+  const renderGameTopHud = () => {
+    const shouldMountMusicHud = workspaceMode === 'game'
+    const shouldShowMusicHud = gameHudScreen === 'loop' || shuffleLoopActive
+    if (!shouldMountMusicHud) {
+      return null
+    }
+    const iconSize = gameHudIconSize
+    const iconStrokeWidth = hudStylePreset.iconStrokeWidth
+    const homeGraceQuiet = gameHudScreen === 'loop' && gameHudHomeDisabledUntil > animationTime
+    const forceQuiet = shuffleLoopActive || homeGraceQuiet
+    const musicOff = !project.gameplay.musicEnabled || project.gameplay.musicMuted
+    return (
+      <div className={gameHudLayerClass(`game-top-ui-layer${shouldShowMusicHud ? '' : ' preloaded-hidden'}`)} style={gameHudStyle} aria-hidden={!shouldShowMusicHud}>
+        <div className="game-hud-placeholder" aria-hidden="true" />
+        <div className="game-hud-placeholder" aria-hidden="true" />
+        <div className="game-hud-placeholder" aria-hidden="true" />
+        <button
+          className={`game-hud-button icon-only${forceQuiet ? ' visual-disabled' : hudTapGlowClass('music')}`}
+          type="button"
+          aria-label={musicOff ? 'Turn music on' : 'Turn music off'}
+          aria-pressed={!musicOff}
+          style={hudButtonStyle('home')}
+          onClick={() => {
+            triggerHudTapGlow('music')
+            if (musicOff) {
+              ensureMusicPlaying(false)
+              return
+            }
+            handleMusicMuteToggle(false)
+          }}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          {musicOff ? <VolumeX size={iconSize} strokeWidth={iconStrokeWidth} /> : <Volume2 size={iconSize} strokeWidth={iconStrokeWidth} />}
+        </button>
+      </div>
+    )
+  }
+
   const handleScreenshot = () => {
     const canvas = canvasRef.current
     if (!canvas) {
@@ -3796,6 +3862,7 @@ function App() {
         )}
         <div className={publicGameBuild ? 'public-game-frame' : 'game-surface-frame'} style={gameSurfaceStyle}>
           <div className="game-surface">
+            {publicGameBootReady && renderGameTopHud()}
             <div
               className={[
                 'canvas-shell',
@@ -3815,6 +3882,11 @@ function App() {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
+                onContextMenu={(event) => {
+                  if (publicGameBuild || workspaceMode === 'game') {
+                    event.preventDefault()
+                  }
+                }}
                 onWheel={handleWheel}
                 onDragOver={handleCanvasDragOver}
                 onDrop={handleCanvasDrop}
@@ -5013,6 +5085,10 @@ function App() {
     return mode === 'journey'
   }
 
+  function shouldManualLoopMusic() {
+    return gameModeRef.current === 'loop' || shuffleLoopControlRef.current.active
+  }
+
   function handleMusicPlay(history = true) {
     clearMusicLoopGap()
     musicResumeAfterHiddenRef.current = false
@@ -5027,6 +5103,29 @@ function App() {
         musicPendingGestureResumeRef.current = true
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
+    }
+    updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music playing', history)
+  }
+
+  function ensureMusicPlaying(history = true) {
+    clearMusicLoopGap()
+    musicResumeAfterHiddenRef.current = false
+    musicPendingGestureResumeRef.current = false
+    const music = musicRef.current
+    const gameplay = projectRef.current.gameplay
+    if (music) {
+      music.loop = shouldNativeLoopMusic()
+      if (music.paused || music.ended) {
+        music.volume = 0
+        void music.play().then(() => {
+          setMusicVolumeSmooth(gameplay.musicMuted ? 0 : gameplay.musicVolume, musicFadeInMs)
+        }).catch(() => {
+          musicPendingGestureResumeRef.current = true
+          setMessage('Music is ready; tap a game button to resume audio')
+        })
+      } else if (!gameplay.musicMuted && music.volume < gameplay.musicVolume - 0.02) {
+        setMusicVolumeSmooth(gameplay.musicVolume, 180)
+      }
     }
     updateGameplay({ musicEnabled: true, musicMuted: false }, 'Moon Moth music playing', history)
   }
