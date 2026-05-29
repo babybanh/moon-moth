@@ -1,9 +1,10 @@
 import { assetById, mothAsset } from './assets'
 import { isFrontOccluder, resolveItemGlowBehaviors, resolveItemGlowTuning } from './project'
 import { resolveMothLean, sampleRouteData, sampleRouteTangent, worldToScreen, type RouteSampleData } from './routeMath'
-import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, GlowBehavior, LayerId, Point, Selection, Size } from './types'
+import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, GlowBehavior, LayerId, Point, RenderBand, Selection, Size } from './types'
 
 export type ImageMap = Map<string, HTMLImageElement>
+export type RenderItemBuckets = Record<LayerId, Record<RenderBand, EditorItem[]>>
 
 const silhouetteBufferCache = new Map<string, HTMLCanvasElement>()
 
@@ -25,6 +26,9 @@ export type RenderOptions = {
   hideRoutePath?: boolean
   hideWorldFrame?: boolean
   suppressMissingArtwork?: boolean
+  showMothFallback?: boolean
+  suppressTrailRings?: boolean
+  renderItemBuckets?: RenderItemBuckets
 }
 
 export function renderScene(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
@@ -149,17 +153,21 @@ function drawLayer(
   project: EditorProject,
   layerId: LayerId,
   options: RenderOptions,
-  renderBand: 'normal' | 'frontOccluder',
+  renderBand: RenderBand,
 ) {
   const layer = project.layers[layerId]
   if (!layer.visible) {
     return
   }
-  const items = project.items
-    .filter((item) => item.layerId === layerId && item.visible && (isFrontOccluder(item) ? 'frontOccluder' : 'normal') === renderBand)
-    .sort(compareItemsByLayerZ)
+  const items = options.renderItemBuckets?.[layerId]?.[renderBand]
+    ?? project.items
+      .filter((item) => item.layerId === layerId && item.visible && (isFrontOccluder(item) ? 'frontOccluder' : 'normal') === renderBand)
+      .sort(compareItemsByLayerZ)
 
   for (const item of items) {
+    if (!itemIntersectsViewport(item, project, options)) {
+      continue
+    }
     drawItem(context, item, project, options)
   }
 }
@@ -210,6 +218,24 @@ function drawItem(context: CanvasRenderingContext2D, item: EditorItem, project: 
     context.strokeRect(-width / 2, -height / 2, width, height)
   }
   context.restore()
+}
+
+function itemIntersectsViewport(item: EditorItem, project: EditorProject, options: RenderOptions) {
+  const bounds = itemScreenBounds(item, project, options.camera, options.viewport)
+  const rotation = Math.abs((item.rotation * Math.PI) / 180)
+  const rotatedWidth = Math.abs(Math.cos(rotation)) * bounds.width + Math.abs(Math.sin(rotation)) * bounds.height
+  const rotatedHeight = Math.abs(Math.sin(rotation)) * bounds.width + Math.abs(Math.cos(rotation)) * bounds.height
+  const centerX = bounds.x + bounds.width / 2
+  const centerY = bounds.y + bounds.height / 2
+  const effectPadding = Math.max(260, Math.max(rotatedWidth, rotatedHeight) * 0.36)
+  const left = centerX - rotatedWidth / 2 - effectPadding
+  const right = centerX + rotatedWidth / 2 + effectPadding
+  const top = centerY - rotatedHeight / 2 - effectPadding
+  const bottom = centerY + rotatedHeight / 2 + effectPadding
+  return right >= 0
+    && left <= options.viewport.width
+    && bottom >= 0
+    && top <= options.viewport.height
 }
 
 function drawSilhouetteImage(
@@ -484,7 +510,7 @@ function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject
     context.arc(x, y, puffRadius, 0, Math.PI * 2)
     context.fill()
 
-    const shouldDrawBubble = style === 'mist' && index % 3 === 0
+    const shouldDrawBubble = style === 'mist' && !options.suppressTrailRings && index % 3 === 0
     if (shouldDrawBubble) {
       const bubbleRadius = puffRadius * 0.34
       context.strokeStyle = `rgba(231, 255, 250, ${alpha * 1.2})`
@@ -503,14 +529,15 @@ function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject
 
 function drawTrailGlint(context: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha: number) {
   context.save()
-  context.strokeStyle = `rgba(255, 248, 207, ${Math.min(0.45, alpha)})`
-  context.lineWidth = Math.max(0.45, radius * 0.12)
+  const glowRadius = Math.max(1.5, radius * 0.55)
+  const glow = context.createRadialGradient(x, y, 0, x, y, glowRadius)
+  glow.addColorStop(0, `rgba(255, 248, 207, ${Math.min(0.42, alpha)})`)
+  glow.addColorStop(0.42, `rgba(230, 255, 238, ${Math.min(0.18, alpha * 0.55)})`)
+  glow.addColorStop(1, 'rgba(230, 255, 238, 0)')
+  context.fillStyle = glow
   context.beginPath()
-  context.moveTo(x - radius, y)
-  context.lineTo(x + radius, y)
-  context.moveTo(x, y - radius)
-  context.lineTo(x, y + radius)
-  context.stroke()
+  context.arc(x, y, glowRadius, 0, Math.PI * 2)
+  context.fill()
   context.restore()
 }
 
@@ -544,6 +571,11 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   const forwardGlowBoost = 1 + forwardGlowLevel * 0.22
   const glow = project.gameplay.mothGlow * glowPulse * forwardGlowBoost
   const image = options.images.get(mothAsset.src)
+  const canDrawMothImage = options.artworkMode === 'art' && Boolean(image?.complete && image.naturalWidth > 0)
+  const shouldDrawMothFallback = !canDrawMothImage && (!options.suppressMissingArtwork || options.showMothFallback)
+  if (!canDrawMothImage && !shouldDrawMothFallback) {
+    return
+  }
 
   context.save()
   const glowRadius = size * (0.74 + forwardGlowLevel * 0.08)
@@ -561,11 +593,8 @@ function drawMoth(context: CanvasRenderingContext2D, project: EditorProject, opt
   context.globalAlpha = 0.96
   context.shadowColor = 'rgba(174, 255, 227, 0.8)'
   context.shadowBlur = 10 + 10 * glow
-  if (options.artworkMode === 'art' && image?.complete) {
+  if (canDrawMothImage && image) {
     context.drawImage(image, -size / 2, -size / 2, size, size)
-  } else if (options.suppressMissingArtwork) {
-    context.restore()
-    return
   } else {
     context.fillStyle = '#dfffee'
     context.beginPath()
@@ -686,6 +715,36 @@ export function orderedLayerIds(project?: EditorProject): LayerId[] {
 
 export function orderItemsByLayerZ(items: EditorItem[]) {
   return [...items].sort(compareItemsByLayerZ)
+}
+
+export function buildRenderItemBuckets(project: EditorProject): RenderItemBuckets {
+  const buckets = Object.fromEntries(
+    orderedLayerIds(project).map((layerId) => [
+      layerId,
+      {
+        normal: [] as EditorItem[],
+        frontOccluder: [] as EditorItem[],
+      },
+    ]),
+  ) as RenderItemBuckets
+
+  for (const item of project.items) {
+    if (!item.visible || !project.layers[item.layerId]?.visible) {
+      continue
+    }
+    const bucket = buckets[item.layerId] ?? {
+      normal: [],
+      frontOccluder: [],
+    }
+    bucket[isFrontOccluder(item) ? 'frontOccluder' : 'normal'].push(item)
+    buckets[item.layerId] = bucket
+  }
+
+  for (const layerId of orderedLayerIds(project)) {
+    buckets[layerId].normal.sort(compareItemsByLayerZ)
+    buckets[layerId].frontOccluder.sort(compareItemsByLayerZ)
+  }
+  return buckets
 }
 
 function compareItemsByLayerZ(a: EditorItem, b: EditorItem) {

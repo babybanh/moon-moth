@@ -38,7 +38,7 @@ import {
   worldToScreen,
   type RouteSampleData,
 } from './routeMath'
-import { itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderMothOnly, renderScene, resizeHandles, type ImageMap } from './renderer'
+import { buildRenderItemBuckets, itemScreenBounds, orderedLayerIds, orderItemsByLayerZ, renderMothOnly, renderScene, resizeHandles, type ImageMap } from './renderer'
 import type {
   AppMode,
   AssetDefinition,
@@ -73,6 +73,18 @@ const publicGameHorizontalMargin = 0
 const publicGameVerticalMargin = 48
 const publicGameHudAllowance = 160
 const publicGameMaxScale = 1.25
+const publicMobileCanvasMaxScale = 1.5
+const publicDesktopCanvasMaxScale = 2.5
+const publicWarmupLookaheadSceneryCount = 32
+const publicCriticalFallbackSceneryCount = 8
+const publicCriticalForceSceneryCount = 3
+const publicCriticalFallbackMs = 12000
+const publicCriticalForceMs = 18000
+const publicImageLoadAttempts = 2
+const publicImageLoadTimeoutMs = 8000
+const publicStartWindowBack = 3600
+const publicStartWindowForward = 5600
+const publicStartWindowVertical = 3600
 
 function calculatePublicGameScale() {
   if (typeof window === 'undefined') {
@@ -85,6 +97,54 @@ function calculatePublicGameScale() {
     (window.innerWidth - publicGameHorizontalMargin) / gameSurfaceSize,
     availableLowerHalf / lowerAuthoredHalf,
   ), 0.36, publicGameMaxScale)
+}
+
+function isSmallPublicGameDisplay() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+  const smallViewport = Math.max(window.innerWidth, window.innerHeight) <= 900
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  return smallViewport || coarsePointer
+}
+
+function canvasRenderScale(publicScale: number) {
+  if (typeof window === 'undefined') {
+    return 1
+  }
+  const deviceScale = window.devicePixelRatio || 1
+  if (!publicGameBuild) {
+    return deviceScale
+  }
+  const maxScale = isSmallPublicGameDisplay()
+    ? publicMobileCanvasMaxScale
+    : publicDesktopCanvasMaxScale
+  return clamp(deviceScale * publicScale, 1, maxScale)
+}
+
+function prepareCanvasForRender(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  viewport: Size,
+  scale: number,
+) {
+  const width = Math.max(1, Math.floor(viewport.width * scale))
+  const height = Math.max(1, Math.floor(viewport.height * scale))
+  if (canvas.width !== width) {
+    canvas.width = width
+  }
+  if (canvas.height !== height) {
+    canvas.height = height
+  }
+  const styleWidth = `${viewport.width}px`
+  const styleHeight = `${viewport.height}px`
+  if (canvas.style.width !== styleWidth) {
+    canvas.style.width = styleWidth
+  }
+  if (canvas.style.height !== styleHeight) {
+    canvas.style.height = styleHeight
+  }
+  context.setTransform(scale, 0, 0, scale, 0, 0)
 }
 
 type EditorView = 'compact' | 'classic'
@@ -305,18 +365,38 @@ function cameraForCanvasView(camera: Camera, project: EditorProject): Camera {
   }
 }
 
-function loadImageElement(src: string): Promise<[string, HTMLImageElement | null]> {
+function loadImageElementOnce(src: string): Promise<[string, HTMLImageElement | null]> {
   return new Promise((resolve) => {
     const image = new window.Image()
+    let settled = false
+    const finish = (loadedImage: HTMLImageElement | null) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      window.clearTimeout(timeout)
+      resolve([src, loadedImage])
+    }
+    const timeout = window.setTimeout(() => finish(null), publicImageLoadTimeoutMs)
     image.onload = () => {
       const decode = typeof image.decode === 'function' ? image.decode() : Promise.resolve()
       decode
         .catch(() => undefined)
-        .then(() => resolve([src, image]))
+        .then(() => finish(image))
     }
-    image.onerror = () => resolve([src, null])
+    image.onerror = () => finish(null)
     image.src = src
   })
+}
+
+async function loadImageElement(src: string, attempts = publicImageLoadAttempts): Promise<[string, HTMLImageElement | null]> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const [loadedSrc, image] = await loadImageElementOnce(src)
+    if (image && image.naturalWidth > 0) {
+      return [loadedSrc, image]
+    }
+  }
+  return [src, null]
 }
 
 export function collectProjectImageSources(project: EditorProject) {
@@ -332,14 +412,44 @@ export function collectProjectImageSources(project: EditorProject) {
 
 export function collectPublicCriticalImageSources(project: EditorProject) {
   const sources = new Set<string>([mothAsset.src])
-  const routeStart = project.route[0] ?? { x: project.camera.x, y: project.camera.y }
-  const bounds = {
-    minX: routeStart.x - 3600,
-    maxX: routeStart.x + 5600,
-    minY: routeStart.y - 3600,
-    maxY: routeStart.y + 3600,
+  for (const entry of collectPublicRouteImageEntries(project)) {
+    if (entry.intersectsStartView) {
+      sources.add(entry.asset.src)
+    }
   }
-  const nearbyItems = project.items
+  return sources
+}
+
+export function collectPublicWarmupImageSources(project: EditorProject, playProgress = 0) {
+  const sources = new Set<string>([mothAsset.src])
+  const routeData = buildRouteSampleData(project.route, project.routeRenderMode, 72)
+  const currentPoint = sampleRouteData(routeData, playProgress)
+  const aheadPoint = sampleRouteData(routeData, clamp(playProgress + 0.08, 0, 1))
+  const behindPoint = sampleRouteData(routeData, clamp(playProgress - 0.04, 0, 1))
+  const entries = collectPublicRouteImageEntries(project, [currentPoint, aheadPoint, behindPoint])
+  const startViewEntries = entries.filter((entry) => entry.intersectsStartView)
+  const windowEntries = entries
+    .filter((entry) => !entry.intersectsStartView && entry.intersectsWarmupWindow)
+    .slice(0, publicWarmupLookaheadSceneryCount)
+
+  for (const entry of [...startViewEntries, ...windowEntries]) {
+    sources.add(entry.asset.src)
+  }
+  return sources
+}
+
+function collectPublicRouteImageEntries(project: EditorProject, warmupPoints: Point[] = []) {
+  const routeStart = project.route[0] ?? { x: project.camera.x, y: project.camera.y }
+  const points = [routeStart, ...warmupPoints]
+  const boundsForPoint = (point: Point) => ({
+    minX: point.x - publicStartWindowBack,
+    maxX: point.x + publicStartWindowForward,
+    minY: point.y - publicStartWindowVertical,
+    maxY: point.y + publicStartWindowVertical,
+  })
+  const startBounds = boundsForPoint(routeStart)
+  const warmupBounds = points.map(boundsForPoint)
+  return project.items
     .map((item) => {
       const asset = assetById.get(item.assetId)
       if (!item.visible || !asset) {
@@ -349,31 +459,62 @@ export function collectPublicCriticalImageSources(project: EditorProject) {
       const right = item.x + item.width / 2
       const top = item.y - item.height / 2
       const bottom = item.y + item.height / 2
-      const intersectsStartView = right >= bounds.minX && left <= bounds.maxX && bottom >= bounds.minY && top <= bounds.maxY
+      const intersects = (bounds: ReturnType<typeof boundsForPoint>) => (
+        right >= bounds.minX && left <= bounds.maxX && bottom >= bounds.minY && top <= bounds.maxY
+      )
+      const intersectsStartView = intersects(startBounds)
+      const intersectsWarmupWindow = warmupBounds.some(intersects)
+      const nearestDistance = Math.min(...points.map((point) => distance({ x: item.x, y: item.y }, point)))
       return {
         asset,
         intersectsStartView,
+        intersectsWarmupWindow,
         distanceToStart: distance({ x: item.x, y: item.y }, routeStart),
+        nearestDistance,
       }
     })
-    .filter((entry): entry is { asset: AssetDefinition; intersectsStartView: boolean; distanceToStart: number } => Boolean(entry))
+    .filter((entry): entry is {
+      asset: AssetDefinition
+      intersectsStartView: boolean
+      intersectsWarmupWindow: boolean
+      distanceToStart: number
+      nearestDistance: number
+    } => Boolean(entry))
     .sort((a, b) => {
       if (a.intersectsStartView !== b.intersectsStartView) {
         return a.intersectsStartView ? -1 : 1
       }
-      return a.distanceToStart - b.distanceToStart
+      if (a.intersectsWarmupWindow !== b.intersectsWarmupWindow) {
+        return a.intersectsWarmupWindow ? -1 : 1
+      }
+      return a.nearestDistance - b.nearestDistance
     })
+}
 
-  for (const entry of nearbyItems.slice(0, 32)) {
-    sources.add(entry.asset.src)
+function publicCriticalReadiness(
+  criticalSources: Set<string>,
+  images: ImageMap,
+  failedSources: Set<string>,
+  fallbackStage: number,
+) {
+  const orderedSources = Array.from(criticalSources)
+  const scenerySources = orderedSources.filter((src) => src !== mothAsset.src)
+  const loadedSceneryCount = scenerySources.filter((src) => images.has(src)).length
+  const allCriticalSettled = orderedSources.every((src) => images.has(src) || failedSources.has(src))
+  const allScenerySettled = scenerySources.every((src) => images.has(src) || failedSources.has(src))
+  const mothLoaded = images.has(mothAsset.src)
+  const mothFailed = failedSources.has(mothAsset.src)
+  const mothRenderable = mothLoaded || (fallbackStage >= 2 && mothFailed)
+  const settledReady = allScenerySettled && (scenerySources.length === 0 || loadedSceneryCount > 0)
+  const fallbackReady = fallbackStage >= 1
+    && loadedSceneryCount >= Math.min(publicCriticalFallbackSceneryCount, scenerySources.length)
+  const forceReady = fallbackStage >= 2
+    && (loadedSceneryCount >= Math.min(publicCriticalForceSceneryCount, scenerySources.length) || allCriticalSettled)
+  const sceneReady = scenerySources.length === 0 || settledReady || fallbackReady || forceReady
+  return {
+    failed: mothFailed || (fallbackStage >= 2 && scenerySources.length > 0 && loadedSceneryCount === 0),
+    ready: mothRenderable && sceneReady,
   }
-  for (const entry of nearbyItems) {
-    if (sources.size >= 10) {
-      break
-    }
-    sources.add(entry.asset.src)
-  }
-  return sources
 }
 
 function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPopoverKind): Point {
@@ -409,6 +550,9 @@ function App() {
   const [publicGameCriticalReady, setPublicGameCriticalReady] = useState(!publicGameBuild)
   const [publicGameHudReady, setPublicGameHudReady] = useState(!publicGameBuild)
   const [publicGameLoadFailed, setPublicGameLoadFailed] = useState(false)
+  const [publicGameBootFallbackStage, setPublicGameBootFallbackStage] = useState(publicGameBuild ? 0 : 2)
+  const [publicGameAssetVersion, setPublicGameAssetVersion] = useState(0)
+  const [publicGameLayoutReady, setPublicGameLayoutReady] = useState(!publicGameBuild)
   const [viewport, setViewport] = useState(publicGameBuild ? { width: gameSurfaceSize, height: gameSurfaceSize } : defaultViewport)
   const [publicGameScale, setPublicGameScale] = useState(() => calculatePublicGameScale())
   const [message, setMessage] = useState(publicGameBuild ? 'Game menu' : 'Sandbox A loaded')
@@ -475,6 +619,7 @@ function App() {
   const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
   const shuffleLoopControlRef = useRef<ShuffleLoopControlState>(stoppedShuffleLoopControl())
   const gameCanvasGestureRef = useRef<GameCanvasGestureState | null>(null)
+  const keyboardGameGestureRef = useRef<Omit<GameCanvasGestureState, 'pointerId'> | null>(null)
   const lastShuffleDirectionRef = useRef<-1 | 1>(-1)
   const editScrubRef = useRef<EditScrubState>({
     pressed: false,
@@ -501,6 +646,7 @@ function App() {
   const journeyDirectionRef = useRef<-1 | 1>(1)
   const journeyEndpointWaitUntilRef = useRef(0)
   const failedImageSourcesRef = useRef<Set<string>>(new Set())
+  const loadingImageSourcesRef = useRef<Set<string>>(new Set())
   const selectedMusicTrack = useMemo(
     () => musicTracks.find((track) => track.id === (project.gameplay.musicTrackId ?? musicTracks[0].id)) ?? musicTracks[0],
     [project.gameplay.musicTrackId],
@@ -659,11 +805,19 @@ function App() {
           event.preventDefault()
         }
       }
-      if (event.key === ' ' && appMode === 'play') {
+      const isSpaceKey = event.key === ' ' || event.code === 'Space'
+      if (isSpaceKey && appMode === 'play') {
         event.preventDefault()
+        if (workspaceMode === 'game') {
+          if (!event.repeat && !keyboardGameGestureRef.current) {
+            keyboardGameGestureRef.current = startGameKeyboardTap()
+          }
+          return
+        }
         if (!event.repeat) {
           togglePlayPaused()
         }
+        return
       }
       if (appMode === 'edit' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
         event.preventDefault()
@@ -695,6 +849,16 @@ function App() {
       }
     }
     const handleKeyUp = (event: KeyboardEvent) => {
+      const isSpaceKey = event.key === ' ' || event.code === 'Space'
+      if (isSpaceKey && appMode === 'play' && workspaceMode === 'game') {
+        event.preventDefault()
+        const gesture = keyboardGameGestureRef.current
+        keyboardGameGestureRef.current = null
+        if (gesture) {
+          stopGameKeyboardTap(gesture)
+        }
+        return
+      }
       if (appMode === 'edit' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
         event.preventDefault()
         event.stopPropagation()
@@ -713,6 +877,11 @@ function App() {
       }
     }
     const handleBlur = () => {
+      const gesture = keyboardGameGestureRef.current
+      keyboardGameGestureRef.current = null
+      if (gesture) {
+        stopGameKeyboardTap(gesture, false)
+      }
       stopForwardControl(false)
       stopExploreControl(undefined, false)
       stopEditMothScrub()
@@ -732,18 +901,37 @@ function App() {
       return
     }
 
-    if (images.has(mothAsset.src) || failedImageSourcesRef.current.has(mothAsset.src)) {
+    const fallbackTimer = window.setTimeout(() => {
+      setPublicGameBootFallbackStage((stage) => Math.max(stage, 1))
+    }, publicCriticalFallbackMs)
+    const forceTimer = window.setTimeout(() => {
+      setPublicGameBootFallbackStage((stage) => Math.max(stage, 2))
+    }, publicCriticalForceMs)
+    return () => {
+      window.clearTimeout(fallbackTimer)
+      window.clearTimeout(forceTimer)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!publicGameBuild) {
       return
     }
 
-    let cancelled = false
+    if (images.has(mothAsset.src) || failedImageSourcesRef.current.has(mothAsset.src)) {
+      return
+    }
+    if (loadingImageSourcesRef.current.has(mothAsset.src)) {
+      return
+    }
+
+    loadingImageSourcesRef.current.add(mothAsset.src)
     loadImageElement(mothAsset.src).then(([src, image]) => {
-      if (cancelled) {
-        return
-      }
+      loadingImageSourcesRef.current.delete(src)
       if (!image || image.naturalWidth === 0) {
         failedImageSourcesRef.current.add(src)
         setPublicGameLoadFailed(true)
+        setPublicGameAssetVersion((version) => version + 1)
         return
       }
       setImages((current) => {
@@ -755,9 +943,6 @@ function App() {
         return next
       })
     })
-    return () => {
-      cancelled = true
-    }
   }, [images])
 
   useEffect(() => {
@@ -785,64 +970,50 @@ function App() {
     }
 
     const criticalSources = collectPublicCriticalImageSources(project)
+    const readiness = publicCriticalReadiness(
+      criticalSources,
+      images,
+      failedImageSourcesRef.current,
+      publicGameBootFallbackStage,
+    )
+    setPublicGameCriticalReady(readiness.ready)
+    setPublicGameHudReady(readiness.ready)
+    setPublicGameLoadFailed(readiness.failed)
+
     const missingSources = Array.from(criticalSources).filter((src) => (
-      !failedImageSourcesRef.current.has(src) && !images.has(src)
+      !failedImageSourcesRef.current.has(src)
+      && !images.has(src)
+      && !loadingImageSourcesRef.current.has(src)
     ))
-    const loadedCriticalSources = Array.from(criticalSources).filter((src) => images.has(src))
-    const hasLoadedMoth = loadedCriticalSources.includes(mothAsset.src)
-    const hasLoadedScenery = loadedCriticalSources.some((src) => src !== mothAsset.src)
     if (missingSources.length === 0) {
-      setPublicGameCriticalReady(hasLoadedMoth && hasLoadedScenery)
-      setPublicGameHudReady(hasLoadedMoth && hasLoadedScenery)
-      setPublicGameLoadFailed(!(hasLoadedMoth && hasLoadedScenery))
       return
     }
 
-    setPublicGameCriticalReady(hasLoadedMoth && hasLoadedScenery)
-    setPublicGameLoadFailed(false)
-    let cancelled = false
-    Promise.all(missingSources.map(loadImageElement)).then((loadedImages) => {
-      if (cancelled) {
-        return
-      }
-      const successfulImages: [string, HTMLImageElement][] = []
-      let mothFailed = false
-      for (const [src, image] of loadedImages) {
+    for (const src of missingSources) {
+      loadingImageSourcesRef.current.add(src)
+      loadImageElement(src).then(([loadedSrc, image]) => {
+        loadingImageSourcesRef.current.delete(loadedSrc)
         if (!image || image.naturalWidth === 0) {
-          failedImageSourcesRef.current.add(src)
-          if (src === mothAsset.src) {
-            mothFailed = true
-          }
-        } else {
-          successfulImages.push([src, image])
+          failedImageSourcesRef.current.add(loadedSrc)
+          setPublicGameAssetVersion((version) => version + 1)
+          return
         }
-      }
-      if (successfulImages.length > 0) {
         setImages((current) => {
-          const next = new Map(current)
-          for (const [src, image] of successfulImages) {
-            next.set(src, image)
+          if (current.has(loadedSrc)) {
+            return current
           }
+          const next = new Map(current)
+          next.set(loadedSrc, image)
           return next
         })
-      }
-      const nextLoadedSources = new Set(loadedCriticalSources)
-      for (const [src] of successfulImages) {
-        nextLoadedSources.add(src)
-      }
-      const nextHasMoth = !mothFailed && nextLoadedSources.has(mothAsset.src)
-      const nextHasScenery = Array.from(nextLoadedSources).some((src) => src !== mothAsset.src)
-      setPublicGameLoadFailed(!(nextHasMoth && nextHasScenery))
-      setPublicGameCriticalReady(nextHasMoth && nextHasScenery)
-      setPublicGameHudReady(nextHasMoth && nextHasScenery)
-    })
-    return () => {
-      cancelled = true
+      })
     }
-  }, [images, project])
+  }, [images, project, publicGameAssetVersion, publicGameBootFallbackStage])
 
   useEffect(() => {
-    const sources = collectProjectImageSources(project)
+    const sources = publicGameBuild
+      ? collectPublicWarmupImageSources(project, playProgress)
+      : collectProjectImageSources(project)
     if (!publicGameBuild) {
       const selectedAsset = assetById.get(selectedAssetId)
       if (selectedAsset) {
@@ -852,7 +1023,9 @@ function App() {
       return
     }
     const missingSources = Array.from(sources).filter((src) => (
-      !failedImageSourcesRef.current.has(src) && !images.has(src)
+      !failedImageSourcesRef.current.has(src)
+      && !images.has(src)
+      && !loadingImageSourcesRef.current.has(src)
     ))
     if (missingSources.length === 0) {
       return
@@ -870,13 +1043,16 @@ function App() {
         const src = missingSources[index]
         index += 1
         active += 1
+        loadingImageSourcesRef.current.add(src)
         loadImageElement(src).then(([loadedSrc, image]) => {
           active -= 1
+          loadingImageSourcesRef.current.delete(loadedSrc)
           if (cancelled) {
             return
           }
           if (!image || image.naturalWidth === 0) {
             failedImageSourcesRef.current.add(loadedSrc)
+            setPublicGameAssetVersion((version) => version + 1)
           } else {
             setImages((current) => {
               if (current.has(loadedSrc)) {
@@ -895,12 +1071,12 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [images, project, publicGameCriticalReady, selectedAssetId])
+  }, [images, playProgress, project, publicGameCriticalReady, selectedAssetId])
 
   useEffect(() => {
     const music = new Audio(selectedMusicTrack.src)
     music.loop = shouldNativeLoopMusic()
-    music.preload = 'auto'
+    music.preload = publicGameBuild ? 'none' : 'auto'
     music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
     music.muted = Boolean(projectRef.current.gameplay.musicMuted)
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
@@ -1063,13 +1239,23 @@ function App() {
     if (!publicGameBuild) {
       return
     }
+    let layoutFrame = 0
     const resize = () => {
       setPublicGameScale(calculatePublicGameScale())
+      if (layoutFrame) {
+        window.cancelAnimationFrame(layoutFrame)
+      }
+      layoutFrame = window.requestAnimationFrame(() => {
+        setPublicGameLayoutReady(true)
+      })
     }
     resize()
     window.addEventListener('resize', resize)
     window.addEventListener('orientationchange', resize)
     return () => {
+      if (layoutFrame) {
+        window.cancelAnimationFrame(layoutFrame)
+      }
       window.removeEventListener('resize', resize)
       window.removeEventListener('orientationchange', resize)
     }
@@ -1437,7 +1623,12 @@ function App() {
     () => cameraForCanvasView(renderCamera, project),
     [project, renderCamera],
   )
-  const publicGameMothReady = !publicGameBuild || images.has(mothAsset.src)
+  const renderItemBuckets = useMemo(
+    () => buildRenderItemBuckets(project),
+    [project],
+  )
+  const publicGameMothLoadFailed = publicGameBuild && failedImageSourcesRef.current.has(mothAsset.src)
+  const publicGameMothReady = !publicGameBuild || images.has(mothAsset.src) || publicGameMothLoadFailed
   const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreIdleFocusVisible || exploreMenuReturnVisible || loopFocusVisible
   const gameFocusActive = gameScreen === 'menu' || exploreIdleFocusActive || exploreMenuReturnActive || loopFocusActive
   const shuffleRestFocusActive = workspaceMode === 'game'
@@ -1453,12 +1644,9 @@ function App() {
     if (!canvas || !context) {
       return
     }
-    const scale = window.devicePixelRatio || 1
-    canvas.width = Math.floor(viewport.width * scale)
-    canvas.height = Math.floor(viewport.height * scale)
-    canvas.style.width = `${viewport.width}px`
-    canvas.style.height = `${viewport.height}px`
-    context.setTransform(scale, 0, 0, scale, 0, 0)
+    const scale = canvasRenderScale(publicGameScale)
+    const suppressTrailRings = publicGameBuild && isSmallPublicGameDisplay()
+    prepareCanvasForRender(canvas, context, viewport, scale)
     renderScene(context, project, {
       appMode,
       artworkMode,
@@ -1473,17 +1661,16 @@ function App() {
       hideRoutePath: workspaceMode === 'game' || appMode === 'play',
       hideWorldFrame: workspaceMode === 'game' || appMode === 'play',
       suppressMissingArtwork: publicGameBuild,
+      showMothFallback: publicGameMothLoadFailed,
+      suppressTrailRings,
+      renderItemBuckets,
       selection,
       selectedItemIds,
       canvasTargets,
       viewport,
     })
     if (menuMothCanvas && menuMothContext) {
-      menuMothCanvas.width = Math.floor(viewport.width * scale)
-      menuMothCanvas.height = Math.floor(viewport.height * scale)
-      menuMothCanvas.style.width = `${viewport.width}px`
-      menuMothCanvas.style.height = `${viewport.height}px`
-      menuMothContext.setTransform(scale, 0, 0, scale, 0, 0)
+      prepareCanvasForRender(menuMothCanvas, menuMothContext, viewport, scale)
       if (workspaceMode === 'game' && (gameFocusVisible || (publicGameBuild && publicGameMothReady && !publicGameCriticalReady))) {
         renderMothOnly(menuMothContext, project, {
           appMode,
@@ -1499,6 +1686,9 @@ function App() {
           hideRoutePath: true,
           hideWorldFrame: true,
           suppressMissingArtwork: publicGameBuild,
+          showMothFallback: publicGameMothLoadFailed,
+          suppressTrailRings,
+          renderItemBuckets,
           selection: null,
           selectedItemIds: [],
           canvasTargets,
@@ -1508,7 +1698,7 @@ function App() {
         menuMothContext.clearRect(0, 0, viewport.width, viewport.height)
       }
     }
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothReady, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothLoadFailed, publicGameMothReady, publicGameScale, renderItemBuckets, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -2796,6 +2986,48 @@ function App() {
     stopExploreControl(direction)
   }
 
+  function startGameKeyboardTap(): Omit<GameCanvasGestureState, 'pointerId'> | null {
+    if (workspaceMode !== 'game' || appMode !== 'play') {
+      return null
+    }
+
+    if (gameScreen === 'menu') {
+      enterJourneyMode('Explore started')
+      return null
+    }
+
+    if (gameScreen === 'journey') {
+      startForwardControl()
+      return { action: 'drift' }
+    }
+
+    if (gameScreen === 'loop') {
+      toggleLoopMotion()
+      return null
+    }
+
+    if (gameScreen === 'explore') {
+      if (shuffleLoopControlRef.current.active) {
+        startShuffleLoopPush()
+        return null
+      }
+      const direction = lastShuffleDirectionRef.current
+      startExploreControl(direction)
+      return { action: 'shuffle-direction', direction }
+    }
+
+    return null
+  }
+
+  function stopGameKeyboardTap(gesture: Omit<GameCanvasGestureState, 'pointerId'>, useReleaseCarry = true) {
+    if (gesture.action === 'drift') {
+      stopForwardControl(useReleaseCarry)
+    }
+    if (gesture.action === 'shuffle-direction' && gesture.direction) {
+      stopExploreControl(gesture.direction, useReleaseCarry)
+    }
+  }
+
   function handleGameCanvasPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     if (workspaceMode !== 'game' || appMode !== 'play') {
       return false
@@ -3930,9 +4162,9 @@ function App() {
     }
   }
 
-  const publicGameBootReady = !publicGameBuild || publicGameHudReady
+  const publicGameBootReady = !publicGameBuild || (publicGameHudReady && publicGameLayoutReady)
   const publicGameWaitingForMoth = publicGameBuild && !publicGameMothReady
-  const publicGameWaitingForScene = publicGameBuild && publicGameMothReady && !publicGameHudReady
+  const publicGameWaitingForScene = publicGameBuild && publicGameMothReady && (!publicGameHudReady || !publicGameLayoutReady)
 
   return (
     <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}${publicGameBuild ? ' public-game' : ''}`}>
@@ -4972,6 +5204,7 @@ function App() {
         </EditorSection>
       </aside>
       )}
+      {publicGameBuild && !publicGameBootReady && <div className="public-game-boot-cover" aria-hidden="true" />}
     </main>
   )
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { assetById, assetLibrary, assetRoles, mothAsset, subLayers } from './assets'
-import { collectProjectImageSources, collectPublicCriticalImageSources } from './App'
+import { collectProjectImageSources, collectPublicCriticalImageSources, collectPublicWarmupImageSources } from './App'
 import {
   createDefaultProject,
   duplicateItem,
@@ -94,11 +94,14 @@ describe('project helpers', () => {
     const project = createDefaultProject()
     const allSources = collectProjectImageSources(project)
     const criticalSources = collectPublicCriticalImageSources(project)
+    const warmupSources = collectPublicWarmupImageSources(project)
     const criticalScenerySources = Array.from(criticalSources).filter((src) => src !== mothAsset.src)
 
     expect(criticalSources.has(mothAsset.src)).toBe(true)
     expect(criticalScenerySources.length).toBeGreaterThan(5)
+    expect(warmupSources.size).toBeGreaterThan(criticalSources.size)
     expect(criticalSources.size).toBeLessThan(allSources.size)
+    expect(warmupSources.size).toBeLessThan(allSources.size)
   })
 
   it('keeps approved runtime asset metadata clean', () => {
