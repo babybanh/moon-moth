@@ -1645,7 +1645,7 @@ function App() {
       return
     }
     const scale = canvasRenderScale(publicGameScale)
-    const suppressTrailRings = publicGameBuild && isSmallPublicGameDisplay()
+    const suppressTrailRings = false
     prepareCanvasForRender(canvas, context, viewport, scale)
     renderScene(context, project, {
       appMode,
