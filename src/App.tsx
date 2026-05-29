@@ -76,6 +76,7 @@ const publicGameMaxScale = 1.25
 const publicMobileCanvasMaxScale = 1.5
 const publicDesktopCanvasMaxScale = 2.5
 const publicWarmupLookaheadSceneryCount = 32
+const publicShufflePreloadSceneryCount = 64
 const publicCriticalFallbackSceneryCount = 8
 const publicCriticalForceSceneryCount = 3
 const publicCriticalFallbackMs = 12000
@@ -433,6 +434,37 @@ export function collectPublicWarmupImageSources(project: EditorProject, playProg
     .slice(0, publicWarmupLookaheadSceneryCount)
 
   for (const entry of [...startViewEntries, ...windowEntries]) {
+    sources.add(entry.asset.src)
+  }
+  return sources
+}
+
+function shuffleRoutePointIndices(routeLength: number) {
+  if (routeLength <= 0) {
+    return []
+  }
+  const minIndex = Math.min(14, routeLength - 1)
+  const maxIndex = Math.min(34, routeLength - 1)
+  return Array.from(
+    { length: Math.max(0, maxIndex - minIndex) + 1 },
+    (_, index) => minIndex + index,
+  )
+}
+
+export function collectPublicShufflePreloadImageSources(project: EditorProject) {
+  const sources = new Set<string>([mothAsset.src])
+  const warmupPoints = shuffleRoutePointIndices(project.route.length)
+    .map((index) => project.route[index])
+    .filter((point): point is RoutePoint => Boolean(point))
+  if (warmupPoints.length === 0) {
+    return sources
+  }
+  const entries = collectPublicRouteImageEntries(project, warmupPoints)
+  const shuffleEntries = entries
+    .filter((entry) => !entry.intersectsStartView && entry.intersectsWarmupWindow)
+    .slice(0, publicShufflePreloadSceneryCount)
+
+  for (const entry of shuffleEntries) {
     sources.add(entry.asset.src)
   }
   return sources
@@ -1072,6 +1104,63 @@ function App() {
       cancelled = true
     }
   }, [images, playProgress, project, publicGameCriticalReady, selectedAssetId])
+
+  useEffect(() => {
+    if (!publicGameBuild || !publicGameCriticalReady) {
+      return
+    }
+
+    const sources = collectPublicShufflePreloadImageSources(project)
+    const missingSources = Array.from(sources).filter((src) => (
+      !failedImageSourcesRef.current.has(src)
+      && !images.has(src)
+      && !loadingImageSourcesRef.current.has(src)
+    ))
+    if (missingSources.length === 0) {
+      return
+    }
+
+    let cancelled = false
+    let index = 0
+    let active = 0
+    const concurrency = 2
+    const pump = () => {
+      if (cancelled) {
+        return
+      }
+      while (active < concurrency && index < missingSources.length) {
+        const src = missingSources[index]
+        index += 1
+        active += 1
+        loadingImageSourcesRef.current.add(src)
+        loadImageElement(src).then(([loadedSrc, image]) => {
+          active -= 1
+          loadingImageSourcesRef.current.delete(loadedSrc)
+          if (cancelled) {
+            return
+          }
+          if (!image || image.naturalWidth === 0) {
+            failedImageSourcesRef.current.add(loadedSrc)
+            setPublicGameAssetVersion((version) => version + 1)
+          } else {
+            setImages((current) => {
+              if (current.has(loadedSrc)) {
+                return current
+              }
+              const next = new Map(current)
+              next.set(loadedSrc, image)
+              return next
+            })
+          }
+          pump()
+        })
+      }
+    }
+    pump()
+    return () => {
+      cancelled = true
+    }
+  }, [project, publicGameAssetVersion, publicGameCriticalReady])
 
   useEffect(() => {
     const music = new Audio(selectedMusicTrack.src)
@@ -2102,12 +2191,7 @@ function App() {
     const route = projectRef.current.route
     let nextMessage = message
     if (route.length > 0) {
-      const minIndex = Math.min(14, route.length - 1)
-      const maxIndex = Math.min(34, route.length - 1)
-      const shufflePool = Array.from(
-        { length: Math.max(0, maxIndex - minIndex) + 1 },
-        (_, index) => minIndex + index,
-      )
+      const shufflePool = shuffleRoutePointIndices(route.length)
       const recentLimit = Math.max(1, Math.ceil(shufflePool.length / 2))
       const recentIndices = recentShufflePointIndicesRef.current.slice(-recentLimit)
       const freshPool = shufflePool.filter((index) => !recentIndices.includes(index))
