@@ -417,6 +417,74 @@ input[type="range"] {
   visibility: hidden;
 }
 
+.drift-description-layer {
+  position: absolute;
+  top: calc(-1 * (var(--game-hud-cell-size) + (24px * var(--game-hud-scale))));
+  left: 50%;
+  z-index: 13;
+  display: grid;
+  width: min(calc(var(--game-surface-size) - (44px * var(--game-hud-scale))), 560px);
+  min-height: calc(var(--game-hud-cell-size) * 1.02);
+  align-items: center;
+  justify-items: center;
+  padding: calc(8px * var(--game-hud-scale)) calc(16px * var(--game-hud-scale));
+  color: rgba(246, 255, 252, 0.96);
+  font-family: var(--game-hud-font-family);
+  font-size: 25px;
+  font-weight: var(--game-hud-font-weight);
+  letter-spacing: var(--game-hud-letter-spacing);
+  line-height: 1.26;
+  pointer-events: none;
+  text-align: center;
+  translate: -50% 0;
+}
+
+.drift-description-text {
+  max-width: 100%;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.drift-description-layer.phase-hold {
+  opacity: var(--drift-description-opacity, 1);
+  filter: none;
+  transform: none;
+}
+
+.drift-description-layer.style-moon-lift.phase-enter {
+  animation: driftDescMoonLiftIn 2520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.drift-description-layer.style-moon-lift.phase-exit {
+  animation: driftDescMoonLiftOut 1960ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes driftDescMoonLiftIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(calc(10px * var(--game-hud-scale)));
+  }
+
+  100% {
+    opacity: var(--drift-description-opacity, 1);
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes driftDescMoonLiftOut {
+  0% {
+    opacity: var(--drift-description-opacity, 1);
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-8px * var(--game-hud-scale)));
+  }
+}
+
 @keyframes gameHudRowDissolveIn {
   0% {
     opacity: 0;
@@ -514,28 +582,52 @@ input[type="range"] {
 
 @keyframes hudTapBloomA {
   0% {
+    box-shadow:
+      0 12px 28px rgba(var(--hud-glow-base), 0.18),
+      0 0 38px rgba(var(--hud-glow-base), 0.195),
+      0 0 76px rgba(var(--hud-glow-outer), 0.09);
     opacity: 0.7;
   }
 
   30% {
+    box-shadow:
+      0 32px 68px rgba(var(--hud-glow-active), 0.45),
+      0 0 116px rgba(var(--hud-glow-active), 0.45),
+      0 0 216px rgba(var(--hud-glow-outer), 0.21);
     opacity: 1;
   }
 
   100% {
+    box-shadow:
+      0 12px 28px rgba(var(--hud-glow-base), 0.18),
+      0 0 38px rgba(var(--hud-glow-base), 0.195),
+      0 0 76px rgba(var(--hud-glow-outer), 0.09);
     opacity: 0.92;
   }
 }
 
 @keyframes hudTapBloomB {
   0% {
+    box-shadow:
+      0 12px 28px rgba(var(--hud-glow-base), 0.18),
+      0 0 38px rgba(var(--hud-glow-base), 0.195),
+      0 0 76px rgba(var(--hud-glow-outer), 0.09);
     opacity: 0.7;
   }
 
   30% {
+    box-shadow:
+      0 32px 68px rgba(var(--hud-glow-active), 0.45),
+      0 0 116px rgba(var(--hud-glow-active), 0.45),
+      0 0 216px rgba(var(--hud-glow-outer), 0.21);
     opacity: 1;
   }
 
   100% {
+    box-shadow:
+      0 12px 28px rgba(var(--hud-glow-base), 0.18),
+      0 0 38px rgba(var(--hud-glow-base), 0.195),
+      0 0 76px rgba(var(--hud-glow-outer), 0.09);
     opacity: 0.92;
   }
 }
@@ -726,6 +818,25 @@ input[type="range"] {
   }
 }
 
+@keyframes hudDriftHoverGlowPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 28px rgba(var(--hud-glow-base), 0.18),
+      0 0 38px rgba(var(--hud-glow-base), 0.195),
+      0 0 76px rgba(var(--hud-glow-outer), 0.09);
+    opacity: 0.9;
+  }
+
+  50% {
+    box-shadow:
+      0 17px 38px rgba(var(--hud-glow-active), 0.3),
+      0 0 62px rgba(var(--hud-glow-active), 0.3),
+      0 0 115px rgba(var(--hud-glow-outer), 0.15);
+    opacity: 1;
+  }
+}
+
 @keyframes hudReleaseGlowDecay {
   0% {
     background: transparent;
@@ -779,6 +890,10 @@ input[type="range"] {
 
 .game-hud-button.ambient-pulse:not(:disabled):not(.hold-pulse) {
   animation: hudAmbientNeonPulse 3600ms ease-in-out infinite;
+}
+
+.game-hud-button.drift-control.ambient-pulse:not(:disabled):not(.hold-pulse) {
+  animation: hudDriftHoverGlowPulse 3400ms ease-in-out infinite;
 }
 
 .game-hud-button.release-glow {
@@ -1729,6 +1844,16 @@ canvas {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift-description-layer.phase-enter {
+    animation: driftDescMoonLiftIn 300ms ease-out both;
+  }
+
+  .drift-description-layer.phase-exit {
+    animation: driftDescMoonLiftOut 300ms ease-in both;
+  }
 }
 
 @media (max-width: 960px) {

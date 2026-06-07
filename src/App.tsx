@@ -297,7 +297,123 @@ const hudTapGlowFadeMs = 3600
 const hudTapGlowTotalMs = hudTapGlowRiseMs + hudTapGlowFadeMs
 const hudHoldPulseSpeedOptions = [2200, 2800]
 const hudLongHoldDisableMs = 3000
+const driftDescriptionInitialDelayMs = 0
+const driftDescriptionExploreEntryTriggerMs = 4000
+const driftDescriptionInactiveTriggerMs = 3000
+const driftDescriptionInactiveDelayMs = 3000
+const driftDescriptionTriggerDelaysMs = [7000, 8000, 9000] as const
+const driftDescriptionHeldTriggerDelaysMs = [3000, 4000, 5000, 4000] as const
+const driftDescriptionShortHoldMs = 2000
+const driftDescriptionLongHoldMs = 3000
+const driftDescriptionStyles = [
+  { style: 'moon-lift', enterMs: 2520, exitMs: 1960 },
+] as const
+const driftDescriptionOpacityOptions = [1, 0.9, 0.8] as const
+const driftDescriptionTextSets = [
+  [
+    'Drift the moth softly, then release.',
+    'The moon opens the path in silver.',
+    'Violet blossoms brighten the lower leaves.',
+    'Dark branches hold the moon in place.',
+    'The music moves slower than wings.',
+    'Stones keep light under their skin.',
+    'The far moon waits in silence.',
+    'Let the moth pause in brightness.',
+    'No visitor leaves by the same path.',
+    'Drift where the song grows quiet.',
+    'The cocoon sleeps near the turning.',
+    'Flower air gathers around the path.',
+    'Cold mist sharpens every glow.',
+    'Getting lost softens the route.',
+    'Shadows remember passing wings.',
+    'Each return changes the view.',
+    'Reeds shine at the edge.',
+    'Follow the water-colored light.',
+    'The garden closes softly behind.',
+  ],
+  [
+    'Drift lightly; let the moth answer.',
+    'The moon writes the path in fragments.',
+    'Pink light collects in the petals.',
+    'Dark branches hold the view together.',
+    'The song turns before the path does.',
+    'They say the garden wakes late.',
+    'Moonstones brighten for passing wings.',
+    'A white moon waits beyond the thicket.',
+    'Rest where the glow feels gentle.',
+    'Some moons are easier to lose.',
+    'Drift where the rhythm thins.',
+    'The cocoon listens near the end.',
+    'Breathe in the lavender cold.',
+    'The air makes every color quieter.',
+    'Pale water keeps no reflection.',
+    'The route forgets its own name.',
+    'The trees keep older shadows.',
+    'The same place returns differently.',
+    'Small reeds mark the lower light.',
+    'The way back opens slowly.',
+  ],
+  [
+    'Guide gently, then let the drift continue.',
+    'The moon pulls a path from the dark.',
+    'Purple and green trade places in the flowers.',
+    'Silhouettes make the garden feel farther away.',
+    'The moth follows the quietest note.',
+    'Midnight keeps this garden half-awake.',
+    'Watch the stones gather leftover moonlight.',
+    'The final moon is already waiting.',
+    'Let the glow slow you down.',
+    'Some visitors return through another night.',
+    'Drift when the music leaves space.',
+    'The cocoon waits without opening.',
+    'Breathe near the bright flowers.',
+    'Cold air gathers under violet leaves.',
+    'The pale water brightens ahead.',
+    'Getting lost makes the route softer.',
+    'Tree shadows pass before the moth.',
+    'The garden changes when seen again.',
+    'Reeds flicker at the quiet edge.',
+    'The path keeps a little light.',
+  ],
+] as const
 type HudSfxIntent = 'home' | 'mode' | 'hold' | 'turn' | 'release'
+type DriftDescriptionPhase = 'enter' | 'hold' | 'exit'
+type DriftDescriptionStyle = typeof driftDescriptionStyles[number]['style']
+type DriftDescriptionOpacity = typeof driftDescriptionOpacityOptions[number]
+type DriftDescriptionState = {
+  runId: number
+  index: number
+  phase: DriftDescriptionPhase
+  style: DriftDescriptionStyle
+  opacity: DriftDescriptionOpacity
+  text: string
+}
+
+function shuffledItems<T>(items: readonly T[]) {
+  const next = [...items]
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = next[index]
+    next[index] = next[swapIndex]
+    next[swapIndex] = current
+  }
+  return next
+}
+
+function driftDescriptionHoldMsForText(text: string) {
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length
+  return wordCount <= 7 ? driftDescriptionShortHoldMs : driftDescriptionLongHoldMs
+}
+
+function driftDescriptionNextHeldDelayMs(heldRunCount: number) {
+  const index = Math.max(0, heldRunCount - 1) % driftDescriptionHeldTriggerDelaysMs.length
+  return driftDescriptionHeldTriggerDelaysMs[index] ?? driftDescriptionHeldTriggerDelaysMs[0]
+}
+
+function driftDescriptionRandomTriggerDelayMs() {
+  const index = Math.floor(Math.random() * driftDescriptionTriggerDelaysMs.length)
+  return driftDescriptionTriggerDelaysMs[index] ?? driftDescriptionTriggerDelaysMs[0]
+}
 
 function stoppedExploreControl(): ExploreControlState {
   return {
@@ -613,6 +729,8 @@ function App() {
   const [shuffleLoopActive, setShuffleLoopActive] = useState(false)
   const [hudTapGlow, setHudTapGlow] = useState<Record<string, { startedAt: number; nonce: number }>>({})
   const [hudHoldPulseMs, setHudHoldPulseMs] = useState<Record<string, number>>({})
+  const [driftDescription, setDriftDescription] = useState<DriftDescriptionState | null>(null)
+  const [, setDriftDescriptionRunId] = useState(0)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -629,6 +747,17 @@ function App() {
   const exploreIdleFocusResumeHeldRef = useRef(false)
   const loopFocusResumeTimeoutRef = useRef<number | null>(null)
   const gameMenuReturnTimeoutRef = useRef<number | null>(null)
+  const driftDescriptionTimeoutRefs = useRef<number[]>([])
+  const driftDescriptionIdleTriggerTimeoutRef = useRef<number | null>(null)
+  const driftDescriptionDelayedTriggerTimeoutRef = useRef<number | null>(null)
+  const driftDescriptionLongHoldOverrideTimeoutRef = useRef<number | null>(null)
+  const driftDescriptionSequenceActiveRef = useRef(false)
+  const driftDescriptionRef = useRef<DriftDescriptionState | null>(null)
+  const driftDescriptionHeldRunCountRef = useRef(0)
+  const driftDescriptionRunIdRef = useRef(0)
+  const driftDescriptionEntrySetIndexRef = useRef(0)
+  const driftDescriptionActiveSetIndexRef = useRef(0)
+  const driftDescriptionTextIndexRef = useRef(0)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const jsonTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -647,7 +776,6 @@ function App() {
   const exploreHasInteractedRef = useRef(false)
   const exploreSettledAtRef = useRef(0)
   const exploreIdleFocusTriggeredRef = useRef(false)
-  const hasAutoDriftedOnFirstExploreRef = useRef(false)
   const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
   const shuffleLoopControlRef = useRef<ShuffleLoopControlState>(stoppedShuffleLoopControl())
   const gameCanvasGestureRef = useRef<GameCanvasGestureState | null>(null)
@@ -723,6 +851,20 @@ function App() {
     if (gameMenuReturnTimeoutRef.current !== null) {
       window.clearTimeout(gameMenuReturnTimeoutRef.current)
     }
+    driftDescriptionTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    driftDescriptionTimeoutRefs.current = []
+    if (driftDescriptionIdleTriggerTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionIdleTriggerTimeoutRef.current)
+      driftDescriptionIdleTriggerTimeoutRef.current = null
+    }
+    if (driftDescriptionDelayedTriggerTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionDelayedTriggerTimeoutRef.current)
+      driftDescriptionDelayedTriggerTimeoutRef.current = null
+    }
+    if (driftDescriptionLongHoldOverrideTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionLongHoldOverrideTimeoutRef.current)
+      driftDescriptionLongHoldOverrideTimeoutRef.current = null
+    }
   }, [])
 
   useEffect(() => {
@@ -736,6 +878,10 @@ function App() {
   useEffect(() => {
     selectionRef.current = selection
   }, [selection])
+
+  useEffect(() => {
+    driftDescriptionRef.current = driftDescription
+  }, [driftDescription])
 
   useEffect(() => {
     selectedItemIdsRef.current = selectedItemIds
@@ -1913,6 +2059,9 @@ function App() {
     '--game-hud-letter-spacing': hudStylePreset.letterSpacing,
     '--game-hud-border-alpha': `${hudStylePreset.borderAlpha}`,
     '--game-hud-primary-alpha': `${hudStylePreset.primaryAlpha}`,
+    '--hud-glow-base': '156, 126, 255',
+    '--hud-glow-active': '185, 156, 255',
+    '--hud-glow-outer': '112, 83, 220',
   } as CSSProperties
   const gameSurfaceStyle = publicGameBuild
     ? { '--public-game-scale': `${publicGameScale}` } as CSSProperties
@@ -1949,6 +2098,199 @@ function App() {
         },
       }
     })
+  }
+  const clearDriftDescriptionTimeouts = () => {
+    driftDescriptionTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    driftDescriptionTimeoutRefs.current = []
+    driftDescriptionSequenceActiveRef.current = false
+  }
+  const clearDriftDescriptionIdleTriggerTimer = () => {
+    if (driftDescriptionIdleTriggerTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionIdleTriggerTimeoutRef.current)
+      driftDescriptionIdleTriggerTimeoutRef.current = null
+    }
+  }
+  const clearDriftDescriptionDelayedTriggerTimer = () => {
+    if (driftDescriptionDelayedTriggerTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionDelayedTriggerTimeoutRef.current)
+      driftDescriptionDelayedTriggerTimeoutRef.current = null
+    }
+  }
+  const clearDriftDescriptionLongHoldOverrideTimer = () => {
+    if (driftDescriptionLongHoldOverrideTimeoutRef.current !== null) {
+      window.clearTimeout(driftDescriptionLongHoldOverrideTimeoutRef.current)
+      driftDescriptionLongHoldOverrideTimeoutRef.current = null
+    }
+  }
+  const driftDescriptionEligible = () => (
+    workspaceModeRef.current === 'game'
+    && appModeRef.current === 'play'
+    && gameModeRef.current === 'journey'
+    && gameScreenRef.current === 'journey'
+    && !playPausedRef.current
+  )
+  const clearDriftDescriptionAutomation = () => {
+    clearDriftDescriptionTimeouts()
+    clearDriftDescriptionIdleTriggerTimer()
+    clearDriftDescriptionDelayedTriggerTimer()
+    clearDriftDescriptionLongHoldOverrideTimer()
+    setDriftDescription(null)
+  }
+  const scheduleDriftDescriptionSequence = () => {
+    if (!driftDescriptionEligible() || driftDescriptionSequenceActiveRef.current) {
+      return
+    }
+    clearDriftDescriptionIdleTriggerTimer()
+    clearDriftDescriptionDelayedTriggerTimer()
+    clearDriftDescriptionTimeouts()
+    driftDescriptionSequenceActiveRef.current = true
+    const sequenceStartedDuringHeldDrift = forwardControlRef.current.pressed
+    if (sequenceStartedDuringHeldDrift) {
+      driftDescriptionHeldRunCountRef.current += 1
+    }
+    setDriftDescription(null)
+    const nextRunId = driftDescriptionRunIdRef.current + 1
+    driftDescriptionRunIdRef.current = nextRunId
+    setDriftDescriptionRunId(nextRunId)
+    const activeSetIndex = driftDescriptionActiveSetIndexRef.current % driftDescriptionTextSets.length
+    const textSet = driftDescriptionTextSets[activeSetIndex] ?? driftDescriptionTextSets[0]
+    const runLength = Math.min(1, textSet.length)
+    const runTexts = Array.from({ length: runLength }, () => {
+      const text = textSet[driftDescriptionTextIndexRef.current] ?? textSet[0]
+      const nextTextIndex = driftDescriptionTextIndexRef.current + 1
+      if (nextTextIndex >= textSet.length) {
+        driftDescriptionActiveSetIndexRef.current = (activeSetIndex + 1) % driftDescriptionTextSets.length
+        driftDescriptionTextIndexRef.current = 0
+      } else {
+        driftDescriptionTextIndexRef.current = nextTextIndex
+      }
+      return text
+    })
+    const runStyles = shuffledItems(driftDescriptionStyles)
+    const runOpacities = shuffledItems(driftDescriptionOpacityOptions)
+    let offsetMs = driftDescriptionInitialDelayMs
+    runTexts.forEach((text, index) => {
+      const item = runStyles[index] ?? runStyles[runStyles.length - 1]
+      const opacity = runOpacities[index] ?? runOpacities[runOpacities.length - 1]
+      const holdMs = driftDescriptionHoldMsForText(text)
+      driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+        setDriftDescription({
+          runId: nextRunId,
+          index,
+          phase: 'enter',
+          style: item.style,
+          opacity,
+          text,
+        })
+      }, offsetMs))
+
+      driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+        setDriftDescription({
+          runId: nextRunId,
+          index,
+          phase: 'hold',
+          style: item.style,
+          opacity,
+          text,
+        })
+      }, offsetMs + item.enterMs))
+
+      driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+        setDriftDescription({
+          runId: nextRunId,
+          index,
+          phase: 'exit',
+          style: item.style,
+          opacity,
+          text,
+        })
+      }, offsetMs + item.enterMs + holdMs))
+
+      driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+        setDriftDescription(null)
+      }, offsetMs + item.enterMs + holdMs + item.exitMs))
+
+      offsetMs += item.enterMs + holdMs + item.exitMs
+    })
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      setDriftDescription(null)
+      driftDescriptionTimeoutRefs.current = []
+      driftDescriptionSequenceActiveRef.current = false
+      if (forwardControlRef.current.pressed) {
+        scheduleDriftDescriptionDelayedTrigger(driftDescriptionNextHeldDelayMs(driftDescriptionHeldRunCountRef.current))
+      } else {
+        scheduleDriftDescriptionIdleTrigger()
+      }
+    }, offsetMs))
+  }
+  const scheduleDriftDescriptionIdleTrigger = () => {
+    clearDriftDescriptionIdleTriggerTimer()
+    if (!driftDescriptionEligible() || forwardControlRef.current.pressed || driftDescriptionSequenceActiveRef.current) {
+      return
+    }
+    driftDescriptionIdleTriggerTimeoutRef.current = window.setTimeout(() => {
+      driftDescriptionIdleTriggerTimeoutRef.current = null
+      if (driftDescriptionEligible() && !forwardControlRef.current.pressed) {
+        scheduleDriftDescriptionDelayedTrigger(driftDescriptionInactiveDelayMs, true)
+      }
+    }, driftDescriptionInactiveTriggerMs)
+  }
+  const scheduleDriftDescriptionDelayedTrigger = (delayMs: number, preserveExisting = false) => {
+    if (preserveExisting && driftDescriptionDelayedTriggerTimeoutRef.current !== null) {
+      return
+    }
+    clearDriftDescriptionDelayedTriggerTimer()
+    if (driftDescriptionSequenceActiveRef.current) {
+      return
+    }
+    driftDescriptionDelayedTriggerTimeoutRef.current = window.setTimeout(() => {
+      driftDescriptionDelayedTriggerTimeoutRef.current = null
+      if (driftDescriptionEligible()) {
+        scheduleDriftDescriptionSequence()
+      }
+    }, delayMs)
+  }
+  const finishDriftDescriptionThenTrigger = () => {
+    const activeDescription = driftDescriptionRef.current
+    if (!activeDescription) {
+      clearDriftDescriptionTimeouts()
+      scheduleDriftDescriptionDelayedTrigger(
+        forwardControlRef.current.pressed
+          ? driftDescriptionNextHeldDelayMs(driftDescriptionHeldRunCountRef.current)
+          : driftDescriptionRandomTriggerDelayMs(),
+      )
+      return
+    }
+    const activeStyle = driftDescriptionStyles.find((item) => item.style === activeDescription.style) ?? driftDescriptionStyles[0]
+    clearDriftDescriptionTimeouts()
+    driftDescriptionSequenceActiveRef.current = true
+    setDriftDescription({
+      ...activeDescription,
+      phase: 'exit',
+    })
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      setDriftDescription(null)
+      driftDescriptionTimeoutRefs.current = []
+      driftDescriptionSequenceActiveRef.current = false
+      scheduleDriftDescriptionDelayedTrigger(
+        forwardControlRef.current.pressed
+          ? driftDescriptionNextHeldDelayMs(driftDescriptionHeldRunCountRef.current)
+          : driftDescriptionRandomTriggerDelayMs(),
+      )
+    }, activeStyle.exitMs))
+  }
+  const scheduleDriftDescriptionLongHoldOverride = (onlyIfSequenceActiveAtStart: boolean) => {
+    clearDriftDescriptionLongHoldOverrideTimer()
+    if (!onlyIfSequenceActiveAtStart) {
+      return
+    }
+    driftDescriptionLongHoldOverrideTimeoutRef.current = window.setTimeout(() => {
+      driftDescriptionLongHoldOverrideTimeoutRef.current = null
+      if (!driftDescriptionEligible() || !forwardControlRef.current.pressed || !driftDescriptionSequenceActiveRef.current) {
+        return
+      }
+      finishDriftDescriptionThenTrigger()
+    }, hudLongHoldDisableMs)
   }
   const randomizeHudHoldPulse = (id: string) => {
     const speedMs = hudHoldPulseSpeedOptions[Math.floor(Math.random() * hudHoldPulseSpeedOptions.length)]
@@ -1988,6 +2330,7 @@ function App() {
     setGameHudHomeDisabledUntil(performance.now() + gameHudHomeGraceMs)
   }
   const setGameScreenWithHomeGrace = (screen: GameScreen, syncHud = true) => {
+    gameScreenRef.current = screen
     setGameScreen(screen)
     if (syncHud) {
       setGameHudScreenWithHomeGrace(screen)
@@ -2120,6 +2463,10 @@ function App() {
       if (next) {
         stopForwardControl(false)
         stopExploreControl(undefined, false)
+        clearDriftDescriptionAutomation()
+      } else {
+        playPausedRef.current = false
+        scheduleDriftDescriptionIdleTrigger()
       }
       setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'explore' ? 'Shuffle resumed' : 'Play resumed: hold Drift to move')
       return next
@@ -2127,9 +2474,11 @@ function App() {
   }
 
   function enterJourneyMode(message = 'Explore mode: hold Drift to move') {
-    const shouldScheduleFirstExploreAutoDrift = workspaceMode === 'game'
-      && gameScreen === 'menu'
-      && !hasAutoDriftedOnFirstExploreRef.current
+    clearDriftDescriptionAutomation()
+    driftDescriptionActiveSetIndexRef.current = driftDescriptionEntrySetIndexRef.current
+    driftDescriptionTextIndexRef.current = 0
+    driftDescriptionEntrySetIndexRef.current = (driftDescriptionEntrySetIndexRef.current + 1) % driftDescriptionTextSets.length
+    const shouldScheduleExploreAutoDrift = workspaceMode === 'game'
       && projectRef.current.route.length > 1
     playHudSfx('mode')
     triggerHudTapGlow('explore')
@@ -2162,17 +2511,21 @@ function App() {
     gameModeRef.current = 'journey'
     setGameMode('journey')
     setGameScreenWithHomeGrace('journey')
+    appModeRef.current = 'play'
     setAppMode('play')
+    playPausedRef.current = false
     setPlayPaused(false)
     handleMusicRestart(false)
     randomizeHudHoldPulse('loop')
-    if (shouldScheduleFirstExploreAutoDrift) {
+    scheduleDriftDescriptionDelayedTrigger(driftDescriptionExploreEntryTriggerMs)
+    if (shouldScheduleExploreAutoDrift) {
       scheduleFirstExploreAutoDrift()
     }
     setMessage(message)
   }
 
   function enterExploreMode(message = 'Shuffle mode: move freely along the path') {
+    clearDriftDescriptionAutomation()
     playHudSfx('mode')
     triggerHudTapGlow('shuffle')
     clearFirstExploreAutoDrift()
@@ -2233,6 +2586,7 @@ function App() {
   }
 
   function enterLoopMode(message = 'Loop mode: drifting between both ends') {
+    clearDriftDescriptionAutomation()
     playHudSfx('mode')
     triggerHudTapGlow('loop')
     clearFirstExploreAutoDrift()
@@ -2288,6 +2642,7 @@ function App() {
       enterGameMenu('Game menu')
       return
     }
+    clearDriftDescriptionAutomation()
     clearFirstExploreAutoDrift()
     clearExploreIdleFocus()
     setWorkspaceMode('editor')
@@ -2296,6 +2651,7 @@ function App() {
   }
 
   function enterGameMenu(message = 'Game menu') {
+    clearDriftDescriptionAutomation()
     clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
@@ -2471,7 +2827,6 @@ function App() {
   }
 
   function scheduleFirstExploreAutoDrift() {
-    hasAutoDriftedOnFirstExploreRef.current = true
     clearFirstExploreAutoDrift()
     firstExploreAutoDriftTimeoutRef.current = window.setTimeout(() => {
       firstExploreAutoDriftTimeoutRef.current = null
@@ -2510,7 +2865,7 @@ function App() {
         idlePushCount: 0,
       }
       setDriftReleaseGlowUntil(now + driftReleaseGlowMs)
-      setMessage(`First drift: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
+      setMessage(`Auto drift: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
     }, 3000)
   }
 
@@ -2731,6 +3086,7 @@ function App() {
   }
 
   function resetRuntimeToJourney() {
+    clearDriftDescriptionAutomation()
     clearLoopControl()
     clearJourneyEndpointWait(1)
     clearExploreIdleFocus()
@@ -2769,7 +3125,12 @@ function App() {
     setAppMode('play')
     setPlayPaused(false)
     if (!forwardControlRef.current.pressed) {
+      const hadActiveDescriptionAtHoldStart = driftDescriptionSequenceActiveRef.current
+      driftDescriptionHeldRunCountRef.current = 0
       triggerHudTapGlow('drift')
+      clearDriftDescriptionIdleTriggerTimer()
+      scheduleDriftDescriptionDelayedTrigger(driftDescriptionRandomTriggerDelayMs(), true)
+      scheduleDriftDescriptionLongHoldOverride(hadActiveDescriptionAtHoldStart)
       randomizeHudHoldPulse('drift')
       playHudSfx('hold')
       const now = performance.now()
@@ -2791,6 +3152,11 @@ function App() {
   function stopForwardControl(useReleaseCarry = true) {
     const currentControl = forwardControlRef.current
     if (!currentControl.pressed) {
+      clearDriftDescriptionLongHoldOverrideTimer()
+      driftDescriptionHeldRunCountRef.current = 0
+      if (!useReleaseCarry) {
+        clearDriftDescriptionDelayedTriggerTimer()
+      }
       if (!useReleaseCarry && (currentControl.releaseCarryUntil > 0 || currentControl.idleSince > 0 || currentControl.idlePushUntil > 0)) {
         forwardControlRef.current = {
           pressed: false,
@@ -2808,6 +3174,11 @@ function App() {
     playHudSfx('release')
     setDriftReleaseGlowUntil(now + driftReleaseGlowMs)
     const heldMs = now - currentControl.startedAt
+    clearDriftDescriptionLongHoldOverrideTimer()
+    driftDescriptionHeldRunCountRef.current = 0
+    if (!useReleaseCarry) {
+      clearDriftDescriptionDelayedTriggerTimer()
+    }
     const releaseCarryMs = useReleaseCarry && !playPaused
       ? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
       : 0
@@ -2821,6 +3192,9 @@ function App() {
       idlePushCount: 0,
     }
     setForwardPressed(false)
+    if (useReleaseCarry) {
+      scheduleDriftDescriptionIdleTrigger()
+    }
     if (releaseCarryMs > 0) {
       setMessage(`Drift released: gentle push for ${(releaseCarryMs / 1000).toFixed(1)}s`)
       return
@@ -4156,10 +4530,10 @@ function App() {
         ) : (
           <button
             className={`${forwardPressed
-              ? 'game-hud-button span-2 primary active hold-pulse'
+              ? 'game-hud-button span-2 primary drift-control active hold-pulse'
               : driftReleasing
-                ? 'game-hud-button span-2 primary release-glow'
-                : 'game-hud-button span-2 primary ambient-pulse'}${hudTapGlowClass('drift')}`}
+                ? 'game-hud-button span-2 primary drift-control release-glow'
+                : 'game-hud-button span-2 primary drift-control ambient-pulse'}${hudTapGlowClass('drift')}`}
             type="button"
             disabled={journeyGlideDisabled}
             style={forwardPressed
@@ -4264,6 +4638,24 @@ function App() {
         <div className={publicGameBuild ? 'public-game-frame' : 'game-surface-frame'} style={gameSurfaceStyle}>
           <div className="game-surface">
             {publicGameBootReady && renderGameTopHud()}
+            {publicGameBootReady && driftDescription && (
+              <div
+                key={`${driftDescription.runId}-${driftDescription.index}-${driftDescription.phase}`}
+                className={[
+                  'drift-description-layer',
+                  `style-${driftDescription.style}`,
+                  `phase-${driftDescription.phase}`,
+                ].join(' ')}
+                style={{
+                  ...gameHudStyle,
+                  '--drift-description-opacity': `${driftDescription.opacity}`,
+                } as CSSProperties}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <div className="drift-description-text">{driftDescription.text}</div>
+              </div>
+            )}
             <div
               className={[
                 'canvas-shell',
@@ -4755,10 +5147,10 @@ function App() {
               max="3000"
               step="100"
               type="range"
-              value={project.gameplay.mothManualRampMs ?? 1300}
+              value={project.gameplay.mothManualRampMs ?? 2800}
               onChange={(event) => updateGameplay({ mothManualRampMs: Number(event.target.value) }, 'Updated forward acceleration')}
             />
-            <span>{((project.gameplay.mothManualRampMs ?? 1300) / 1000).toFixed(1)}s</span>
+            <span>{((project.gameplay.mothManualRampMs ?? 2800) / 1000).toFixed(1)}s</span>
           </label>
           <label className="range-row">
             Release Carry

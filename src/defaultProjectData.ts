@@ -2958,12 +2958,12 @@ export const defaultProjectData = {
     }
   ],
   "gameplay": {
-    "mothSpeed": 0.18,
+    "mothSpeed": 0.16,
     "mothSize": 2.35,
     "mothGlow": 1.95,
     "mothManualSpeedMin": 0.006,
     "mothManualSpeedMax": 0.055,
-    "mothManualRampMs": 1300,
+    "mothManualRampMs": 2800,
     "mothManualSwellPeak": 0.038,
     "mothManualSwellCruise": 0.014,
     "mothManualSwellPeriodMs": 2200,

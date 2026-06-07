@@ -12,7 +12,7 @@ export type MothLeanSettings = Pick<GameplaySettings, 'mothLeanForwardAmount' | 
 
 const defaultManualScrub = {
   speedMin: 0.006,
-  rampMs: 1300,
+  rampMs: 2800,
   topSpeedScale: 0.055,
 }
 const idlePushMaxDurationMs = 18000
@@ -149,7 +149,8 @@ export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings =
   const start = Math.min(settings.mothManualSpeedMin ?? defaultManualScrub.speedMin, topSpeed * 0.35)
   const rampMs = Math.max(120, settings.mothManualRampMs ?? defaultManualScrub.rampMs)
   const t = clamp(heldMs / rampMs, 0, 1)
-  const eased = 1 - (1 - t) ** 3
+  const delayedT = t ** 1.4
+  const eased = delayedT * delayedT * delayedT * (delayedT * (delayedT * 6 - 15) + 10)
   return lerp(start, topSpeed, eased)
 }
 

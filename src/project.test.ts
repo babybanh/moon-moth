@@ -18,12 +18,12 @@ import {
 } from './project'
 
 const defaultGameplay = {
-  mothSpeed: 0.18,
+  mothSpeed: 0.16,
   mothSize: 2.35,
   mothGlow: 1.95,
   mothManualSpeedMin: 0.006,
   mothManualSpeedMax: 0.055,
-  mothManualRampMs: 1300,
+  mothManualRampMs: 2800,
   mothManualSwellPeak: 0.038,
   mothManualSwellCruise: 0.014,
   mothManualSwellPeriodMs: 2200,
@@ -146,7 +146,7 @@ describe('project helpers', () => {
       mothGlow: 1.2,
       mothManualSpeedMin: 0.006,
       mothManualSpeedMax: 0.055,
-      mothManualRampMs: 1300,
+      mothManualRampMs: 2800,
       mothManualSwellPeak: 0.038,
       mothManualSwellCruise: 0.014,
       mothManualSwellPeriodMs: 2200,
@@ -192,7 +192,7 @@ describe('project helpers', () => {
       },
     })
     expect(project.gameplay).toMatchObject({
-      mothSpeed: 0.18,
+      mothSpeed: 0.16,
       mothSize: 2.35,
       mothGlow: 1.95,
       mothGlowPulseSpeed: 0.6,

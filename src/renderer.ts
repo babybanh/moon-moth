@@ -1,6 +1,6 @@
 import { assetById, mothAsset } from './assets'
 import { isFrontOccluder, resolveItemGlowBehaviors, resolveItemGlowTuning } from './project'
-import { resolveMothLean, sampleRouteData, sampleRouteTangent, worldToScreen, type RouteSampleData } from './routeMath'
+import { clamp, lerp, resolveMothLean, sampleRouteData, sampleRouteTangent, worldToScreen, type RouteSampleData } from './routeMath'
 import type { ArtworkMode, Camera, CanvasTarget, EditorItem, EditorProject, GlowBehavior, LayerId, Point, RenderBand, Selection, Size } from './types'
 
 export type ImageMap = Map<string, HTMLImageElement>
@@ -404,9 +404,12 @@ function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject
   const time = options.animationTime / 1000
   const trailVelocityScale = Math.max(0.001, 0.055 * project.gameplay.mothSpeed)
   const trailDirectionBlend = Math.max(-1, Math.min(1, options.mothTrailVelocity / trailVelocityScale))
+  const trailDirection = trailDirectionBlend < 0 ? -1 : 1
+  const trailPathStrength = clamp(Math.abs(trailDirectionBlend) * 1.45, 0, 1)
   const speedIntensity = Math.min(1, Math.max(0.18, Math.abs(options.mothTrailVelocity) / 0.038))
   const forwardGlowLevel = Math.min(1, Math.max(0, options.mothMotionVelocity / Math.max(0.001, 0.055 * project.gameplay.mothSpeed)))
-  const forwardGlowBoost = 1 + forwardGlowLevel * 0.24
+  const trailBrightnessBoost = 1.1
+  const forwardGlowBoost = (1 + forwardGlowLevel * 0.24) * trailBrightnessBoost
   const count = Math.round(style === 'bubble' ? 7 + amount * 15 : style === 'sparkle' ? 12 + amount * 28 : 14 + amount * 32)
   const moth = sampleRouteData(options.routeSampleData, options.playProgress)
   const anchor = worldToScreen(moth, options.camera, options.viewport)
@@ -433,8 +436,26 @@ function drawMothTrail(context: CanvasRenderingContext2D, project: EditorProject
     const sizeVariance = 0.72 + randomish * 0.66
     const distanceBehind = index * spacing
     const bubbleScatter = style === 'bubble' ? (randomish - 0.5) * waveAmount * 1.9 : 0
-    const x = anchor.x - travel.x * distanceBehind + normal.x * (wave + bubbleScatter) + Math.sin(phase * 0.53) * 2.4
-    const y = anchor.y - travel.y * distanceBehind + normal.y * (wave + bubbleScatter) + Math.sin(time * 0.8 + index) * 3.2 * age
+    const straightX = anchor.x - travel.x * distanceBehind
+    const straightY = anchor.y - travel.y * distanceBehind
+    const pathDistanceBehind = (distanceBehind * Math.max(0.18, Math.abs(trailDirectionBlend))) / Math.max(0.001, options.camera.zoom)
+    const pathProgress = clamp(
+      options.playProgress - trailDirection * (pathDistanceBehind / options.routeSampleData.totalLength),
+      0,
+      1,
+    )
+    const pathPoint = worldToScreen(sampleRouteData(options.routeSampleData, pathProgress), options.camera, options.viewport)
+    const pathTangent = sampleRouteTangent(options.routeSampleData, pathProgress)
+    const pathNormal = { x: -pathTangent.y, y: pathTangent.x }
+    const pathFollow = trailPathStrength * (style === 'sparkle' ? 0.64 : style === 'bubble' ? 0.72 : 0.86)
+    const baseX = lerp(straightX, pathPoint.x, pathFollow)
+    const baseY = lerp(straightY, pathPoint.y, pathFollow)
+    const particleNormal = {
+      x: lerp(normal.x, pathNormal.x, pathFollow),
+      y: lerp(normal.y, pathNormal.y, pathFollow),
+    }
+    const x = baseX + particleNormal.x * (wave + bubbleScatter) + Math.sin(phase * 0.53) * 2.4
+    const y = baseY + particleNormal.y * (wave + bubbleScatter) + Math.sin(time * 0.8 + index) * 3.2 * age
     const color = colors[index % colors.length]
     const fade = (1 - age) ** (style === 'sparkle' ? 1.2 : 1.55)
 
