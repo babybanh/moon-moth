@@ -282,7 +282,7 @@ const mothStoppedVelocityThreshold = 0.00012
 const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
 const musicFadeOutMs = 180
-const musicFadeInMs = 420
+const musicFadeInMs = 1800
 const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
@@ -798,6 +798,7 @@ function App() {
   const musicLoopGapTimeoutRef = useRef<number | null>(null)
   const musicResumeAfterHiddenRef = useRef(false)
   const musicPendingGestureResumeRef = useRef(false)
+  const musicFadeInPendingRef = useRef(false)
   const musicFadeFrameRef = useRef<number | null>(null)
   const recentShufflePointIndicesRef = useRef<number[]>([])
   const gameModeRef = useRef<GameMode>(gameMode)
@@ -1312,7 +1313,7 @@ function App() {
     const music = new Audio(selectedMusicTrack.src)
     music.loop = shouldNativeLoopMusic()
     music.preload = publicGameBuild ? 'none' : 'auto'
-    music.volume = projectRef.current.gameplay.musicMuted ? 0 : projectRef.current.gameplay.musicVolume
+    music.volume = 0
     music.muted = Boolean(projectRef.current.gameplay.musicMuted)
     ;(music as HTMLAudioElement & { playsInline?: boolean }).playsInline = true
     const handleEnded = () => {
@@ -1325,9 +1326,14 @@ function App() {
             return
           }
           music.currentTime = 0
-          music.volume = gameplay.musicMuted ? 0 : gameplay.musicVolume
+          music.volume = 0
           music.muted = Boolean(gameplay.musicMuted)
-          void music.play().catch(() => {
+          musicFadeInPendingRef.current = true
+          void music.play().then(() => {
+            musicFadeInPendingRef.current = false
+            setMusicVolumeSmooth(gameplay.musicVolume, musicFadeInMs)
+          }).catch(() => {
+            musicFadeInPendingRef.current = false
             musicPendingGestureResumeRef.current = true
             setMessage('Music is ready; tap a game button to resume audio')
           })
@@ -1341,7 +1347,12 @@ function App() {
     music.addEventListener('ended', handleEnded)
     musicRef.current = music
     if (projectRef.current.gameplay.musicEnabled && !projectRef.current.gameplay.musicMuted) {
-      void music.play().catch(() => {
+      musicFadeInPendingRef.current = true
+      void music.play().then(() => {
+        musicFadeInPendingRef.current = false
+        setMusicVolumeSmooth(projectRef.current.gameplay.musicVolume, musicFadeInMs)
+      }).catch(() => {
+        musicFadeInPendingRef.current = false
         setMessage('Music is ready; press Play Music when the browser allows it')
       })
     }
@@ -1360,7 +1371,7 @@ function App() {
       return
     }
     music.loop = shouldNativeLoopMusic(gameMode)
-    if (musicFadeFrameRef.current === null) {
+    if (musicFadeFrameRef.current === null && !musicFadeInPendingRef.current) {
       music.volume = project.gameplay.musicMuted ? 0 : project.gameplay.musicVolume
     }
     music.muted = Boolean(project.gameplay.musicMuted)
