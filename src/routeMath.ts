@@ -8,11 +8,16 @@ export type RouteSampleData = {
 }
 
 export type ManualScrubSettings = Partial<Pick<GameplaySettings, 'mothSpeed' | 'mothManualSpeedMin' | 'mothManualRampMs'>>
+export type ManualScrubOptions = {
+  delayedRamp?: boolean
+  mothSpeed?: number
+  rampMs?: number
+}
 export type MothLeanSettings = Pick<GameplaySettings, 'mothLeanForwardAmount' | 'mothLeanBackwardAmount'>
 
 const defaultManualScrub = {
   speedMin: 0.006,
-  rampMs: 2800,
+  rampMs: 1300,
   topSpeedScale: 0.055,
 }
 const idlePushMaxDurationMs = 18000
@@ -143,14 +148,16 @@ export function resolveMothLean(signedProgressPerSecond: number, settings: MothL
   return Math.sign(signedProgressPerSecond) * intensity * (signedProgressPerSecond >= 0 ? forwardLean : backwardLean)
 }
 
-export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings = {}, shiftKey = false, direction: -1 | 1 = 1) {
+export function manualScrubSpeed(heldMs: number, settings: ManualScrubSettings = {}, shiftKey = false, direction: -1 | 1 = 1, options: ManualScrubOptions = {}) {
   const shiftMultiplier = shiftKey ? 1.45 : 1
-  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (settings.mothSpeed ?? 0.17) * shiftMultiplier)
+  const topSpeed = Math.max(0.001, defaultManualScrub.topSpeedScale * (options.mothSpeed ?? settings.mothSpeed ?? 0.17) * shiftMultiplier)
   const start = Math.min(settings.mothManualSpeedMin ?? defaultManualScrub.speedMin, topSpeed * 0.35)
-  const rampMs = Math.max(120, settings.mothManualRampMs ?? defaultManualScrub.rampMs)
+  const rampMs = Math.max(120, options.rampMs ?? settings.mothManualRampMs ?? defaultManualScrub.rampMs)
   const t = clamp(heldMs / rampMs, 0, 1)
   const delayedT = t ** 1.4
-  const eased = delayedT * delayedT * delayedT * (delayedT * (delayedT * 6 - 15) + 10)
+  const eased = options.delayedRamp
+    ? delayedT * delayedT * delayedT * (delayedT * (delayedT * 6 - 15) + 10)
+    : 1 - (1 - t) ** 3
   return lerp(start, topSpeed, eased)
 }
 

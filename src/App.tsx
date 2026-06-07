@@ -283,6 +283,7 @@ const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
 const musicFadeOutMs = 180
 const musicFadeInMs = 1800
+const journeyDriftRampOptions = { mothSpeed: 0.16, rampMs: 2800, delayedRamp: true } as const
 const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
@@ -308,7 +309,6 @@ const driftDescriptionLongHoldMs = 3000
 const driftDescriptionStyles = [
   { style: 'moon-lift', enterMs: 2520, exitMs: 1960 },
 ] as const
-const driftDescriptionOpacityOptions = [1, 0.9, 0.8] as const
 const driftDescriptionTextSets = [
   [
     'Drift the moth softly, then release.',
@@ -379,13 +379,12 @@ const driftDescriptionTextSets = [
 type HudSfxIntent = 'home' | 'mode' | 'hold' | 'turn' | 'release'
 type DriftDescriptionPhase = 'enter' | 'hold' | 'exit'
 type DriftDescriptionStyle = typeof driftDescriptionStyles[number]['style']
-type DriftDescriptionOpacity = typeof driftDescriptionOpacityOptions[number]
 type DriftDescriptionState = {
   runId: number
   index: number
   phase: DriftDescriptionPhase
   style: DriftDescriptionStyle
-  opacity: DriftDescriptionOpacity
+  opacity: number
   text: string
 }
 
@@ -1565,7 +1564,7 @@ function App() {
           const heldMs = idlePushActive
             ? time - forwardControlRef.current.idlePushStartedAt
             : time - activeControl.startedAt
-          targetVelocity = direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, direction) * speedMultiplier * releasePushScale
+          targetVelocity = direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, direction, journeyDriftRampOptions) * speedMultiplier * releasePushScale
         }
 
         const response = movementRequested ? 2.8 : 1.35
@@ -2178,11 +2177,9 @@ function App() {
       return text
     })
     const runStyles = shuffledItems(driftDescriptionStyles)
-    const runOpacities = shuffledItems(driftDescriptionOpacityOptions)
     let offsetMs = driftDescriptionInitialDelayMs
     runTexts.forEach((text, index) => {
       const item = runStyles[index] ?? runStyles[runStyles.length - 1]
-      const opacity = runOpacities[index] ?? runOpacities[runOpacities.length - 1]
       const holdMs = driftDescriptionHoldMsForText(text)
       driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
         setDriftDescription({
@@ -2190,7 +2187,7 @@ function App() {
           index,
           phase: 'enter',
           style: item.style,
-          opacity,
+          opacity: 1,
           text,
         })
       }, offsetMs))
@@ -2201,7 +2198,7 @@ function App() {
           index,
           phase: 'hold',
           style: item.style,
-          opacity,
+          opacity: 1,
           text,
         })
       }, offsetMs + item.enterMs))
@@ -2212,7 +2209,7 @@ function App() {
           index,
           phase: 'exit',
           style: item.style,
-          opacity,
+          opacity: 1,
           text,
         })
       }, offsetMs + item.enterMs + holdMs))
@@ -4402,7 +4399,7 @@ function App() {
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
           <button
-            className={`game-hud-button span-2 primary ambient-pulse${hudTapGlowClass('explore')}`}
+            className={`game-hud-button span-2 primary enhanced-glow ambient-pulse${hudTapGlowClass('explore')}`}
             type="button"
             style={hudButtonStyle('explore')}
             onClick={() => enterJourneyMode('Explore started')}
@@ -4471,7 +4468,7 @@ function App() {
           ) : (
             <>
               <button
-                className={`${backwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${oppositeBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
+                className={`${backwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
                 type="button"
                 aria-label="Move backward"
                 disabled={exploreBackDisabled}
@@ -4484,7 +4481,7 @@ function App() {
                 <ChevronsLeft size={iconSize} strokeWidth={iconStrokeWidth} />
               </button>
               <button
-                className={`${forwardActive ? 'game-hud-button icon-only middle-control active hold-pulse' : 'game-hud-button icon-only middle-control'}${shuffleDirectionVisualClass}${oppositeForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
+                className={`${forwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
                 type="button"
                 aria-label="Move forward"
                 disabled={exploreForwardDisabled}
@@ -4541,10 +4538,10 @@ function App() {
         ) : (
           <button
             className={`${forwardPressed
-              ? 'game-hud-button span-2 primary drift-control active hold-pulse'
+              ? 'game-hud-button span-2 primary drift-control enhanced-glow active hold-pulse'
               : driftReleasing
-                ? 'game-hud-button span-2 primary drift-control release-glow'
-                : 'game-hud-button span-2 primary drift-control ambient-pulse'}${hudTapGlowClass('drift')}`}
+                ? 'game-hud-button span-2 primary drift-control enhanced-glow release-glow'
+                : 'game-hud-button span-2 primary drift-control enhanced-glow ambient-pulse'}${hudTapGlowClass('drift')}`}
             type="button"
             disabled={journeyGlideDisabled}
             style={forwardPressed
@@ -5158,10 +5155,10 @@ function App() {
               max="3000"
               step="100"
               type="range"
-              value={project.gameplay.mothManualRampMs ?? 2800}
+              value={project.gameplay.mothManualRampMs ?? 1300}
               onChange={(event) => updateGameplay({ mothManualRampMs: Number(event.target.value) }, 'Updated forward acceleration')}
             />
-            <span>{((project.gameplay.mothManualRampMs ?? 2800) / 1000).toFixed(1)}s</span>
+            <span>{((project.gameplay.mothManualRampMs ?? 1300) / 1000).toFixed(1)}s</span>
           </label>
           <label className="range-row">
             Release Carry

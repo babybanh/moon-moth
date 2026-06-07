@@ -23,7 +23,7 @@ export const glowBloomDefault = 1.4
 export const glowSpriteLiftDefault = 0.35
 const manualSpeedMinDefault = 0.006
 const manualSpeedMaxDefault = 0.055
-const manualRampMsDefault = 2800
+const manualRampMsDefault = 1300
 const manualSwellPeakDefault = 0.038
 const manualSwellCruiseDefault = 0.014
 const manualSwellPeriodMsDefault = 2200
@@ -328,7 +328,7 @@ function resolveMusicCue(value: unknown): MusicCueAction {
 function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): GameplaySettings {
   const source = value && typeof value === 'object' ? value as Partial<GameplaySettings> : {}
   const merged: GameplaySettings = { ...fallback, ...source }
-  const mothSpeed = migrateDefaultLikeNumber(source.mothSpeed, fallback.mothSpeed, [0.17, 0.18, 0.2])
+  const mothSpeed = migrateDefaultLikeNumber(source.mothSpeed, fallback.mothSpeed, [0.16, 0.17, 0.2])
   const mothSize = migrateDefaultLikeNumber(source.mothSize, fallback.mothSize, [2.25, 2.5, 2.65])
   const mothGlow = migrateDefaultLikeNumber(source.mothGlow, fallback.mothGlow, [1.3, 1.85])
   const mothManualSpeedMin = clampNumber(source.mothManualSpeedMin, 0.001, 0.5, fallback.mothManualSpeedMin ?? manualSpeedMinDefault)
@@ -344,7 +344,7 @@ function migrateGameplaySettings(value: unknown, fallback: GameplaySettings): Ga
     mothManualSpeedMin,
     mothManualSpeedMax,
     mothManualRampMs: Math.round(clampNumber(
-      migrateDefaultLikeNumber(source.mothManualRampMs, fallback.mothManualRampMs ?? manualRampMsDefault, [1300, 2000]),
+      migrateDefaultLikeNumber(source.mothManualRampMs, fallback.mothManualRampMs ?? manualRampMsDefault, [2000, 2800]),
       100,
       5000,
       fallback.mothManualRampMs ?? manualRampMsDefault,

@@ -837,6 +837,46 @@ input[type="range"] {
   }
 }
 
+@keyframes hudSmallButtonGlowPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 14px 32px rgba(var(--hud-glow-base), 0.22),
+      0 0 54px rgba(var(--hud-glow-base), 0.24),
+      0 0 112px rgba(var(--hud-glow-base), 0.13),
+      0 0 154px rgba(var(--hud-glow-outer), 0.08);
+    opacity: 0.94;
+  }
+
+  50% {
+    box-shadow:
+      0 19px 42px rgba(var(--hud-glow-active), 0.34),
+      0 0 76px rgba(var(--hud-glow-active), 0.34),
+      0 0 146px rgba(var(--hud-glow-base), 0.2),
+      0 0 194px rgba(var(--hud-glow-outer), 0.12);
+    opacity: 1;
+  }
+}
+
+@keyframes hudFirstMenuGlowPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 28px rgba(130, 246, 232, 0.18),
+      0 0 38px rgba(130, 246, 232, 0.195),
+      0 0 76px rgba(104, 226, 238, 0.09);
+    opacity: 0.9;
+  }
+
+  50% {
+    box-shadow:
+      0 17px 38px rgba(130, 246, 232, 0.3),
+      0 0 62px rgba(130, 246, 232, 0.3),
+      0 0 115px rgba(104, 226, 238, 0.15);
+    opacity: 1;
+  }
+}
+
 @keyframes hudReleaseGlowDecay {
   0% {
     background: transparent;
@@ -892,8 +932,16 @@ input[type="range"] {
   animation: hudAmbientNeonPulse 3600ms ease-in-out infinite;
 }
 
-.game-hud-button.drift-control.ambient-pulse:not(:disabled):not(.hold-pulse) {
+.game-hud-button.enhanced-glow.ambient-pulse:not(:disabled):not(.hold-pulse) {
   animation: hudDriftHoverGlowPulse 3400ms ease-in-out infinite;
+}
+
+.game-hud-button.middle-control.enhanced-glow.ambient-pulse:not(:disabled):not(.hold-pulse) {
+  animation: hudSmallButtonGlowPulse 3200ms ease-in-out infinite;
+}
+
+.game-ui-layer.first-menu-glow .game-hud-button.primary.enhanced-glow.ambient-pulse:not(:disabled):not(.hold-pulse) {
+  animation: hudFirstMenuGlowPulse 3400ms ease-in-out infinite;
 }
 
 .game-hud-button.release-glow {
