@@ -384,9 +384,9 @@ input[type="range"] {
   --game-hud-letter-spacing: 0;
   --game-hud-border-alpha: 0.32;
   --game-hud-primary-alpha: 0.5;
-  --hud-glow-base: 156, 126, 255;
-  --hud-glow-active: 185, 156, 255;
-  --hud-glow-outer: 112, 83, 220;
+  --hud-glow-base: 130, 246, 232;
+  --hud-glow-active: 130, 246, 232;
+  --hud-glow-outer: 104, 226, 238;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-rows: var(--game-hud-cell-size);
@@ -518,6 +518,9 @@ input[type="range"] {
   letter-spacing: var(--game-hud-letter-spacing);
   line-height: 1.38;
   pointer-events: none;
+  --shuffle-description-glow-base: 156, 126, 255;
+  --shuffle-description-glow-active: 185, 156, 255;
+  --shuffle-description-glow-outer: 112, 83, 220;
   --shuffle-description-avatar-current-radius: calc(var(--shuffle-description-button-size) * var(--game-hud-roundness) * 0.5);
   --shuffle-description-avatar-current-size: var(--shuffle-description-button-size);
   --shuffle-description-avatar-current-top: calc((var(--shuffle-description-avatar-size) - var(--shuffle-description-button-size)) / 2);
@@ -544,12 +547,18 @@ input[type="range"] {
   --shuffle-description-card-opacity: 1;
 }
 
+.shuffle-description-prototype.closed .shuffle-description-avatar {
+  color: rgba(211, 232, 230, 0.58);
+  opacity: 0.72;
+  box-shadow: none;
+}
+
 .shuffle-description-prototype.multi-example .shuffle-description-example {
   opacity: 0;
   animation: none;
 }
 
-.shuffle-description-prototype.multi-example .shuffle-description-example:first-child,
+.shuffle-description-prototype.multi-example .shuffle-description-example.active,
 .shuffle-description-prototype.closed.multi-example .shuffle-description-example:first-child {
   opacity: 1;
 }
@@ -560,9 +569,9 @@ input[type="range"] {
   height: var(--shuffle-description-avatar-current-size);
   background: #000;
   box-shadow:
-    0 12px 28px rgba(var(--hud-glow-base), 0.16),
-    0 0 44px rgba(var(--hud-glow-base), 0.16),
-    0 0 86px rgba(var(--hud-glow-outer), 0.08);
+    0 12px 28px rgba(var(--shuffle-description-glow-base), 0.12),
+    0 0 38px rgba(var(--shuffle-description-glow-base), 0.13),
+    0 0 76px rgba(var(--shuffle-description-glow-outer), 0.06);
 }
 
 .shuffle-description-avatar {
@@ -591,6 +600,11 @@ input[type="range"] {
 }
 
 .shuffle-description-prototype.open .shuffle-description-avatar {
+  box-shadow:
+    0 18px 40px rgba(var(--shuffle-description-glow-active), 0.28),
+    0 0 70px rgba(var(--shuffle-description-glow-active), 0.3),
+    0 0 132px rgba(var(--shuffle-description-glow-base), 0.16),
+    0 0 178px rgba(var(--shuffle-description-glow-outer), 0.1);
   transition:
     top 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
     left 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
@@ -605,9 +619,9 @@ input[type="range"] {
 .shuffle-description-avatar:hover {
   color: #ffffff;
   box-shadow:
-    0 14px 32px rgba(var(--hud-glow-active), 0.2),
-    0 0 52px rgba(var(--hud-glow-active), 0.2),
-    0 0 96px rgba(var(--hud-glow-outer), 0.1);
+    0 16px 34px rgba(var(--shuffle-description-glow-active), 0.24),
+    0 0 58px rgba(var(--shuffle-description-glow-active), 0.24),
+    0 0 108px rgba(var(--shuffle-description-glow-outer), 0.12);
 }
 
 .shuffle-description-flower-icon {
@@ -633,7 +647,7 @@ input[type="range"] {
   margin: 10%;
   object-fit: contain;
   opacity: 0;
-  transform: scale(0.78);
+  transform: scale(calc(var(--shuffle-description-avatar-image-scale, 1) * 0.78));
   transition:
     opacity 420ms ease,
     transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -641,7 +655,7 @@ input[type="range"] {
 
 .shuffle-description-prototype.open .shuffle-description-avatar img {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(var(--shuffle-description-avatar-image-scale, 1));
   transition:
     opacity 920ms ease 160ms,
     transform 920ms cubic-bezier(0.16, 1, 0.3, 1) 180ms;
@@ -680,6 +694,7 @@ input[type="range"] {
   width: 100%;
   align-content: center;
   gap: calc(9px * var(--game-hud-scale));
+  text-align: left;
 }
 
 .shuffle-description-card-title {

@@ -1,4 +1,4 @@
-import { Home, Bug, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clover, Copy, Crosshair, Eclipse, Eye, EyeOff, Flower, Flower2, Image, Leaf, Moon, MoonStar, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, Shuffle, SkipBack, Sprout, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { Home, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Crosshair, Eye, EyeOff, Image, Leaf, Moon, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, Shuffle, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
@@ -241,16 +241,49 @@ const shuffleInfoRooms: Array<{ id: ShuffleInfoRoomId; label: string; shortLabel
   { id: 'moon-room-4', label: 'Moon Room 4', shortLabel: 'Room 4' },
 ]
 const shuffleInfoIconOptions = [
-  { id: 'flower', label: 'Flower', Icon: Flower },
-  { id: 'flower-2', label: 'Flower 2', Icon: Flower2 },
-  { id: 'clover', label: 'Clover flower', Icon: Clover },
-  { id: 'sprout', label: 'Sprout', Icon: Sprout },
   { id: 'leaf', label: 'Leaf', Icon: Leaf },
-  { id: 'bug', label: 'Moth placeholder', Icon: Bug },
   { id: 'moon', label: 'Moon', Icon: Moon },
-  { id: 'moon-star', label: 'Moon star', Icon: MoonStar },
-  { id: 'eclipse', label: 'Eclipse', Icon: Eclipse },
 ]
+const shuffleInfoAvatarMeasuredCoverageByName: Record<string, number> = {
+  'Crooked Saplings': 0.401,
+  'Crescent Moon': 0.43,
+  'Full Moon': 0.47,
+  'First Moon': 0.588,
+  'Soft Moon': 0.588,
+  'Moonstone Fragments': 0.655,
+  'Glow Flower': 0.669,
+  'Moon Reeds': 0.693,
+  'Cocoon Shrine': 0.75,
+  'Great Moonstone': 0.773,
+  'Vine Lanterns': 0.798,
+  'Star Petals': 0.798,
+  'Orchid Spill': 0.799,
+  'Moss Rock': 0.799,
+  'Fern Mound': 0.799,
+}
+const shuffleInfoAvatarTargetCoverageByName: Record<string, number> = {
+  'Crooked Saplings': 0.76,
+  'Crescent Moon': 0.7,
+  'Full Moon': 0.7,
+  'First Moon': 0.7,
+  'Soft Moon': 0.7,
+  'Moonstone Fragments': 1.08,
+  'Glow Flower': 0.86,
+  'Moon Reeds': 0.9,
+  'Cocoon Shrine': 0.88,
+  'Great Moonstone': 0.9,
+  'Vine Lanterns': 0.86,
+  'Star Petals': 0.83,
+  'Orchid Spill': 0.86,
+  'Moss Rock': 0.83,
+  'Fern Mound': 0.83,
+}
+const shuffleInfoAvatarScaleByName = Object.fromEntries(
+  Object.entries(shuffleInfoAvatarTargetCoverageByName).map(([name, targetCoverage]) => {
+    const measuredCoverage = shuffleInfoAvatarMeasuredCoverageByName[name] ?? targetCoverage
+    return [name, Math.round(clamp(targetCoverage / measuredCoverage, 0.8, 1.9) * 100) / 100]
+  }),
+) as Record<string, number>
 const shuffleInfoItemTransferType = 'application/x-moon-moth-info-item'
 const hudButtonOptions: Array<{ id: GameHudButtonId; label: string }> = [
   { id: 'home', label: 'Home' },
@@ -770,6 +803,8 @@ function App() {
   const [, setDriftDescriptionRunId] = useState(0)
   const [shuffleDescriptionOpen, setShuffleDescriptionOpen] = useState(false)
   const [shuffleInfoIconIndex, setShuffleInfoIconIndex] = useState(0)
+  const [shuffleDescriptionExampleIndex, setShuffleDescriptionExampleIndex] = useState(0)
+  const [shuffleDescriptionCardSeed, setShuffleDescriptionCardSeed] = useState(0)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -2111,9 +2146,9 @@ function App() {
     '--game-hud-letter-spacing': hudStylePreset.letterSpacing,
     '--game-hud-border-alpha': `${hudStylePreset.borderAlpha}`,
     '--game-hud-primary-alpha': `${hudStylePreset.primaryAlpha}`,
-    '--hud-glow-base': '156, 126, 255',
-    '--hud-glow-active': '185, 156, 255',
-    '--hud-glow-outer': '112, 83, 220',
+    '--hud-glow-base': '130, 246, 232',
+    '--hud-glow-active': '130, 246, 232',
+    '--hud-glow-outer': '104, 226, 238',
   } as CSSProperties
   const gameSurfaceStyle = publicGameBuild
     ? { '--public-game-scale': `${publicGameScale}` } as CSSProperties
@@ -2376,32 +2411,29 @@ function App() {
       if (!entry.enabled || !entry.asset) {
         return []
       }
-      return entry.cards
+      const cards = entry.cards
         .map((card) => card.body.trim())
         .filter(Boolean)
-        .map((text) => ({
-          avatarAlt: entry.publicName,
-          avatarSrc: entry.asset?.src ?? '',
-          id: `${entry.item.id}-${text}`,
-          silhouette: entry.item.silhouette,
-          publicName: entry.publicName,
-          text,
-        }))
+      if (cards.length === 0) {
+        return []
+      }
+      const text = cards[Math.floor(Math.random() * cards.length)]
+      return [{
+        avatarAlt: entry.publicName,
+        avatarSrc: entry.asset?.src ?? '',
+        id: entry.item.id,
+        silhouette: entry.item.silhouette,
+        publicName: entry.publicName,
+        text,
+        avatarScale: shuffleInfoAvatarScaleByName[entry.publicName] ?? 1,
+      }]
     })
-    const examples = collectExamples(shuffleInfoEntries).length > 0
-      ? collectExamples(shuffleInfoEntries)
+    const currentExamples = collectExamples(shuffleInfoEntries)
+    const examples = currentExamples.length > 0
+      ? currentExamples
       : collectExamples(defaultShuffleInfoEntries)
-    if (examples.length === 0) {
-      return []
-    }
-    const sorted = [...examples].sort((a, b) => a.text.length - b.text.length || a.publicName.localeCompare(b.publicName))
-    const shortest = sorted[0]
-    const longest = sorted[sorted.length - 1]
-    const silhouetteExample = examples.find((example) => example.silhouette)
-    return [longest, shortest, silhouetteExample]
-      .filter((example): example is typeof shortest => Boolean(example))
-      .filter((example, index, list) => list.findIndex((candidate) => candidate.id === example.id) === index)
-  }, [defaultShuffleInfoEntries, shuffleInfoEntries])
+    return examples
+  }, [defaultShuffleInfoEntries, shuffleDescriptionCardSeed, shuffleInfoEntries])
   const cameraExtensionInnerScale = clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
   const shuffleDescriptionInnerSize = gameSurfaceSize * cameraExtensionInnerScale
   const shuffleDescriptionInnerLeft = 2 + ((gameSurfaceSize - 4 - shuffleDescriptionInnerSize) / 2)
@@ -2452,6 +2484,16 @@ function App() {
     }, 1400)
     return () => window.clearInterval(interval)
   }, [showShuffleDescriptionPrototype, shuffleDescriptionOpen])
+  useEffect(() => {
+    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleDescriptionPrototypeExamples.length <= 1) {
+      return undefined
+    }
+    const interval = window.setInterval(() => {
+      setShuffleDescriptionExampleIndex((index) => (index + 1) % shuffleDescriptionPrototypeExamples.length)
+      setShuffleDescriptionCardSeed((seed) => seed + 1)
+    }, 3000)
+    return () => window.clearInterval(interval)
+  }, [showShuffleDescriptionPrototype, shuffleDescriptionOpen, shuffleDescriptionPrototypeExamples.length])
   const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
     setGameHudScreen(screen)
     if (screen === 'menu') {
@@ -4813,20 +4855,27 @@ function App() {
                 aria-atomic="true"
               >
                 {shuffleDescriptionPrototypeExamples.map((example, index) => (
-                  <div
-                    className="shuffle-description-example"
-                    key={example.id}
-                    style={{
-                      '--shuffle-description-example-count': `${shuffleDescriptionPrototypeExamples.length}`,
-                      '--shuffle-description-example-index': `${index}`,
-                    } as CSSProperties}
-                  >
+                  (() => {
+                    const exampleActive = shuffleDescriptionOpen ? index === shuffleDescriptionExampleIndex : index === 0
+                    return (
+                    <div
+                      className={[
+                        'shuffle-description-example',
+                        exampleActive ? 'active' : '',
+                      ].filter(Boolean).join(' ')}
+                      key={example.id}
+                      style={{
+                        '--shuffle-description-example-count': `${shuffleDescriptionPrototypeExamples.length}`,
+                        '--shuffle-description-example-index': `${index}`,
+                        '--shuffle-description-avatar-image-scale': `${example.avatarScale}`,
+                      } as CSSProperties}
+                    >
                     <button
                       className="shuffle-description-avatar"
                       type="button"
-                      aria-hidden={index === 0 ? undefined : true}
-                      aria-label={index === 0 ? (shuffleDescriptionOpen ? 'Close shuffle info' : `Open shuffle info, ${shuffleInfoIconLabel} icon`) : undefined}
-                      tabIndex={index === 0 ? 0 : -1}
+                      aria-hidden={exampleActive ? undefined : true}
+                      aria-label={exampleActive ? (shuffleDescriptionOpen ? 'Close shuffle info' : `Open shuffle info, ${shuffleInfoIconLabel} icon`) : undefined}
+                      tabIndex={exampleActive ? 0 : -1}
                       onClick={() => setShuffleDescriptionOpen((open) => !open)}
                     >
                       <ShuffleInfoIcon className="shuffle-description-flower-icon" size={gameHudIconSize} strokeWidth={hudStylePreset.iconStrokeWidth} aria-hidden="true" />
@@ -4839,6 +4888,8 @@ function App() {
                       </div>
                     </div>
                   </div>
+                    )
+                  })()
                 ))}
               </div>
             )}
