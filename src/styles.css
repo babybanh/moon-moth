@@ -1254,7 +1254,7 @@ input[type="range"] {
 
 .menu-moth-canvas {
   position: absolute;
-  inset: var(--game-canvas-test-inset, 0);
+  inset: var(--game-canvas-edge-inset, 0);
   width: auto;
   height: auto;
   z-index: 5;
@@ -1268,9 +1268,9 @@ input[type="range"] {
   filter: none;
   transform: scale(1);
   transform-origin: center;
-  width: calc(100% - (var(--game-canvas-test-inset, 0px) * 2));
-  height: calc(100% - (var(--game-canvas-test-inset, 0px) * 2));
-  margin: var(--game-canvas-test-inset, 0);
+  width: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2));
+  height: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2));
+  margin: var(--game-canvas-edge-inset, 0);
   transition:
     opacity 1800ms cubic-bezier(0.22, 1, 0.36, 1),
     filter var(--menu-focus-canvas-exit-ms, 1800ms) cubic-bezier(0.22, 1, 0.36, 1),
@@ -1357,12 +1357,13 @@ canvas {
 }
 
 .public-game-frame .canvas-shell {
-  --game-canvas-test-inset: 3px;
+  /* Prevents subpixel/backdrop-filter hairlines where the artwork meets the clipped square shell. */
+  --game-canvas-edge-inset: 3px;
 }
 
 .public-game-frame .canvas-shell > canvas:not(.menu-moth-canvas) {
-  width: calc(100% - (var(--game-canvas-test-inset, 0px) * 2)) !important;
-  height: calc(100% - (var(--game-canvas-test-inset, 0px) * 2)) !important;
+  width: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2)) !important;
+  height: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2)) !important;
 }
 
 .camera-extension-overlay {
