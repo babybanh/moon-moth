@@ -433,16 +433,16 @@ input[type="range"] {
   font-size: 25px;
   font-weight: var(--game-hud-font-weight);
   letter-spacing: var(--game-hud-letter-spacing);
-  line-height: 1.26;
+  line-height: 1.38;
   pointer-events: none;
-  text-align: center;
+  text-align: left;
   translate: -50% 0;
 }
 
 .drift-description-text {
+  width: 100%;
   max-width: 100%;
-  text-align: center;
-  text-wrap: balance;
+  text-align: left;
 }
 
 .drift-description-layer.phase-hold {
@@ -501,6 +501,230 @@ input[type="range"] {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
+  }
+}
+
+.shuffle-description-prototype {
+  position: absolute;
+  top: var(--shuffle-description-top);
+  left: var(--shuffle-description-left);
+  z-index: 14;
+  width: var(--shuffle-description-width);
+  height: var(--shuffle-description-avatar-size);
+  color: rgba(246, 255, 252, 0.96);
+  font-family: var(--game-hud-font-family);
+  font-size: 20px;
+  font-weight: var(--game-hud-font-weight);
+  letter-spacing: var(--game-hud-letter-spacing);
+  line-height: 1.38;
+  pointer-events: none;
+  --shuffle-description-avatar-current-radius: calc(var(--shuffle-description-button-size) * var(--game-hud-roundness) * 0.5);
+  --shuffle-description-avatar-current-size: var(--shuffle-description-button-size);
+  --shuffle-description-avatar-current-top: calc((var(--shuffle-description-avatar-size) - var(--shuffle-description-button-size)) / 2);
+  --shuffle-description-avatar-current-left: calc(var(--shuffle-description-avatar-size) - var(--shuffle-description-button-size));
+  --shuffle-description-card-opacity: 0;
+}
+
+.shuffle-description-example {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shuffle-description-prototype.closed .shuffle-description-example:first-child,
+.shuffle-description-prototype.open .shuffle-description-example:first-child {
+  pointer-events: auto;
+}
+
+.shuffle-description-prototype.open {
+  --shuffle-description-avatar-current-radius: calc(var(--shuffle-description-avatar-size) * 0.09);
+  --shuffle-description-avatar-current-size: var(--shuffle-description-avatar-size);
+  --shuffle-description-avatar-current-top: 0px;
+  --shuffle-description-avatar-current-left: 0px;
+  --shuffle-description-card-opacity: 1;
+}
+
+.shuffle-description-prototype.multi-example .shuffle-description-example {
+  opacity: 0;
+  animation: none;
+}
+
+.shuffle-description-prototype.multi-example .shuffle-description-example:first-child,
+.shuffle-description-prototype.closed.multi-example .shuffle-description-example:first-child {
+  opacity: 1;
+}
+
+.shuffle-description-avatar,
+.shuffle-description-card {
+  position: relative;
+  height: var(--shuffle-description-avatar-current-size);
+  background: #000;
+  box-shadow:
+    0 12px 28px rgba(var(--hud-glow-base), 0.16),
+    0 0 44px rgba(var(--hud-glow-base), 0.16),
+    0 0 86px rgba(var(--hud-glow-outer), 0.08);
+}
+
+.shuffle-description-avatar {
+  position: absolute;
+  top: var(--shuffle-description-avatar-current-top);
+  left: var(--shuffle-description-avatar-current-left);
+  display: grid;
+  width: var(--shuffle-description-avatar-current-size);
+  place-items: center;
+  border: 0;
+  padding: 0;
+  color: rgba(238, 255, 250, 0.9);
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: var(--shuffle-description-avatar-current-radius);
+  pointer-events: auto;
+  transition:
+    top 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 760ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 760ms ease,
+    color 520ms ease,
+    opacity 520ms ease;
+}
+
+.shuffle-description-prototype.open .shuffle-description-avatar {
+  transition:
+    top 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    left 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    width 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    height 860ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    border-radius 900ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    box-shadow 860ms ease 180ms,
+    color 520ms ease,
+    opacity 520ms ease;
+}
+
+.shuffle-description-avatar:hover {
+  color: #ffffff;
+  box-shadow:
+    0 14px 32px rgba(var(--hud-glow-active), 0.2),
+    0 0 52px rgba(var(--hud-glow-active), 0.2),
+    0 0 96px rgba(var(--hud-glow-outer), 0.1);
+}
+
+.shuffle-description-flower-icon {
+  position: absolute;
+  opacity: 1;
+  transition:
+    opacity 480ms ease,
+    transform 820ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shuffle-description-prototype.open .shuffle-description-flower-icon {
+  opacity: 0;
+  transform: scale(0.82) rotate(-18deg);
+  transition:
+    opacity 260ms ease 80ms,
+    transform 300ms ease 80ms;
+}
+
+.shuffle-description-avatar img {
+  display: block;
+  width: 80%;
+  height: 80%;
+  margin: 10%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.78);
+  transition:
+    opacity 420ms ease,
+    transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shuffle-description-prototype.open .shuffle-description-avatar img {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 920ms ease 160ms,
+    transform 920ms cubic-bezier(0.16, 1, 0.3, 1) 180ms;
+}
+
+.shuffle-description-card {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--shuffle-description-card-left);
+  height: var(--shuffle-description-avatar-size);
+  display: grid;
+  align-items: center;
+  justify-items: stretch;
+  overflow: hidden;
+  border-radius: calc(var(--shuffle-description-avatar-size) * 0.16);
+  padding: 0;
+  text-align: left;
+  box-shadow: none;
+  opacity: var(--shuffle-description-card-opacity);
+  transform: translateY(calc(4px * var(--game-hud-scale)));
+  transition:
+    opacity 520ms ease,
+    transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shuffle-description-prototype.open .shuffle-description-card {
+  transform: translateY(0);
+  transition:
+    opacity 920ms ease 160ms,
+    transform 920ms cubic-bezier(0.16, 1, 0.3, 1) 180ms;
+}
+
+.shuffle-description-copy {
+  display: grid;
+  width: 100%;
+  align-content: center;
+  gap: calc(9px * var(--game-hud-scale));
+}
+
+.shuffle-description-card-title {
+  overflow: hidden;
+  color: rgba(246, 255, 252, 0.74);
+  font-size: 15.5px;
+  line-height: 1.16;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shuffle-description-card-text {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@keyframes shuffleDescriptionExampleCycle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  8%,
+  42% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shuffle-description-prototype.multi-example .shuffle-description-example {
+    animation: none;
+  }
+
+  .shuffle-description-prototype.multi-example .shuffle-description-example:first-child {
+    opacity: 1;
   }
 }
 
@@ -1030,7 +1254,9 @@ input[type="range"] {
 
 .menu-moth-canvas {
   position: absolute;
-  inset: 0;
+  inset: var(--game-canvas-test-inset, 0);
+  width: auto;
+  height: auto;
   z-index: 5;
   opacity: 0;
   pointer-events: none;
@@ -1042,6 +1268,9 @@ input[type="range"] {
   filter: none;
   transform: scale(1);
   transform-origin: center;
+  width: calc(100% - (var(--game-canvas-test-inset, 0px) * 2));
+  height: calc(100% - (var(--game-canvas-test-inset, 0px) * 2));
+  margin: var(--game-canvas-test-inset, 0);
   transition:
     opacity 1800ms cubic-bezier(0.22, 1, 0.36, 1),
     filter var(--menu-focus-canvas-exit-ms, 1800ms) cubic-bezier(0.22, 1, 0.36, 1),
@@ -1053,7 +1282,7 @@ input[type="range"] {
     blur(var(--menu-focus-blur, 5px))
     brightness(var(--menu-focus-brightness, 0.64))
     saturate(0.94);
-  transform: scale(1.018);
+  transform: scale(1);
 }
 
 .canvas-shell.menu-focus-active .menu-moth-canvas {
@@ -1127,6 +1356,15 @@ canvas {
   cursor: crosshair;
 }
 
+.public-game-frame .canvas-shell {
+  --game-canvas-test-inset: 3px;
+}
+
+.public-game-frame .canvas-shell > canvas:not(.menu-moth-canvas) {
+  width: calc(100% - (var(--game-canvas-test-inset, 0px) * 2)) !important;
+  height: calc(100% - (var(--game-canvas-test-inset, 0px) * 2)) !important;
+}
+
 .camera-extension-overlay {
   --camera-extension-inner-size: 80%;
   --camera-extension-radius: 9%;
@@ -1135,7 +1373,7 @@ canvas {
   --camera-extension-brightness: 0.86;
   --camera-extension-blur: 6px;
   position: absolute;
-  inset: -2px;
+  inset: 0;
   z-index: 3;
   pointer-events: none;
 }
@@ -1197,8 +1435,8 @@ canvas {
 
 .camera-extension-frame {
   position: absolute;
-  left: calc(2px + ((100% - 4px - var(--camera-extension-inner-size)) / 2));
-  top: calc(2px + ((100% - 4px - var(--camera-extension-inner-size)) / 2));
+  left: calc((100% - var(--camera-extension-inner-size)) / 2);
+  top: calc((100% - var(--camera-extension-inner-size)) / 2);
   width: var(--camera-extension-inner-size);
   height: var(--camera-extension-inner-size);
   border: 0;
@@ -1714,6 +1952,311 @@ canvas {
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.shuffle-info-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.shuffle-info-tabs {
+  margin-top: 2px;
+}
+
+.shuffle-info-tabs button {
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.shuffle-info-tabs span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.shuffle-info-room-list,
+.shuffle-info-asset-list {
+  display: grid;
+  gap: 9px;
+}
+
+.shuffle-info-room {
+  border: 1px solid rgba(185, 255, 237, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.024);
+}
+
+.shuffle-info-room summary {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shuffle-info-room summary small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.shuffle-info-room-tools {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid rgba(185, 255, 237, 0.08);
+}
+
+.shuffle-info-room-tools button {
+  min-height: 30px;
+  font-size: 11px;
+}
+
+.shuffle-info-room-tools span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.shuffle-info-room .shuffle-info-asset-list {
+  padding: 8px;
+}
+
+.shuffle-info-other-drop,
+.shuffle-info-room-drop-grid button {
+  min-height: 34px;
+  border: 1px dashed rgba(143, 255, 228, 0.28);
+  border-radius: 7px;
+  background: rgba(143, 255, 228, 0.035);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.shuffle-info-other-drop {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  text-align: center;
+}
+
+.shuffle-info-room-drop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.shuffle-info-room-drop-grid button {
+  padding: 0 6px;
+}
+
+.shuffle-info-asset,
+.shuffle-info-other-row {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(185, 255, 237, 0.12);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(143, 255, 228, 0.055), transparent 48%),
+    #101a28;
+}
+
+.shuffle-info-asset.active,
+.shuffle-info-other-row.active {
+  border-color: rgba(143, 255, 228, 0.62);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(143, 255, 228, 0.12), transparent 52%),
+    rgba(72, 181, 167, 0.12);
+}
+
+.shuffle-info-asset-header {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  min-height: 58px;
+  justify-content: stretch;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.shuffle-info-asset-header:hover:not(:disabled) {
+  background: transparent;
+}
+
+.shuffle-info-avatar {
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(185, 255, 237, 0.18);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(156, 126, 255, 0.16), transparent 62%),
+    #080e17;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.34);
+  object-fit: contain;
+}
+
+.shuffle-info-avatar.missing {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.shuffle-info-asset-header span {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 4px;
+}
+
+.shuffle-info-asset-header strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shuffle-info-asset-header small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shuffle-info-public-name {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.shuffle-info-public-name input {
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.shuffle-info-card-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 62px;
+  align-items: center;
+  gap: 6px;
+}
+
+.shuffle-info-card-tools .checkbox-row {
+  min-height: 30px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.shuffle-info-card-tools .mini {
+  min-height: 28px;
+  padding: 0 6px;
+}
+
+.shuffle-info-card-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.shuffle-info-card-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.shuffle-info-card-field textarea {
+  min-height: 54px;
+  padding: 8px 9px;
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.shuffle-info-card-field button {
+  min-height: 30px;
+  padding: 0;
+}
+
+.shuffle-info-add-card {
+  margin-top: 0;
+}
+
+.shuffle-info-details {
+  border-top: 1px solid rgba(185, 255, 237, 0.08);
+  padding-top: 6px;
+}
+
+.shuffle-info-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shuffle-info-details dl {
+  display: grid;
+  gap: 5px;
+  margin: 7px 0 0;
+}
+
+.shuffle-info-details div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.shuffle-info-details dt,
+.shuffle-info-details dd {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.shuffle-info-details dt {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.shuffle-info-details dd {
+  color: var(--muted);
+}
+
+.shuffle-info-other-panel {
+  display: grid;
+  gap: 9px;
+  min-height: 150px;
+  padding: 8px;
+  border: 1px dashed rgba(143, 255, 228, 0.26);
+  border-radius: 7px;
+  background: rgba(143, 255, 228, 0.025);
+}
+
+.shuffle-info-asset-list.compact {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.shuffle-info-other-row {
+  grid-template-columns: minmax(0, 1fr) 54px;
+  align-items: center;
+}
+
+.shuffle-info-other-row .mini {
+  min-height: 30px;
+  padding: 0 8px;
 }
 
 .selected-editor {

@@ -693,7 +693,19 @@ export const defaultProjectData = {
       "zIndex": 11,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-1",
+        "publicName": "First Moon",
+        "cards": [
+          { "id": "first-moon-1", "body": "The earliest moon is small, but it gives the moth a direction." },
+          { "id": "first-moon-2", "body": "Its light appears before most flowers are bright enough to guide by." },
+          { "id": "first-moon-3", "body": "The moth's wing glow reads greener under this first pale light." },
+          { "id": "first-moon-4", "body": "This moon works like an opening marker rather than a destination." },
+          { "id": "first-moon-5", "body": "Garden notes call this the moon that wakes the path." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -808,7 +820,18 @@ export const defaultProjectData = {
       "zIndex": 13,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Crooked Saplings",
+        "cards": [
+          { "id": "crooked-saplings-1", "body": "The paired trunks lean unevenly, making the path feel hand-grown." },
+          { "id": "crooked-saplings-2", "body": "Their bend creates a natural frame without closing the view." },
+          { "id": "crooked-saplings-3", "body": "Moonlight catches along the curves, revealing how twisted they are." },
+          { "id": "crooked-saplings-4", "body": "The moth passes between them as the garden begins to turn." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -886,7 +909,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-1",
+        "publicName": "Mooncup Blossom",
+        "cards": [
+          { "id": "mooncup-blossom-1", "body": "The cup-shaped center holds light like a small bowl of dew." },
+          { "id": "mooncup-blossom-2", "body": "Its pale rim is easiest to see when the moth slows nearby." },
+          { "id": "mooncup-blossom-3", "body": "The blossom opens toward the nearest moonlit edge, not straight upward." },
+          { "id": "mooncup-blossom-4", "body": "Its color shifts gently between green, violet, and pearl." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -910,7 +944,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path. glow.",
+      "notes": "in front path. glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-1",
+        "publicName": "Firefly Flowers",
+        "cards": [
+          { "id": "firefly-flowers-1", "body": "These small flowers brighten in clusters, more like sparks than rows." },
+          { "id": "firefly-flowers-2", "body": "Their warm glow gives the early path several points to follow." },
+          { "id": "firefly-flowers-3", "body": "The patch feels lively up close, as if the blooms are gathering." },
+          { "id": "firefly-flowers-4", "body": "The moth finds them by color before it reaches their shape." }
+        ]
+      },
       "renderBand": "frontOccluder",
       "glowBehaviors": [],
       "glowIntensity": 1,
@@ -953,7 +998,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "in front path. glow.",
+      "notes": "in front path. glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-1",
+        "publicName": "Vine Lanterns",
+        "cards": [
+          { "id": "vine-lanterns-1", "body": "Hanging strands glow like small lamps, marking the shaded entrance." },
+          { "id": "vine-lanterns-2", "body": "Their light sits above the path, so the moth rises toward it." },
+          { "id": "vine-lanterns-3", "body": "The leaves are darker near the stems, making each lantern tip stand out." },
+          { "id": "vine-lanterns-4", "body": "Viewed from below, the lanterns make the garden feel covered and cool." }
+        ]
+      },
       "renderBand": "frontOccluder",
       "glowBehaviors": [],
       "glowIntensity": 1,
@@ -996,7 +1052,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Glow Flower",
+        "cards": [
+          { "id": "glow-flower-1", "body": "This taller bloom reads clearly through branches and darker leaves." },
+          { "id": "glow-flower-2", "body": "Its pink center pulls attention before the lower plants become visible." },
+          { "id": "glow-flower-3", "body": "The petals hold a clean glow, almost like a lantern under glass." },
+          { "id": "glow-flower-4", "body": "The moth often turns here, where color rises above the ground." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1209,7 +1276,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-1",
+        "publicName": "Moss Rock",
+        "cards": [
+          { "id": "moss-rock-1", "body": "A low green glow settles in the moss, close to the ground." },
+          { "id": "moss-rock-2", "body": "The stone makes the nearby flower colors feel warmer by contrast." },
+          { "id": "moss-rock-3", "body": "Its uneven surface catches moonlight in small patches, not all at once." },
+          { "id": "moss-rock-4", "body": "Moths often pass slower here, where the path feels more grounded." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1331,7 +1409,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": "in front path. glow",
+      "notes": "in front path. glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Cocoon Bud",
+        "cards": [
+          { "id": "cocoon-bud-1", "body": "This small cocoon rests low, easy to miss on a quick pass." },
+          { "id": "cocoon-bud-2", "body": "Its shell glows softly, as if the light is still inside." },
+          { "id": "cocoon-bud-3", "body": "The bud feels young beside the taller flowers and stones." },
+          { "id": "cocoon-bud-4", "body": "The moth passes above it, close enough to notice the curve." },
+          { "id": "cocoon-bud-5", "body": "It hints at the larger cocoon form waiting later in the path." }
+        ]
+      },
       "renderBand": "frontOccluder",
       "glowBehaviors": [],
       "glowIntensity": 1,
@@ -1356,7 +1446,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Bellflowers",
+        "cards": [
+          { "id": "bellflowers-1", "body": "Drooping bells hold their glow at the tips, close to the path." },
+          { "id": "bellflowers-2", "body": "Their stems bend downward, keeping the light low and quiet." },
+          { "id": "bellflowers-3", "body": "The flowers read best against shadow, where each bell shape separates." },
+          { "id": "bellflowers-4", "body": "The moth passes near them without disturbing the hanging blooms." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1434,7 +1535,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-3",
+        "publicName": "Fern Mound",
+        "cards": [
+          { "id": "fern-mound-1", "body": "Layered fern leaves keep the glow folded close to the ground." },
+          { "id": "fern-mound-2", "body": "The mound feels cool and sheltered, like a pocket of shade." },
+          { "id": "fern-mound-3", "body": "Its darker greens help the nearby pale plants stand forward." },
+          { "id": "fern-mound-4", "body": "The moth dips near the ferns before lifting again." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1476,7 +1588,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Foliage",
       "subLayer": "Near",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-4",
+        "publicName": "Orchid Spill",
+        "cards": [
+          { "id": "orchid-spill-1", "body": "Purple blooms spread low, almost spilling onto the path." },
+          { "id": "orchid-spill-2", "body": "The warm violet color stays strong under cooler moonlight." },
+          { "id": "orchid-spill-3", "body": "Its low shape makes the flowers feel like a soft groundcover." },
+          { "id": "orchid-spill-4", "body": "The moth turns toward the orchids when the path opens." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1500,7 +1623,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-3",
+        "publicName": "Star Petals",
+        "cards": [
+          { "id": "star-petals-1", "body": "Small star-shaped petals spread low, brightening the ground in patches." },
+          { "id": "star-petals-2", "body": "The points of light make the path feel wider than it is." },
+          { "id": "star-petals-3", "body": "Their pale centers stay visible even when darker leaves cross the view." },
+          { "id": "star-petals-4", "body": "The moth follows the scattered petals toward thinner plants." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1560,7 +1694,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Moonstone Fragments",
+        "cards": [
+          { "id": "moonstone-fragments-1", "body": "Broken edges catch light first, before the flat faces begin to glow." },
+          { "id": "moonstone-fragments-2", "body": "Cool light gathers in the cracks between the scattered pieces." },
+          { "id": "moonstone-fragments-3", "body": "The fragments look accidental, but their brightness feels carefully placed." },
+          { "id": "moonstone-fragments-4", "body": "The moth crosses them slowly, as if reading the ground." },
+          { "id": "moonstone-fragments-5", "body": "Some pieces brighten late, after the moth has already passed." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1602,7 +1748,18 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-3",
+        "publicName": "Moon Reeds",
+        "cards": [
+          { "id": "moon-reeds-1", "body": "Thin reed tips catch light before the stems become visible." },
+          { "id": "moon-reeds-2", "body": "The cluster makes the garden feel close to pale water." },
+          { "id": "moon-reeds-3", "body": "Their upright lines contrast with the moth's soft drifting motion." },
+          { "id": "moon-reeds-4", "body": "The reeds mark a quieter edge, where the glow becomes cooler." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1626,7 +1783,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Ground & Pools",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-4",
+        "publicName": "Great Moonstone",
+        "cards": [
+          { "id": "great-moonstone-1", "body": "A broad surface holds steady light, unlike the scattered fragments." },
+          { "id": "great-moonstone-2", "body": "Its glow is cooler than the flowers and easier to read from afar." },
+          { "id": "great-moonstone-3", "body": "The stone feels like a stopping point, even while the moth moves." },
+          { "id": "great-moonstone-4", "body": "Moonlight sits across it in wide patches instead of small sparks." },
+          { "id": "great-moonstone-5", "body": "The moth often curves around the stone rather than crossing straight." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -1764,7 +1933,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-4",
+        "publicName": "Full Moon",
+        "cards": [
+          { "id": "full-moon-1", "body": "This brightest moon makes nearby pale plants easier to see." },
+          { "id": "full-moon-2", "body": "Its round glow steadies the moth before the path turns back." },
+          { "id": "full-moon-3", "body": "Full moonlight gathers the garden into one clear view." },
+          { "id": "full-moon-4", "body": "Under this moon, pale surfaces shine while colors become softer." },
+          { "id": "full-moon-5", "body": "The moth looks smallest here, but its glow becomes very clear." }
+        ]
+      }
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu",
@@ -1782,7 +1963,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-3",
+        "publicName": "Crescent Moon",
+        "cards": [
+          { "id": "crescent-moon-1", "body": "The crescent lights the garden from one side, sharpening leaf edges." },
+          { "id": "crescent-moon-2", "body": "Its curve changes how the moth reads the path beneath it." },
+          { "id": "crescent-moon-3", "body": "This moon makes one stretch feel split between light and shadow." },
+          { "id": "crescent-moon-4", "body": "The moth follows the curve more than the brightness." },
+          { "id": "crescent-moon-5", "body": "The crescent is a useful marker when the garden begins to turn." }
+        ]
+      }
     },
     {
       "id": "moon-glow-paste-k8kc38",
@@ -2464,7 +2657,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Landmarks",
       "subLayer": "Mid",
-      "notes": "glow",
+      "notes": "glow. shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-4",
+        "publicName": "Cocoon Shrine",
+        "cards": [
+          { "id": "cocoon-shrine-1", "body": "The pale shell catches moonlight along its outer curve." },
+          { "id": "cocoon-shrine-2", "body": "Its larger shape is easy to recognize even from a distance." },
+          { "id": "cocoon-shrine-3", "body": "The shrine feels still, while smaller plants brighten around it." },
+          { "id": "cocoon-shrine-4", "body": "The moth can rest near it before the path turns back." },
+          { "id": "cocoon-shrine-5", "body": "Its glow is broad and quiet, closer to moonlight than flower light." }
+        ]
+      },
       "glowBehaviors": [],
       "glowIntensity": 1,
       "glowRadius": 1.25,
@@ -2524,7 +2729,19 @@ export const defaultProjectData = {
       "silhouette": false,
       "role": "Light FX",
       "subLayer": "Mid",
-      "notes": ""
+      "notes": "shuffle assets",
+      "shuffleInfo": {
+        "enabled": true,
+        "roomId": "moon-room-2",
+        "publicName": "Soft Moon",
+        "cards": [
+          { "id": "soft-moon-1", "body": "A wider moonlight spreads across nearby leaves, stones, and buds." },
+          { "id": "soft-moon-2", "body": "Its glow is gentle enough to reveal shape without flattening color." },
+          { "id": "soft-moon-3", "body": "The moth seems calmer here, held by a softer kind of light." },
+          { "id": "soft-moon-4", "body": "This moon makes the garden feel quiet, but not empty." },
+          { "id": "soft-moon-5", "body": "Its light gathers slowly, like mist settling over the path." }
+        ]
+      }
     },
     {
       "id": "artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s",

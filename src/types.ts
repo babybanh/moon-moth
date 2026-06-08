@@ -70,6 +70,21 @@ export type RouteGroup = {
   notes: string
 }
 
+export type ShuffleInfoRoomId = 'moon-room-1' | 'moon-room-2' | 'moon-room-3' | 'moon-room-4'
+
+export type ShuffleInfoCard = {
+  id: string
+  body: string
+}
+
+export type ShuffleInfoConfig = {
+  enabled?: boolean
+  roomId?: ShuffleInfoRoomId
+  publicName?: string
+  ordered?: boolean
+  cards?: ShuffleInfoCard[]
+}
+
 export type Camera = Point & {
   zoom: number
 }
@@ -105,6 +120,7 @@ export type EditorItem = Point & {
   glowPulseSpeed?: number
   glowBloom?: number
   glowSpriteLift?: number
+  shuffleInfo?: ShuffleInfoConfig
   notes?: string
   width: number
   height: number

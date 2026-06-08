@@ -1,6 +1,6 @@
 import { assetById } from './assets'
 import { defaultProjectData } from './defaultProjectData'
-import type { AssetRole, EditorItem, EditorProject, GameHudButtonId, GameHudSoundPreset, GameHudStylePreset, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, SubLayer } from './types'
+import type { AssetRole, EditorItem, EditorProject, GameHudButtonId, GameHudSoundPreset, GameHudStylePreset, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, ShuffleInfoRoomId, SubLayer } from './types'
 
 export const sandboxIds: SandboxId[] = ['a', 'b', 'c']
 
@@ -185,6 +185,7 @@ export function migrateProject(value: unknown): EditorProject {
         renderBand: resolveMigratedItemRenderBand(item),
         glowBehaviors: resolveMigratedItemGlowBehaviors(item),
         ...resolveMigratedItemGlowTuning(item),
+        shuffleInfo: migrateShuffleInfo((item as Partial<EditorItem>).shuffleInfo),
         notes: typeof item.notes === 'string' ? item.notes : '',
       })))
       : fallback.items,
@@ -468,6 +469,49 @@ function resolveMigratedItemGlowTuning(item: Pick<EditorItem, 'glowBehaviors' | 
     glowBloom: tuning.bloom,
     glowSpriteLift: tuning.spriteLift,
   }
+}
+
+function migrateShuffleInfo(value: unknown): EditorItem['shuffleInfo'] {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  const draft = value as Partial<NonNullable<EditorItem['shuffleInfo']>>
+  const next: NonNullable<EditorItem['shuffleInfo']> = {}
+  if (typeof draft.enabled === 'boolean') {
+    next.enabled = draft.enabled
+  }
+  if (isShuffleInfoRoomId(draft.roomId)) {
+    next.roomId = draft.roomId
+  }
+  if (typeof draft.publicName === 'string' && draft.publicName.trim()) {
+    next.publicName = draft.publicName
+  }
+  if (typeof draft.ordered === 'boolean') {
+    next.ordered = draft.ordered
+  }
+  if (Array.isArray(draft.cards)) {
+    const cards = draft.cards
+      .map((card, index) => {
+        if (!card || typeof card !== 'object') {
+          return null
+        }
+        const body = typeof card.body === 'string' ? card.body : ''
+        const id = typeof card.id === 'string' && card.id.trim() ? card.id : `info-card-${index + 1}`
+        return { id, body }
+      })
+      .filter((card): card is { id: string; body: string } => Boolean(card))
+    if (cards.length > 0) {
+      next.cards = cards
+    }
+  }
+  return Object.keys(next).length > 0 ? next : undefined
+}
+
+function isShuffleInfoRoomId(value: unknown): value is ShuffleInfoRoomId {
+  return value === 'moon-room-1'
+    || value === 'moon-room-2'
+    || value === 'moon-room-3'
+    || value === 'moon-room-4'
 }
 
 function uniqueGlowBehaviors(value: unknown): GlowBehavior[] {

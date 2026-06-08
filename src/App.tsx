@@ -1,5 +1,5 @@
-import { Home, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Crosshair, Eye, EyeOff, Image, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, Shuffle, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { Home, Bug, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clover, Copy, Crosshair, Eclipse, Eye, EyeOff, Flower, Flower2, Image, Leaf, Moon, MoonStar, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, Shuffle, SkipBack, Sprout, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
   addAssetItem,
@@ -21,6 +21,7 @@ import {
   sandboxIds,
   saveProjectToStorage,
 } from './project'
+import { defaultProjectData } from './defaultProjectData'
 import {
   appendRoutePoint,
   buildRouteSampleData,
@@ -61,6 +62,8 @@ import type {
   RouteRenderMode,
   SandboxId,
   Selection,
+  ShuffleInfoConfig,
+  ShuffleInfoRoomId,
   Size,
   SubLayer,
 } from './types'
@@ -151,7 +154,7 @@ function prepareCanvasForRender(
 type EditorView = 'compact' | 'classic'
 type WorkspaceMode = 'editor' | 'game'
 type SelectionBox = { start: Point; current: Point } | null
-type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'HUD' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
+type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'Info' | 'HUD' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
 type ForwardControlState = {
   pressed: boolean
   startedAt: number
@@ -212,8 +215,43 @@ type GameCanvasGestureState = {
   action: 'drift' | 'shuffle-direction' | null
   direction?: -1 | 1
 }
+type ShuffleInfoEntry = {
+  item: EditorItem
+  asset: AssetDefinition | null
+  enabled: boolean
+  roomId: ShuffleInfoRoomId
+  routeProgress: number
+  closestRoutePoint: RoutePoint | null
+  closestRoutePointIndex: number
+  routePointCount: number
+  closestRoutePointDistance: number
+  cards: NonNullable<ShuffleInfoConfig['cards']>
+  publicName: string
+  ordered: boolean
+  description: string
+  moonRelation: string
+  nearby: Array<{ item: EditorItem; distance: number }>
+}
 
-const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'HUD', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'Info', 'HUD', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const shuffleInfoRooms: Array<{ id: ShuffleInfoRoomId; label: string; shortLabel: string }> = [
+  { id: 'moon-room-1', label: 'Moon Room 1', shortLabel: 'Room 1' },
+  { id: 'moon-room-2', label: 'Moon Room 2', shortLabel: 'Room 2' },
+  { id: 'moon-room-3', label: 'Moon Room 3', shortLabel: 'Room 3' },
+  { id: 'moon-room-4', label: 'Moon Room 4', shortLabel: 'Room 4' },
+]
+const shuffleInfoIconOptions = [
+  { id: 'flower', label: 'Flower', Icon: Flower },
+  { id: 'flower-2', label: 'Flower 2', Icon: Flower2 },
+  { id: 'clover', label: 'Clover flower', Icon: Clover },
+  { id: 'sprout', label: 'Sprout', Icon: Sprout },
+  { id: 'leaf', label: 'Leaf', Icon: Leaf },
+  { id: 'bug', label: 'Moth placeholder', Icon: Bug },
+  { id: 'moon', label: 'Moon', Icon: Moon },
+  { id: 'moon-star', label: 'Moon star', Icon: MoonStar },
+  { id: 'eclipse', label: 'Eclipse', Icon: Eclipse },
+]
+const shuffleInfoItemTransferType = 'application/x-moon-moth-info-item'
 const hudButtonOptions: Array<{ id: GameHudButtonId; label: string }> = [
   { id: 'home', label: 'Home' },
   { id: 'shuffle', label: 'Shuffle' },
@@ -730,6 +768,8 @@ function App() {
   const [hudHoldPulseMs, setHudHoldPulseMs] = useState<Record<string, number>>({})
   const [driftDescription, setDriftDescription] = useState<DriftDescriptionState | null>(null)
   const [, setDriftDescriptionRunId] = useState(0)
+  const [shuffleDescriptionOpen, setShuffleDescriptionOpen] = useState(false)
+  const [shuffleInfoIconIndex, setShuffleInfoIconIndex] = useState(0)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -1952,6 +1992,8 @@ function App() {
     () => selectedItemIds.map((id) => project.items.find((item) => item.id === id)).filter((item): item is EditorItem => Boolean(item)),
     [project.items, selectedItemIds],
   )
+  const shuffleInfoEntries = useMemo(() => buildShuffleInfoEntries(project), [project])
+  const defaultShuffleInfoEntries = useMemo(() => buildShuffleInfoEntries(defaultProjectData), [])
   const selectedRoutePoint = selection?.type === 'route-point'
     ? project.route.find((point) => point.id === selection.id) ?? null
     : null
@@ -2329,6 +2371,87 @@ function App() {
   const hudButtonPairStyle = (ids: GameHudButtonId[]) => ({
     '--game-hud-button-scale': `${ids.reduce((sum, id) => sum + hudButtonScale(id), 0) / ids.length}`,
   }) as CSSProperties
+  const shuffleDescriptionPrototypeExamples = useMemo(() => {
+    const collectExamples = (entries: ShuffleInfoEntry[]) => entries.flatMap((entry) => {
+      if (!entry.enabled || !entry.asset) {
+        return []
+      }
+      return entry.cards
+        .map((card) => card.body.trim())
+        .filter(Boolean)
+        .map((text) => ({
+          avatarAlt: entry.publicName,
+          avatarSrc: entry.asset?.src ?? '',
+          id: `${entry.item.id}-${text}`,
+          silhouette: entry.item.silhouette,
+          publicName: entry.publicName,
+          text,
+        }))
+    })
+    const examples = collectExamples(shuffleInfoEntries).length > 0
+      ? collectExamples(shuffleInfoEntries)
+      : collectExamples(defaultShuffleInfoEntries)
+    if (examples.length === 0) {
+      return []
+    }
+    const sorted = [...examples].sort((a, b) => a.text.length - b.text.length || a.publicName.localeCompare(b.publicName))
+    const shortest = sorted[0]
+    const longest = sorted[sorted.length - 1]
+    const silhouetteExample = examples.find((example) => example.silhouette)
+    return [longest, shortest, silhouetteExample]
+      .filter((example): example is typeof shortest => Boolean(example))
+      .filter((example, index, list) => list.findIndex((candidate) => candidate.id === example.id) === index)
+  }, [defaultShuffleInfoEntries, shuffleInfoEntries])
+  const cameraExtensionInnerScale = clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
+  const shuffleDescriptionInnerSize = gameSurfaceSize * cameraExtensionInnerScale
+  const shuffleDescriptionInnerLeft = 2 + ((gameSurfaceSize - 4 - shuffleDescriptionInnerSize) / 2)
+  const shuffleDescriptionInnerRight = shuffleDescriptionInnerLeft + shuffleDescriptionInnerSize
+  const shuffleDescriptionInnerCenterY = viewport.height / 2
+  const shuffleDescriptionBottomHudCenterY = viewport.height + 30 + (gameHudCellSize / 2)
+  const shuffleDescriptionHudLeft = (viewport.width - gameHudWidth) / 2
+  const shuffleDescriptionButtonSize = gameHudCellSize * gameHudInnerScale
+  const shuffleDescriptionLoopWidth = shuffleDescriptionButtonSize * hudButtonScale('loop')
+  const shuffleDescriptionLoopLeft = shuffleDescriptionHudLeft + ((gameHudCellSize - shuffleDescriptionLoopWidth) / 2)
+  const shuffleDescriptionLoopRight = shuffleDescriptionHudLeft + ((gameHudCellSize + shuffleDescriptionLoopWidth) / 2)
+  const shuffleDescriptionAvatarLeft = (shuffleDescriptionInnerLeft + shuffleDescriptionLoopLeft) / 2
+  const shuffleDescriptionAvatarSize = Math.max(44, shuffleDescriptionLoopRight - shuffleDescriptionAvatarLeft)
+  const shuffleDescriptionBackwardWidth = shuffleDescriptionButtonSize * hudButtonScale('backward')
+  const shuffleDescriptionBackwardLeft = shuffleDescriptionHudLeft
+    + gameHudCellSize
+    + gameHudGap
+    + ((gameHudCellSize - shuffleDescriptionBackwardWidth) / 2)
+  const shuffleDescriptionHomeWidth = shuffleDescriptionButtonSize * hudButtonScale('home')
+  const shuffleDescriptionHomeRight = shuffleDescriptionHudLeft
+    + ((gameHudCellSize + gameHudGap) * 3)
+    + ((gameHudCellSize + shuffleDescriptionHomeWidth) / 2)
+  const shuffleDescriptionCardRight = (shuffleDescriptionHomeRight + shuffleDescriptionInnerRight) / 2
+  const shuffleDescriptionAvatarCenterY = (2 * shuffleDescriptionInnerCenterY) - shuffleDescriptionBottomHudCenterY
+  const shuffleDescriptionTop = shuffleDescriptionAvatarCenterY - (shuffleDescriptionAvatarSize / 2)
+  const shuffleDescriptionStyle = {
+    ...gameHudStyle,
+    '--shuffle-description-top': `${shuffleDescriptionTop}px`,
+    '--shuffle-description-avatar-size': `${shuffleDescriptionAvatarSize}px`,
+    '--shuffle-description-button-size': `${shuffleDescriptionLoopWidth}px`,
+    '--shuffle-description-left': `${shuffleDescriptionAvatarLeft}px`,
+    '--shuffle-description-width': `${shuffleDescriptionCardRight - shuffleDescriptionAvatarLeft}px`,
+    '--shuffle-description-card-left': `${shuffleDescriptionBackwardLeft - shuffleDescriptionAvatarLeft}px`,
+  } as CSSProperties
+  const showShuffleDescriptionPrototype = publicGameBuild
+    && workspaceMode === 'game'
+    && gameMode === 'explore'
+    && gameHudScreen === 'explore'
+    && shuffleDescriptionPrototypeExamples.length > 0
+  const ShuffleInfoIcon = shuffleInfoIconOptions[shuffleInfoIconIndex % shuffleInfoIconOptions.length].Icon
+  const shuffleInfoIconLabel = shuffleInfoIconOptions[shuffleInfoIconIndex % shuffleInfoIconOptions.length].label
+  useEffect(() => {
+    if (!showShuffleDescriptionPrototype || shuffleDescriptionOpen) {
+      return undefined
+    }
+    const interval = window.setInterval(() => {
+      setShuffleInfoIconIndex((index) => (index + 1) % shuffleInfoIconOptions.length)
+    }, 1400)
+    return () => window.clearInterval(interval)
+  }, [showShuffleDescriptionPrototype, shuffleDescriptionOpen])
   const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
     setGameHudScreen(screen)
     if (screen === 'menu') {
@@ -2373,15 +2496,14 @@ function App() {
     '--shuffle-rest-moth-delay-ms': '260ms',
   } as CSSProperties
   const cameraExtensionVignetteStyle = useMemo(() => {
-    const edgeBleed = 2
     const canvasWidth = Math.max(1, viewport.width)
     const canvasHeight = Math.max(1, viewport.height)
     const inner = Math.round(Math.min(canvasWidth, canvasHeight) * clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96))
-    const left = Math.round(edgeBleed + (canvasWidth - inner) / 2)
-    const top = Math.round(edgeBleed + (canvasHeight - inner) / 2)
+    const left = Math.round((canvasWidth - inner) / 2)
+    const top = Math.round((canvasHeight - inner) / 2)
     const radius = Math.round(inner * clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 0.5)
-    const maskWidth = canvasWidth + edgeBleed * 2
-    const maskHeight = canvasHeight + edgeBleed * 2
+    const maskWidth = canvasWidth
+    const maskHeight = canvasHeight
     const right = left + inner
     const bottom = top + inner
     const maskPath = [
@@ -3730,6 +3852,21 @@ function App() {
     setMessage(copied ? `Copied ${commentCount} comment${commentCount === 1 ? '' : 's'}` : 'Copy failed: select comments manually')
   }
 
+  const handleCopyShuffleInfo = async (text: string, successMessage = 'Shuffle info copied') => {
+    const copied = await copyTextToClipboard(text)
+    if (copied) {
+      setMessage(successMessage)
+      return
+    }
+    setJsonDraft(text)
+    setOpenEditorPanels((current) => [...current.filter((title) => title !== 'JSON'), 'JSON' as EditorPanelTitle].slice(-maxOpenEditorPanels))
+    window.setTimeout(() => {
+      jsonTextareaRef.current?.focus()
+      jsonTextareaRef.current?.select()
+    }, 0)
+    setMessage('Copy blocked; content opened and selected for manual copy')
+  }
+
   const handleApplyJson = () => {
     try {
       resetRuntimeToJourney()
@@ -4664,6 +4801,47 @@ function App() {
                 <div className="drift-description-text">{driftDescription.text}</div>
               </div>
             )}
+            {publicGameBootReady && showShuffleDescriptionPrototype && (
+              <div
+                className={[
+                  'shuffle-description-prototype',
+                  shuffleDescriptionOpen ? 'open' : 'closed',
+                  shuffleDescriptionPrototypeExamples.length > 1 ? 'multi-example' : '',
+                ].filter(Boolean).join(' ')}
+                style={shuffleDescriptionStyle}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {shuffleDescriptionPrototypeExamples.map((example, index) => (
+                  <div
+                    className="shuffle-description-example"
+                    key={example.id}
+                    style={{
+                      '--shuffle-description-example-count': `${shuffleDescriptionPrototypeExamples.length}`,
+                      '--shuffle-description-example-index': `${index}`,
+                    } as CSSProperties}
+                  >
+                    <button
+                      className="shuffle-description-avatar"
+                      type="button"
+                      aria-hidden={index === 0 ? undefined : true}
+                      aria-label={index === 0 ? (shuffleDescriptionOpen ? 'Close shuffle info' : `Open shuffle info, ${shuffleInfoIconLabel} icon`) : undefined}
+                      tabIndex={index === 0 ? 0 : -1}
+                      onClick={() => setShuffleDescriptionOpen((open) => !open)}
+                    >
+                      <ShuffleInfoIcon className="shuffle-description-flower-icon" size={gameHudIconSize} strokeWidth={hudStylePreset.iconStrokeWidth} aria-hidden="true" />
+                      <img src={example.avatarSrc} alt="" loading="lazy" />
+                    </button>
+                    <div className="shuffle-description-card">
+                      <div className="shuffle-description-copy">
+                        <div className="shuffle-description-card-title">{example.publicName}</div>
+                        <div className="shuffle-description-card-text">{example.text}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div
               className={[
                 'canvas-shell',
@@ -5251,6 +5429,28 @@ function App() {
               Select an artwork asset to tune its glow.
             </div>
           )}
+        </EditorSection>
+
+        <EditorSection title="Info" {...panelSectionProps('Info')}>
+          <ShuffleInfoEditor
+            entries={shuffleInfoEntries}
+            project={project}
+            selectedItemIds={selectedItemIds}
+            onSelectItem={(itemId) => {
+              setSelection({ type: 'item', id: itemId })
+              setSelectedItemIds([itemId])
+              setSelectedRoutePointIds([])
+              setSelectedRouteGroupId(null)
+            }}
+            onSetEnabled={setShuffleInfoEnabled}
+            onSetRoom={setShuffleInfoRoom}
+            onSetOrdered={setShuffleInfoOrdered}
+            onSetPublicName={setShuffleInfoPublicName}
+            onUpdateCard={updateShuffleInfoCard}
+            onAddCard={addShuffleInfoCard}
+            onRemoveCard={removeShuffleInfoCard}
+            onCopyText={handleCopyShuffleInfo}
+          />
         </EditorSection>
 
         <EditorSection title="HUD" {...panelSectionProps('HUD')}>
@@ -6075,6 +6275,94 @@ function App() {
     }))
   }
 
+  function updateShuffleInfo(id: string, updater: (current: ShuffleInfoConfig, item: EditorItem) => ShuffleInfoConfig, messageText = 'Updated shuffle info') {
+    updateProject((current) => ({
+      ...current,
+      items: current.items.map((item) => {
+        if (item.id !== id) {
+          return item
+        }
+        const nextInfo = updater(item.shuffleInfo ?? {}, item)
+        return {
+          ...item,
+          shuffleInfo: Object.keys(nextInfo).length > 0 ? nextInfo : undefined,
+        }
+      }),
+    }), { message: messageText })
+  }
+
+  function setShuffleInfoEnabled(id: string, enabled: boolean, roomId?: ShuffleInfoRoomId) {
+    updateShuffleInfo(id, (info, item) => ({
+      ...info,
+      enabled,
+      roomId: roomId ?? info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+      cards: ensureShuffleInfoCards(info),
+    }), enabled ? 'Added asset to Shuffle Info' : 'Moved asset to Other Assets')
+  }
+
+  function setShuffleInfoRoom(id: string, roomId: ShuffleInfoRoomId) {
+    updateShuffleInfo(id, (info) => ({
+      ...info,
+      enabled: true,
+      roomId,
+      cards: ensureShuffleInfoCards(info),
+    }), `Moved asset to ${shuffleInfoRooms.find((room) => room.id === roomId)?.shortLabel ?? 'room'}`)
+  }
+
+  function setShuffleInfoOrdered(id: string, ordered: boolean) {
+    updateShuffleInfo(id, (info, item) => ({
+      ...info,
+      enabled: info.enabled ?? isShuffleInfoSeedCandidate(item),
+      roomId: info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+      ordered,
+      cards: ensureShuffleInfoCards(info),
+    }), ordered ? 'Shuffle info set to ordered' : 'Shuffle info set to random')
+  }
+
+  function setShuffleInfoPublicName(id: string, publicName: string) {
+    updateShuffleInfo(id, (info, item) => ({
+      ...info,
+      enabled: info.enabled ?? isShuffleInfoSeedCandidate(item),
+      roomId: info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+      publicName,
+      cards: ensureShuffleInfoCards(info),
+    }), 'Updated shuffle public name')
+  }
+
+  function updateShuffleInfoCard(id: string, cardIndex: number, body: string) {
+    updateShuffleInfo(id, (info, item) => {
+      const cards = ensureShuffleInfoCards(info)
+      const nextCards = cards.map((card, index) => index === cardIndex ? { ...card, body } : card)
+      return {
+        ...info,
+        enabled: info.enabled ?? isShuffleInfoSeedCandidate(item),
+        roomId: info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+        cards: nextCards,
+      }
+    }, 'Updated shuffle info card')
+  }
+
+  function addShuffleInfoCard(id: string) {
+    updateShuffleInfo(id, (info, item) => ({
+      ...info,
+      enabled: info.enabled ?? isShuffleInfoSeedCandidate(item),
+      roomId: info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+      cards: [...ensureShuffleInfoCards(info), { id: createId('info-card'), body: '' }],
+    }), 'Added shuffle info card')
+  }
+
+  function removeShuffleInfoCard(id: string, cardIndex: number) {
+    updateShuffleInfo(id, (info, item) => {
+      const cards = ensureShuffleInfoCards(info).filter((_, index) => index !== cardIndex)
+      return {
+        ...info,
+        enabled: info.enabled ?? isShuffleInfoSeedCandidate(item),
+        roomId: info.roomId ?? inferShuffleInfoRoomId(projectRef.current, item),
+        cards: cards.length > 0 ? cards : [{ id: createId('info-card'), body: '' }],
+      }
+    }, 'Removed shuffle info card')
+  }
+
   function updateSelectedItems(patch: Partial<EditorItem>) {
     const ids = selectedItemIdsRef.current
     updateProject((current) => ({
@@ -6150,6 +6438,300 @@ function EditorSection({ title, editorView, isOpen = true, onToggle, children }:
       </div>
       <div className="panel-section-body">{children}</div>
     </section>
+  )
+}
+
+function ShuffleInfoEditor({
+  entries,
+  project,
+  selectedItemIds,
+  onSelectItem,
+  onSetEnabled,
+  onSetRoom,
+  onSetOrdered,
+  onSetPublicName,
+  onUpdateCard,
+  onAddCard,
+  onRemoveCard,
+  onCopyText,
+}: {
+  entries: ShuffleInfoEntry[]
+  project: EditorProject
+  selectedItemIds: string[]
+  onSelectItem: (itemId: string) => void
+  onSetEnabled: (itemId: string, enabled: boolean, roomId?: ShuffleInfoRoomId) => void
+  onSetRoom: (itemId: string, roomId: ShuffleInfoRoomId) => void
+  onSetOrdered: (itemId: string, ordered: boolean) => void
+  onSetPublicName: (itemId: string, publicName: string) => void
+  onUpdateCard: (itemId: string, cardIndex: number, body: string) => void
+  onAddCard: (itemId: string) => void
+  onRemoveCard: (itemId: string, cardIndex: number) => void
+  onCopyText: (text: string, successMessage?: string) => void
+}) {
+  const [activeTab, setActiveTab] = useState<'glow' | 'other'>('glow')
+  const [openRoomIds, setOpenRoomIds] = useState<ShuffleInfoRoomId[]>(() => shuffleInfoRooms.map((room) => room.id))
+  const enabledEntries = entries.filter((entry) => entry.enabled)
+  const otherEntries = entries.filter((entry) => !entry.enabled)
+  const entriesByRoom = new Map<ShuffleInfoRoomId, ShuffleInfoEntry[]>()
+  for (const room of shuffleInfoRooms) {
+    entriesByRoom.set(room.id, enabledEntries.filter((entry) => entry.roomId === room.id))
+  }
+  const handleDragStart = (event: DragEvent<HTMLElement>, itemId: string) => {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData(shuffleInfoItemTransferType, itemId)
+  }
+  const readDraggedItemId = (event: DragEvent<HTMLElement>) => event.dataTransfer.getData(shuffleInfoItemTransferType)
+  const handleRoomDrop = (event: DragEvent<HTMLElement>, roomId: ShuffleInfoRoomId) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const itemId = readDraggedItemId(event)
+    if (itemId) {
+      onSetRoom(itemId, roomId)
+      setActiveTab('glow')
+    }
+  }
+  const handleOtherDrop = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const itemId = readDraggedItemId(event)
+    if (itemId) {
+      onSetEnabled(itemId, false)
+      setActiveTab('other')
+    }
+  }
+
+  return (
+    <div className="shuffle-info-editor">
+      <p className="target-hint">
+        Shuffle infocards are authoring notes only. Moving assets here will not change visual glow.
+      </p>
+      <div className="button-grid">
+        <button type="button" onClick={() => onCopyText(formatShuffleInfoExport(project, enabledEntries), 'Copied all Shuffle info')}>
+          <Copy size={14} /> Copy All
+        </button>
+        <button type="button" onClick={() => onCopyText(formatShuffleInfoExport(project, enabledEntries.filter((entry) => entry.cards.some((card) => card.body.trim()))), 'Copied filled Shuffle info')}>
+          <Copy size={14} /> Copy Filled
+        </button>
+      </div>
+      <div className="segmented shuffle-info-tabs">
+        <button className={activeTab === 'glow' ? 'active' : ''} type="button" onClick={() => setActiveTab('glow')}>
+          Shuffle Assets <span>{enabledEntries.length}</span>
+        </button>
+        <button className={activeTab === 'other' ? 'active' : ''} type="button" onClick={() => setActiveTab('other')}>
+          Other Assets <span>{otherEntries.length}</span>
+        </button>
+      </div>
+
+      {activeTab === 'glow' ? (
+        <div className="shuffle-info-room-list">
+          <div
+            className="shuffle-info-other-drop"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={handleOtherDrop}
+          >
+            Drop an active shuffle asset here to move it to Other Assets.
+          </div>
+          {shuffleInfoRooms.map((room) => {
+            const roomEntries = entriesByRoom.get(room.id) ?? []
+            return (
+              <details
+                key={room.id}
+                className="shuffle-info-room"
+                open={openRoomIds.includes(room.id)}
+                onToggle={(event) => {
+                  const isOpen = event.currentTarget.open
+                  setOpenRoomIds((current) => {
+                    const hasRoom = current.includes(room.id)
+                    if (isOpen === hasRoom) {
+                      return current
+                    }
+                    return isOpen ? [...current, room.id] : current.filter((id) => id !== room.id)
+                  })
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handleRoomDrop(event, room.id)}
+              >
+                <summary>
+                  <span>{room.label}</span>
+                  <small>{roomEntries.length} asset{roomEntries.length === 1 ? '' : 's'}</small>
+                </summary>
+                <div className="shuffle-info-room-tools">
+                  <button type="button" onClick={() => onCopyText(formatShuffleInfoExport(project, roomEntries), `Copied ${room.label}`)}>
+                    <Copy size={14} /> Copy Room
+                  </button>
+                  <span>Drop assets here to assign this room.</span>
+                </div>
+                <div className="shuffle-info-asset-list">
+                  {roomEntries.length > 0 ? roomEntries.map((entry) => (
+                    <ShuffleInfoAssetRow
+                      key={entry.item.id}
+                      entry={entry}
+                      selected={selectedItemIds.includes(entry.item.id)}
+                      onSelect={() => onSelectItem(entry.item.id)}
+                      onDragStart={(event) => handleDragStart(event, entry.item.id)}
+                      onMoveToOther={() => onSetEnabled(entry.item.id, false)}
+                      onSetOrdered={(ordered) => onSetOrdered(entry.item.id, ordered)}
+                      onSetPublicName={(publicName) => onSetPublicName(entry.item.id, publicName)}
+                      onUpdateCard={(cardIndex, body) => onUpdateCard(entry.item.id, cardIndex, body)}
+                      onAddCard={() => onAddCard(entry.item.id)}
+                      onRemoveCard={(cardIndex) => onRemoveCard(entry.item.id, cardIndex)}
+                      onCopy={() => onCopyText(formatShuffleInfoExport(project, [entry]), `Copied ${entry.publicName}`)}
+                    />
+                  )) : (
+                    <p className="muted">No shuffle assets assigned yet. Drop placed assets into this room.</p>
+                  )}
+                </div>
+              </details>
+            )
+          })}
+        </div>
+      ) : (
+        <div
+          className="shuffle-info-other-panel"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={handleOtherDrop}
+        >
+          <p className="target-hint">Drop a shuffle asset here to remove it from the active infocard list while preserving its draft cards.</p>
+          <div className="shuffle-info-room-drop-grid" aria-label="Room drop targets">
+            {shuffleInfoRooms.map((room) => (
+              <button
+                key={room.id}
+                type="button"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handleRoomDrop(event, room.id)}
+              >
+                Drop to {room.shortLabel}
+              </button>
+            ))}
+          </div>
+          <div className="shuffle-info-asset-list compact">
+            {otherEntries.map((entry) => (
+              <ShuffleInfoOtherRow
+                key={entry.item.id}
+                entry={entry}
+                selected={selectedItemIds.includes(entry.item.id)}
+                onSelect={() => onSelectItem(entry.item.id)}
+                onDragStart={(event) => handleDragStart(event, entry.item.id)}
+                onAdd={() => {
+                  onSetEnabled(entry.item.id, true, entry.roomId)
+                  setActiveTab('glow')
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ShuffleInfoAssetRow({
+  entry,
+  selected,
+  onSelect,
+  onDragStart,
+  onMoveToOther,
+  onSetOrdered,
+  onSetPublicName,
+  onUpdateCard,
+  onAddCard,
+  onRemoveCard,
+  onCopy,
+}: {
+  entry: ShuffleInfoEntry
+  selected: boolean
+  onSelect: () => void
+  onDragStart: (event: DragEvent<HTMLElement>) => void
+  onMoveToOther: () => void
+  onSetOrdered: (ordered: boolean) => void
+  onSetPublicName: (publicName: string) => void
+  onUpdateCard: (cardIndex: number, body: string) => void
+  onAddCard: () => void
+  onRemoveCard: (cardIndex: number) => void
+  onCopy: () => void
+}) {
+  return (
+    <article className={selected ? 'shuffle-info-asset active' : 'shuffle-info-asset'} draggable onDragStart={onDragStart}>
+      <button className="shuffle-info-asset-header" type="button" onClick={onSelect}>
+        {entry.asset ? <img className="shuffle-info-avatar" src={entry.asset.src} alt="" loading="lazy" /> : <span className="shuffle-info-avatar missing">?</span>}
+        <span>
+          <strong>{entry.publicName}</strong>
+          <small>Internal: {entry.item.name} · {formatShuffleInfoLocation(entry)}</small>
+        </span>
+      </button>
+      <label className="shuffle-info-public-name">
+        <span>Public name</span>
+        <input
+          type="text"
+          value={entry.publicName}
+          onChange={(event) => onSetPublicName(event.target.value)}
+        />
+      </label>
+      <div className="shuffle-info-card-tools">
+        <label className="checkbox-row">
+          <input type="checkbox" checked={entry.ordered} onChange={(event) => onSetOrdered(event.target.checked)} />
+          Show in order
+        </label>
+        <button className="mini" type="button" onClick={onCopy}><Copy size={13} /> Copy</button>
+        <button className="mini" type="button" onClick={onMoveToOther}>Other</button>
+      </div>
+      <div className="shuffle-info-card-stack">
+        {entry.cards.map((card, index) => (
+          <div className="shuffle-info-card-field" key={card.id}>
+            <textarea
+              rows={2}
+              value={card.body}
+              placeholder={`Folklore card ${index + 1}`}
+              onChange={(event) => onUpdateCard(index, event.target.value)}
+            />
+            <button type="button" title="Remove card" onClick={() => onRemoveCard(index)} disabled={entry.cards.length <= 1 && !card.body.trim()}>
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button className="mini wide-button shuffle-info-add-card" type="button" onClick={onAddCard}>
+        <Plus size={13} /> Add Card
+      </button>
+      <details className="shuffle-info-details">
+        <summary>Additional information</summary>
+        <dl>
+          <div><dt>Closest path</dt><dd>{formatShuffleInfoLocation(entry)}</dd></div>
+          <div><dt>Description</dt><dd>{entry.description}</dd></div>
+          <div><dt>Layer</dt><dd>{entry.item.layerId} / {resolveItemSubLayer(entry.item)}</dd></div>
+          <div><dt>Room moon</dt><dd>{entry.moonRelation}</dd></div>
+          <div><dt>Nearby shuffle</dt><dd>{formatNearbyShuffleInfo(entry.nearby)}</dd></div>
+        </dl>
+      </details>
+    </article>
+  )
+}
+
+function ShuffleInfoOtherRow({
+  entry,
+  selected,
+  onSelect,
+  onDragStart,
+  onAdd,
+}: {
+  entry: ShuffleInfoEntry
+  selected: boolean
+  onSelect: () => void
+  onDragStart: (event: DragEvent<HTMLElement>) => void
+  onAdd: () => void
+}) {
+  const draftCount = entry.cards.filter((card) => card.body.trim()).length
+  return (
+    <article className={selected ? 'shuffle-info-other-row active' : 'shuffle-info-other-row'} draggable onDragStart={onDragStart}>
+      <button className="shuffle-info-asset-header" type="button" onClick={onSelect}>
+        {entry.asset ? <img className="shuffle-info-avatar" src={entry.asset.src} alt="" loading="lazy" /> : <span className="shuffle-info-avatar missing">?</span>}
+        <span>
+          <strong>{entry.publicName}</strong>
+          <small>Internal: {entry.item.name} · {entry.item.layerId} / {resolveItemSubLayer(entry.item)}{draftCount > 0 ? ` · ${draftCount} draft${draftCount === 1 ? '' : 's'}` : ''}</small>
+        </span>
+      </button>
+      <button className="mini" type="button" onClick={onAdd}>Add</button>
+    </article>
   )
 }
 
@@ -6798,6 +7380,180 @@ function getItemDisplayName(item: EditorItem) {
 function formatCanvasTargets(targets: CanvasTarget[], project: EditorProject) {
   const labels = targets.map((target) => target === 'path' ? 'Path' : project.layers[target].label)
   return labels.join(' + ')
+}
+
+function buildShuffleInfoEntries(project: EditorProject): ShuffleInfoEntry[] {
+  const entries = project.items
+    .map((item) => {
+      const routeProgress = nearestRouteProgress(project.route, project.routeRenderMode, item)
+      const closest = findClosestRoutePoint(project, item)
+      const asset = assetById.get(item.assetId) ?? null
+      const enabled = typeof item.shuffleInfo?.enabled === 'boolean' ? item.shuffleInfo.enabled : isShuffleInfoSeedCandidate(item)
+      const roomId = item.shuffleInfo?.roomId ?? inferShuffleInfoRoomId(project, item)
+      const publicName = item.shuffleInfo?.publicName?.trim() || item.name
+      const cards = item.shuffleInfo?.cards?.length
+        ? item.shuffleInfo.cards
+        : enabled
+          ? [{ id: `${item.id}-draft-card`, body: '' }]
+          : []
+      return {
+        item,
+        asset,
+        enabled,
+        roomId,
+        routeProgress,
+        closestRoutePoint: closest.point,
+        closestRoutePointIndex: closest.index,
+        routePointCount: project.route.length,
+        closestRoutePointDistance: closest.distance,
+        cards,
+        publicName,
+        ordered: item.shuffleInfo?.ordered === true,
+        description: describeShuffleInfoAsset(item, asset),
+        moonRelation: '',
+        nearby: [],
+      } satisfies ShuffleInfoEntry
+    })
+    .sort((a, b) => a.routeProgress - b.routeProgress || a.item.name.localeCompare(b.item.name))
+
+  const activeEntries = entries.filter((entry) => entry.enabled)
+  const roomMoonByRoom = new Map<ShuffleInfoRoomId, ShuffleInfoEntry>()
+  for (const room of shuffleInfoRooms) {
+    const moonEntry = activeEntries.find((entry) => entry.roomId === room.id && isShuffleInfoRoomMoon(entry))
+    if (moonEntry) {
+      roomMoonByRoom.set(room.id, moonEntry)
+    }
+  }
+  return entries.map((entry) => ({
+    ...entry,
+    moonRelation: formatShuffleInfoMoonRelation(entry, roomMoonByRoom.get(entry.roomId)),
+    nearby: activeEntries
+      .filter((candidate) => candidate.item.id !== entry.item.id)
+      .map((candidate) => ({ item: candidate.item, distance: distance(entry.item, candidate.item) }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 4),
+  }))
+}
+
+function isShuffleInfoSeedCandidate(item: EditorItem) {
+  return typeof item.notes === 'string' && /\bshuffle assets?\b/i.test(item.notes)
+}
+
+function inferShuffleInfoRoomId(project: EditorProject, item: EditorItem): ShuffleInfoRoomId {
+  const progress = nearestRouteProgress(project.route, project.routeRenderMode, item)
+  const index = Math.min(shuffleInfoRooms.length - 1, Math.max(0, Math.floor(progress * shuffleInfoRooms.length)))
+  return shuffleInfoRooms[index].id
+}
+
+function ensureShuffleInfoCards(info: ShuffleInfoConfig) {
+  return info.cards?.length ? info.cards : [{ id: createId('info-card'), body: '' }]
+}
+
+function formatShuffleInfoPublicName(item: EditorItem) {
+  return item.shuffleInfo?.publicName?.trim() || item.name
+}
+
+function findClosestRoutePoint(project: EditorProject, item: EditorItem) {
+  let closest = {
+    point: null as RoutePoint | null,
+    index: -1,
+    distance: Number.POSITIVE_INFINITY,
+  }
+  project.route.forEach((point, index) => {
+    const candidateDistance = distance(item, point)
+    if (candidateDistance < closest.distance) {
+      closest = { point, index, distance: candidateDistance }
+    }
+  })
+  return closest
+}
+
+function describeShuffleInfoAsset(item: EditorItem, asset: AssetDefinition | null) {
+  const role = resolveItemRole(item)
+  const subLayer = resolveItemSubLayer(item)
+  const tags = asset?.tags?.slice(0, 3).join(', ')
+  const source = asset?.label ?? item.assetId
+  return `${role} asset from ${source}; ${item.layerId} / ${subLayer}${tags ? `; tags: ${tags}` : ''}.`
+}
+
+function isShuffleInfoRoomMoon(entry: ShuffleInfoEntry) {
+  const name = `${entry.item.name} ${entry.item.assetId}`.toLowerCase()
+  return name.includes('moon')
+    && (resolveItemRole(entry.item) === 'Light FX' || name.includes('moon-glow') || name.includes('moon_glow'))
+}
+
+function formatShuffleInfoMoonRelation(entry: ShuffleInfoEntry, moonEntry: ShuffleInfoEntry | undefined) {
+  if (!moonEntry) {
+    return 'No room moon marker estimated.'
+  }
+  if (entry.item.id === moonEntry.item.id) {
+    return `Moon marker for ${shuffleInfoRooms.find((room) => room.id === entry.roomId)?.label ?? 'this room'}.`
+  }
+  const progressDelta = entry.routeProgress - moonEntry.routeProgress
+  const routePercent = Math.round(Math.abs(progressDelta) * 100)
+  const relation = progressDelta < -0.025 ? 'before' : progressDelta > 0.025 ? 'after' : 'near'
+  const worldDistance = Math.round(distance(entry.item, moonEntry.item))
+  return `${relation} ${moonEntry.item.name}; ${routePercent}% route delta, ${worldDistance}px away.`
+}
+
+function formatShuffleInfoLocation(entry: ShuffleInfoEntry) {
+  const indexLabel = entry.closestRoutePointIndex >= 0 ? `${entry.closestRoutePointIndex + 1}` : '?'
+  const totalLabel = entry.routePointCount > 0 ? `${entry.routePointCount}` : '?'
+  const pointLabel = entry.closestRoutePoint?.label?.trim() || `Path ${indexLabel}`
+  return `${pointLabel} (${indexLabel}/${totalLabel}, ${Math.round(entry.routeProgress * 100)}%)`
+}
+
+function formatNearbyShuffleInfo(nearby: ShuffleInfoEntry['nearby']) {
+  if (nearby.length === 0) {
+    return 'None estimated.'
+  }
+  return nearby
+    .map((entry) => `${formatShuffleInfoPublicName(entry.item)} (${Math.round(entry.distance)}px)`)
+    .join(', ')
+}
+
+function formatShuffleInfoExport(project: EditorProject, entries: ShuffleInfoEntry[]) {
+  const roomEntries = shuffleInfoRooms.map((room) => ({
+    roomId: room.id,
+    room: room.label,
+    assets: entries
+      .filter((entry) => entry.enabled && entry.roomId === room.id)
+      .map((entry) => ({
+        publicName: entry.publicName,
+        internalName: entry.item.name,
+        internalItemId: entry.item.id,
+        assetId: entry.item.assetId,
+        assetLabel: entry.asset?.label ?? entry.item.assetId,
+        selectionMode: entry.ordered ? 'in-order' : 'random',
+        closestPathPoint: entry.closestRoutePoint?.label ?? null,
+        routeProgress: Number(entry.routeProgress.toFixed(3)),
+        moonRelation: entry.moonRelation,
+        layer: entry.item.layerId,
+        subLayer: resolveItemSubLayer(entry.item),
+        silhouette: entry.item.silhouette,
+        silhouetteStatus: entry.item.silhouette ? 'silhouette' : 'not-silhouette',
+        nearbyShuffleAssets: entry.nearby.map((nearby) => ({
+          publicName: formatShuffleInfoPublicName(nearby.item),
+          internalName: nearby.item.name,
+          distance: Math.round(nearby.distance),
+        })),
+        cards: entry.cards
+          .map((card) => card.body.trim())
+          .filter(Boolean),
+      })),
+  }))
+  return [
+    '# Moon Moth Shuffle Infocards',
+    '',
+    `Project: ${project.title}`,
+    '',
+    '```json',
+    JSON.stringify({
+      projectTitle: project.title,
+      rooms: roomEntries,
+    }, null, 2),
+    '```',
+  ].join('\n')
 }
 
 async function copyTextToClipboard(text: string) {
