@@ -174,6 +174,7 @@ type ExploreControlState = {
   releaseDirection: -1 | 0 | 1
   releaseStartedAt: number
   releaseCarryUntil: number
+  nudgeTargetProgress?: number
   idleSince: number
   idlePushStartedAt: number
   idlePushUntil: number
@@ -541,6 +542,7 @@ function stoppedExploreControl(): ExploreControlState {
     releaseDirection: 0,
     releaseStartedAt: 0,
     releaseCarryUntil: 0,
+    nudgeTargetProgress: undefined,
     idleSince: 0,
     idlePushStartedAt: 0,
     idlePushUntil: 0,
@@ -1809,7 +1811,26 @@ function App() {
           const response = reversingDirection ? 1.45 : movementRequested ? 2.8 : 1.75
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
           const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
-          if (next !== current) {
+          const nudgeTarget = releaseCarryActive ? exploreControl.nudgeTargetProgress : undefined
+          const reachedNudgeTarget = nudgeTarget !== undefined
+            && activeDirection !== 0
+            && ((activeDirection > 0 && next >= nudgeTarget) || (activeDirection < 0 && next <= nudgeTarget))
+          if (reachedNudgeTarget) {
+            playProgressRef.current = nudgeTarget
+            setPlayProgress(nudgeTarget)
+            mothMotionRef.current.velocity = 0
+            mothMotionRef.current.trailVelocity = 0
+            exploreControlRef.current = {
+              ...exploreControlRef.current,
+              releaseDirection: 0,
+              releaseCarryUntil: 0,
+              nudgeTargetProgress: undefined,
+              idleSince: 0,
+              idlePushStartedAt: 0,
+              idlePushUntil: 0,
+              idlePushCount: 0,
+            }
+          } else if (next !== current) {
             playProgressRef.current = next
             setPlayProgress(next)
           } else if ((next <= 0 && mothMotionRef.current.velocity < 0) || (next >= 1 && mothMotionRef.current.velocity > 0)) {
@@ -2873,6 +2894,20 @@ function App() {
   const shuffleDescriptionTransitionTarget = () => {
     return shuffleDescriptionActiveBoundary
   }
+  const shuffleDescriptionNearestAnchorTarget = () => {
+    if (shuffleDescriptionBoundaryEntries.length === 0) {
+      return null
+    }
+    const current = playProgressRef.current
+    return shuffleDescriptionBoundaryEntries.reduce((closest, entry) => {
+      const closestDistance = Math.abs(closest.point.routeProgress - current)
+      const entryDistance = Math.abs(entry.point.routeProgress - current)
+      return entryDistance < closestDistance ? entry : closest
+    }, shuffleDescriptionBoundaryEntries[0])
+  }
+  const shuffleDescriptionInfoTarget = () => {
+    return shuffleDescriptionTransitionTarget() ?? shuffleDescriptionNearestAnchorTarget()
+  }
   useEffect(() => {
     if (
       !showShuffleDescriptionPrototype
@@ -3743,6 +3778,7 @@ function App() {
       releaseDirection: 0,
       releaseStartedAt: 0,
       releaseCarryUntil: 0,
+      nudgeTargetProgress: undefined,
       idleSince: 0,
       idlePushStartedAt: 0,
       idlePushUntil: 0,
@@ -3772,6 +3808,7 @@ function App() {
       releaseDirection: direction,
       releaseStartedAt: now,
       releaseCarryUntil: now + nudgeMs,
+      nudgeTargetProgress: undefined,
       idleSince: now + nudgeMs,
       idlePushStartedAt: 0,
       idlePushUntil: 0,
@@ -3779,6 +3816,42 @@ function App() {
     }
     setExploreDirection(0)
     setMessage(direction > 0 ? 'Shuffle nudge forward' : 'Shuffle nudge back')
+  }
+
+  function nudgeExploreTowardAnchor(targetProgress: number) {
+    if (gameModeRef.current !== 'explore') {
+      return
+    }
+    const target = clamp(targetProgress, 0, 1)
+    const current = playProgressRef.current
+    const distance = target - current
+    if (Math.abs(distance) < 0.002) {
+      return
+    }
+    const direction: -1 | 1 = distance > 0 ? 1 : -1
+    if ((direction < 0 && current <= 0) || (direction > 0 && current >= 1)) {
+      return
+    }
+    const now = performance.now()
+    const nudgeMs = clamp((projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300) * 0.28, 450, 850)
+    setAppMode('play')
+    setPlayPaused(false)
+    exploreHasInteractedRef.current = true
+    lastShuffleDirectionRef.current = direction
+    exploreControlRef.current = {
+      direction: 0,
+      startedAt: 0,
+      releaseDirection: direction,
+      releaseStartedAt: now,
+      releaseCarryUntil: now + nudgeMs,
+      nudgeTargetProgress: target,
+      idleSince: now + nudgeMs,
+      idlePushStartedAt: 0,
+      idlePushUntil: 0,
+      idlePushCount: 0,
+    }
+    setExploreDirection(0)
+    setMessage(direction > 0 ? 'Info nudge toward anchor' : 'Info nudge back toward anchor')
   }
 
   function stopExploreControl(direction?: -1 | 1, useReleaseCarry = true) {
@@ -3804,6 +3877,7 @@ function App() {
       releaseDirection: releaseCarryMs > 0 ? currentControl.direction : 0,
       releaseStartedAt: now,
       releaseCarryUntil: releaseCarryMs > 0 ? now + releaseCarryMs : 0,
+      nudgeTargetProgress: undefined,
       idleSince: releaseCarryMs > 0 ? now + releaseCarryMs : now,
       idlePushStartedAt: 0,
       idlePushUntil: 0,
@@ -5134,13 +5208,16 @@ function App() {
                           resetShuffleDescriptionCard()
                           return
                         }
-                        const targetEntry = shuffleDescriptionTransitionTarget()
+                        const targetEntry = shuffleDescriptionInfoTarget()
                         const targetExampleIndex = targetEntry?.exampleIndex
                           ?? (shuffleDescriptionMothExampleIndex >= 0 ? shuffleDescriptionMothExampleIndex : shuffleDescriptionActiveExampleIndex)
                         if (targetExampleIndex !== shuffleDescriptionActiveExampleIndex) {
                           changeShuffleDescriptionAsset(targetExampleIndex)
                         } else {
                           advanceShuffleDescriptionCard(targetExampleIndex)
+                        }
+                        if (targetEntry) {
+                          nudgeExploreTowardAnchor(targetEntry.point.routeProgress)
                         }
                         setShuffleDescriptionPendingAssetIndex(null)
                         setShuffleDescriptionOpenedAt(performance.now())
