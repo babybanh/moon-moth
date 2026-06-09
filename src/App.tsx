@@ -71,6 +71,7 @@ import type {
 
 const defaultViewport: Size = { width: 900, height: 620 }
 const editorViewStorageKey = 'moonMothRouteEditor.editorView'
+const discoverPairingsStorageKey = 'moonMothRouteEditor.discoverPairings.v1'
 const publicGameBuild = import.meta.env.VITE_MOON_MOTH_GAME_ONLY === 'true'
 const gameSurfaceSize = 628
 const publicGameHorizontalMargin = 0
@@ -186,10 +187,12 @@ type FreeExploreInputState = {
   left: boolean
   right: boolean
 }
+type FreeExploreInputKey = keyof FreeExploreInputState
 type FreeExploreState = {
   position: Point
   velocity: Point
   input: FreeExploreInputState
+  keyboardPriority: FreeExploreInputKey[]
   pointerDirection: Point | null
   pointerStartedAt: number
   direction: Point
@@ -209,6 +212,11 @@ type FreeExploreRouteLight = {
   itemId: string
   layerId: LayerId
   point: Point
+}
+type DiscoverPairCandidate = {
+  distance: number
+  item: EditorItem
+  role: string
 }
 type LoopControlState = {
   direction: -1 | 1
@@ -435,10 +443,12 @@ const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
 const exploreRelocationDelayMs = 460
-const freeExploreDebugSpeedMultiplier = 6
+const freeExploreDebugSpeedMultiplier = 2
 const freeExploreLightCollectRadius = 165
 const freeExploreShuffleDiscoverRadius = 235
 const freeExploreRevealBaseRadius = 360
+const freeExploreRevealBloomMs = 2500
+const freeExploreLightMinY = 520
 const freeExploreGlowTapRadiusMin = 76
 const freeExploreGlowTapRadiusMax = 154
 const freeExploreTrailMaxPoints = 120
@@ -605,6 +615,28 @@ function vectorDot(a: Point, b: Point) {
   return a.x * b.x + a.y * b.y
 }
 
+function freeExploreKeyboardDirection(input: FreeExploreInputState, priority: FreeExploreInputKey[] = []): Point {
+  let x = (input.right ? 1 : 0) - (input.left ? 1 : 0)
+  let y = (input.down ? 1 : 0) - (input.up ? 1 : 0)
+  if (x === 0 && input.left && input.right) {
+    x = lastPrioritizedFreeExploreInput(priority, ['left', 'right']) === 'left' ? -1 : 1
+  }
+  if (y === 0 && input.up && input.down) {
+    y = lastPrioritizedFreeExploreInput(priority, ['up', 'down']) === 'up' ? -1 : 1
+  }
+  return normalizeVector({ x, y })
+}
+
+function lastPrioritizedFreeExploreInput(priority: FreeExploreInputKey[], keys: FreeExploreInputKey[]) {
+  for (let index = priority.length - 1; index >= 0; index -= 1) {
+    const key = priority[index]
+    if (keys.includes(key)) {
+      return key
+    }
+  }
+  return keys[0]
+}
+
 function stoppedFreeExplore(project: EditorProject): FreeExploreState {
   return {
     position: initialFreeExplorePosition(project),
@@ -626,6 +658,7 @@ function stoppedFreeExplore(project: EditorProject): FreeExploreState {
       left: false,
       right: false,
     },
+    keyboardPriority: [],
     debugFast: false,
   }
 }
@@ -636,8 +669,15 @@ function buildFreeExploreRouteLights(project: EditorProject): FreeExploreRouteLi
     id: `asset-light-${item.id}`,
     itemId: item.id,
     layerId: item.layerId,
-    point: { x: item.x, y: item.y },
+    point: freeExploreLightPointForItem(project, item),
   }))
+}
+
+function freeExploreLightPointForItem(project: EditorProject, item: EditorItem): Point {
+  return {
+    x: clamp(item.x, 0, project.world.width),
+    y: clamp(item.y, freeExploreLightMinY, project.world.height),
+  }
 }
 
 function stoppedLoopControl(direction: -1 | 1 = 1): LoopControlState {
@@ -706,6 +746,38 @@ function loadImageElementOnce(src: string): Promise<[string, HTMLImageElement | 
     image.onerror = () => finish(null)
     image.src = src
   })
+}
+
+function readDiscoverPairingsFromStorage(): Record<string, string[]> {
+  try {
+    const raw = window.localStorage.getItem(discoverPairingsStorageKey)
+    if (!raw) {
+      return {}
+    }
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {}
+    }
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .filter((entry): entry is [string, string[]] => typeof entry[0] === 'string' && Array.isArray(entry[1]))
+        .map(([shuffleItemId, assetItemIds]) => [
+          shuffleItemId,
+          assetItemIds.filter((assetItemId): assetItemId is string => typeof assetItemId === 'string'),
+        ])
+        .filter(([, assetItemIds]) => assetItemIds.length > 0),
+    )
+  } catch {
+    return {}
+  }
+}
+
+function saveDiscoverPairingsToStorage(pairings: Record<string, string[]>) {
+  try {
+    window.localStorage.setItem(discoverPairingsStorageKey, JSON.stringify(pairings))
+  } catch {
+    // Discovery pairing is an editor aid; the game should keep running if storage is unavailable.
+  }
 }
 
 async function loadImageElement(src: string, attempts = publicImageLoadAttempts): Promise<[string, HTMLImageElement | null]> {
@@ -921,7 +993,12 @@ function App() {
   const [freeExploreCameraCenter, setFreeExploreCameraCenter] = useState<Point>(() => initialFreeExplorePosition(project))
   const [freeExploreDebugFast, setFreeExploreDebugFast] = useState(false)
   const [collectedLightItemIds, setCollectedLightItemIds] = useState<string[]>([])
+  const [collectedLightCollectedAt, setCollectedLightCollectedAt] = useState<Record<string, number>>({})
   const [discoveredShuffleItemIds, setDiscoveredShuffleItemIds] = useState<string[]>([])
+  const [discoverPairedAssetIdsByShuffleId, setDiscoverPairedAssetIdsByShuffleId] = useState<Record<string, string[]>>(
+    () => readDiscoverPairingsFromStorage(),
+  )
+  const [discoverPairSelectedAtByKey, setDiscoverPairSelectedAtByKey] = useState<Record<string, number>>({})
   const [activeShuffleItemId, setActiveShuffleItemId] = useState<string | null>(null)
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
@@ -998,6 +1075,7 @@ function App() {
   const freeExploreCameraCenterRef = useRef<Point>(initialFreeExplorePosition(project))
   const freeExploreTrailPointsRef = useRef<Point[]>([initialFreeExplorePosition(project)])
   const collectedLightItemIdsRef = useRef<string[]>([])
+  const collectedLightCollectedAtRef = useRef<Record<string, number>>({})
   const discoveredShuffleItemIdsRef = useRef<string[]>([])
   const activeShuffleItemIdRef = useRef<string | null>(null)
   const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
@@ -1186,6 +1264,10 @@ function App() {
   useEffect(() => {
     collectedLightItemIdsRef.current = collectedLightItemIds
   }, [collectedLightItemIds])
+
+  useEffect(() => {
+    collectedLightCollectedAtRef.current = collectedLightCollectedAt
+  }, [collectedLightCollectedAt])
 
   useEffect(() => {
     discoveredShuffleItemIdsRef.current = discoveredShuffleItemIds
@@ -1888,9 +1970,9 @@ function App() {
         shouldAnimate = true
       } else if (appMode === 'play' && !playPaused && gameMode === 'discover') {
         const state = freeExploreRef.current
-        const inputX = (state.input.right ? 1 : 0) - (state.input.left ? 1 : 0)
-        const inputY = (state.input.down ? 1 : 0) - (state.input.up ? 1 : 0)
-        const keyboardDirection = normalizeVector({ x: inputX, y: inputY })
+        const keyboardDirection = freeExploreKeyboardDirection(state.input, state.keyboardPriority)
+        const keyboardActive = Math.hypot(keyboardDirection.x, keyboardDirection.y) > 0.001
+        const pointerActive = Boolean(state.pointerDirection)
         const requestedDirection = state.pointerDirection ?? keyboardDirection
         const requestActive = Math.hypot(requestedDirection.x, requestedDirection.y) > 0.001
         let releaseCarryActive = !requestActive
@@ -1960,11 +2042,12 @@ function App() {
         targetVelocity = movementRequested
           ? Math.abs(exploreTargetVelocity(1, 0.5, heldMs, projectRef.current.gameplay))
               * pushScale
-              * (latestState.debugFast ? freeExploreDebugSpeedMultiplier : 1)
+              * (latestState.debugFast && keyboardActive && !pointerActive ? freeExploreDebugSpeedMultiplier : 1)
           : 0
 
         const currentVelocityDirection = normalizeVector(latestState.velocity)
         const reversingDirection = movementRequested
+          && !keyboardActive
           && Math.hypot(currentVelocityDirection.x, currentVelocityDirection.y) > 0.001
           && vectorDot(activeDirection, currentVelocityDirection) < -0.18
           && Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold * 6
@@ -2299,10 +2382,56 @@ function App() {
     [collectedLightItemIds],
   )
   const collectedRouteLightPoints = useMemo(
-    () => freeExploreRouteLights
-      .filter((light) => collectedLightIdSet.has(light.id))
-      .map((light) => ({ assetId: light.assetId, itemId: light.itemId, layerId: light.layerId, point: light.point })),
-    [collectedLightIdSet, freeExploreRouteLights],
+    () => {
+      const itemById = new Map(project.items.map((item) => [item.id, item]))
+      return freeExploreRouteLights
+        .filter((light) => collectedLightIdSet.has(light.id))
+        .flatMap((light) => {
+          const collectedAt = collectedLightCollectedAt[light.id] ?? 0
+          const pairedIds = discoverPairedAssetIdsByShuffleId[light.itemId] ?? []
+          const pairedReveals = pairedIds
+            .map((itemId) => itemById.get(itemId))
+            .filter((item): item is EditorItem => Boolean(item?.visible))
+            .map((item) => ({
+              assetId: item.assetId,
+              bloomMs: freeExploreRevealBloomMs,
+              collectedAt: discoverPairSelectedAtByKey[`${light.itemId}:${item.id}`] ?? collectedAt,
+              itemId: item.id,
+              layerId: item.layerId,
+              point: { x: item.x, y: item.y },
+            }))
+          return [
+            {
+              assetId: light.assetId,
+              bloomMs: freeExploreRevealBloomMs,
+              collectedAt,
+              itemId: light.itemId,
+              layerId: light.layerId,
+              point: light.point,
+            },
+            ...pairedReveals,
+          ]
+        })
+    },
+    [collectedLightCollectedAt, collectedLightIdSet, discoverPairedAssetIdsByShuffleId, discoverPairSelectedAtByKey, freeExploreRouteLights, project.items],
+  )
+  const discoverActiveShuffleItem = useMemo(
+    () => activeShuffleItemId ? project.items.find((item) => item.id === activeShuffleItemId) ?? null : null,
+    [activeShuffleItemId, project.items],
+  )
+  const discoverPairCandidates = useMemo(
+    () => freeExploreActive && discoverActiveShuffleItem
+      ? buildDiscoverPairCandidates(project, discoverActiveShuffleItem)
+      : [],
+    [discoverActiveShuffleItem, freeExploreActive, project],
+  )
+  const discoverActivePairedAssetIds = discoverActiveShuffleItem
+    ? discoverPairedAssetIdsByShuffleId[discoverActiveShuffleItem.id] ?? []
+    : []
+  const discoverPairPanelVisible = Boolean(
+    freeExploreActive
+    && discoverActiveShuffleItem
+    && collectedLightIdSet.has(`asset-light-${discoverActiveShuffleItem.id}`),
   )
   const freeExploreRevealRadius = freeExploreRevealBaseRadius
   const freeExploreDiscoveryRender = freeExploreActive
@@ -3533,9 +3662,11 @@ function App() {
     setFreeExplorePosition(start)
     setFreeExploreCameraCenter(start)
     setCollectedLightItemIds([])
+    setCollectedLightCollectedAt({})
     setDiscoveredShuffleItemIds([])
     setActiveShuffleItemId(null)
     collectedLightItemIdsRef.current = []
+    collectedLightCollectedAtRef.current = {}
     discoveredShuffleItemIdsRef.current = []
     activeShuffleItemIdRef.current = null
     const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, start)
@@ -4199,13 +4330,22 @@ function App() {
       return
     }
     const input = freeExploreRef.current.input
+    const previousKeyboardDirection = freeExploreKeyboardDirection(input, freeExploreRef.current.keyboardPriority)
+    const nextPriority = [...freeExploreRef.current.keyboardPriority.filter((entry) => entry !== direction), direction]
+    freeExploreRef.current.keyboardPriority = nextPriority
     if (!input[direction]) {
       const wasIdle = !input.up && !input.down && !input.left && !input.right
-      freeExploreRef.current.input = { ...input, [direction]: true }
+      const nextInput = { ...input, [direction]: true }
+      const nextKeyboardDirection = freeExploreKeyboardDirection(nextInput, nextPriority)
+      const directionChanged = Math.hypot(previousKeyboardDirection.x, previousKeyboardDirection.y) > 0.001
+        && Math.hypot(nextKeyboardDirection.x, nextKeyboardDirection.y) > 0.001
+        && vectorDot(previousKeyboardDirection, nextKeyboardDirection) < 0.72
+      freeExploreRef.current.input = nextInput
       freeExploreRef.current.pointerDirection = null
-      if (wasIdle) {
+      if (wasIdle || directionChanged) {
         freeExploreRef.current.startedAt = performance.now()
       }
+      freeExploreRef.current.direction = nextKeyboardDirection
       freeExploreRef.current.releaseCarryUntil = 0
       freeExploreRef.current.releaseStartedAt = 0
       freeExploreRef.current.releaseDirection = { x: 0, y: 0 }
@@ -4276,11 +4416,34 @@ function App() {
     }
     const input = freeExploreRef.current.input
     if (input[direction]) {
+      const previousKeyboardDirection = freeExploreKeyboardDirection(input, freeExploreRef.current.keyboardPriority)
       const nextInput = { ...input, [direction]: false }
+      const nextPriority = freeExploreRef.current.keyboardPriority.filter((entry) => entry !== direction)
+      const nextKeyboardDirection = freeExploreKeyboardDirection(nextInput, nextPriority)
       freeExploreRef.current.input = nextInput
+      freeExploreRef.current.keyboardPriority = nextPriority
       const inputStillActive = nextInput.up || nextInput.down || nextInput.left || nextInput.right
-      if (!inputStillActive && !freeExploreRef.current.pointerDirection) {
-        releaseFreeExploreMotion()
+      if (inputStillActive) {
+        const directionChanged = Math.hypot(previousKeyboardDirection.x, previousKeyboardDirection.y) > 0.001
+          && Math.hypot(nextKeyboardDirection.x, nextKeyboardDirection.y) > 0.001
+          && vectorDot(previousKeyboardDirection, nextKeyboardDirection) < 0.72
+        freeExploreRef.current.direction = nextKeyboardDirection
+        if (directionChanged) {
+          freeExploreRef.current.startedAt = performance.now()
+        }
+        freeExploreRef.current.releaseCarryUntil = 0
+        freeExploreRef.current.releaseStartedAt = 0
+        freeExploreRef.current.releaseDirection = { x: 0, y: 0 }
+        freeExploreRef.current.idleSince = 0
+        freeExploreRef.current.idlePushStartedAt = 0
+        freeExploreRef.current.idlePushUntil = 0
+        freeExploreRef.current.idlePushCount = 0
+      } else if (!freeExploreRef.current.pointerDirection) {
+        releaseFreeExploreMotion({
+          carryMs: freeExploreRef.current.debugFast ? 0 : undefined,
+          allowIdleFollowup: false,
+          message: freeExploreRef.current.debugFast ? 'Discover debug stop' : 'Discover released: gentle push',
+        })
       }
     }
   }
@@ -4310,7 +4473,10 @@ function App() {
           message: 'Discover tap: small push',
         })
       } else {
-        releaseFreeExploreMotion()
+        releaseFreeExploreMotion({
+          allowIdleFollowup: false,
+          message: 'Discover released: gentle push',
+        })
       }
     }
   }
@@ -4341,6 +4507,7 @@ function App() {
       left: false,
       right: false,
     }
+    freeExploreRef.current.keyboardPriority = []
     freeExploreRef.current.pointerDirection = null
     freeExploreRef.current.pointerStartedAt = 0
     freeExploreRef.current.startedAt = 0
@@ -4380,13 +4547,16 @@ function App() {
     const routeLights = buildFreeExploreRouteLights(project)
     const shuffleItems = collectFreeExploreShuffleItems(project)
     const currentCollected = new Set(collectedLightItemIdsRef.current)
+    const currentCollectedAt = { ...collectedLightCollectedAtRef.current }
     const currentDiscovered = new Set(discoveredShuffleItemIdsRef.current)
     let collectedChanged = false
     let discoveredChanged = false
+    const collectedAt = performance.now()
 
     for (const light of routeLights) {
       if (!currentCollected.has(light.id) && distance(position, light.point) <= freeExploreLightCollectRadius) {
         currentCollected.add(light.id)
+        currentCollectedAt[light.id] = collectedAt
         collectedChanged = true
       }
     }
@@ -4408,7 +4578,9 @@ function App() {
     if (collectedChanged) {
       const next = Array.from(currentCollected)
       collectedLightItemIdsRef.current = next
+      collectedLightCollectedAtRef.current = currentCollectedAt
       setCollectedLightItemIds(next)
+      setCollectedLightCollectedAt(currentCollectedAt)
       const routeLightCollectedCount = routeLights.filter((light) => currentCollected.has(light.id)).length
       setMessage(`Asset light collected: ${routeLightCollectedCount}/${routeLights.length}`)
     }
@@ -4701,6 +4873,35 @@ function App() {
     return candidates
       .map((light) => ({ light, distance: distance(position, light.point) }))
       .sort((a, b) => a.distance - b.distance)[0]?.light ?? null
+  }
+
+  function toggleDiscoverPairAsset(shuffleItemId: string, assetItemId: string, checked: boolean) {
+    const pairKey = `${shuffleItemId}:${assetItemId}`
+    setDiscoverPairedAssetIdsByShuffleId((current) => {
+      const existing = current[shuffleItemId] ?? []
+      const nextIds = checked
+        ? existing.includes(assetItemId) ? existing : [...existing, assetItemId]
+        : existing.filter((id) => id !== assetItemId)
+      const next = { ...current }
+      if (nextIds.length > 0) {
+        next[shuffleItemId] = nextIds
+      } else {
+        delete next[shuffleItemId]
+      }
+      saveDiscoverPairingsToStorage(next)
+      return next
+    })
+    setDiscoverPairSelectedAtByKey((current) => {
+      const next = { ...current }
+      if (checked) {
+        next[pairKey] = performance.now()
+      } else {
+        delete next[pairKey]
+      }
+      return next
+    })
+    const assetName = projectRef.current.items.find((item) => item.id === assetItemId)?.name ?? 'asset'
+    setMessage(checked ? `Paired ${assetName}` : `Unpaired ${assetName}`)
   }
 
   function handleGameCanvasPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -6082,6 +6283,47 @@ function App() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+            {publicGameBootReady && discoverPairPanelVisible && discoverActiveShuffleItem && (
+              <div className="discover-pair-panel" aria-label="Discover glow group">
+                <div className="discover-pair-header">
+                  <span>Glow Group</span>
+                  <strong>{discoverActiveShuffleItem.shuffleInfo?.publicName?.trim() || discoverActiveShuffleItem.name}</strong>
+                </div>
+                <div className="discover-pair-list">
+                  {discoverPairCandidates.length > 0 ? discoverPairCandidates.map((candidate) => {
+                    const checked = discoverActivePairedAssetIds.includes(candidate.item.id)
+                    const candidateAsset = assetById.get(candidate.item.assetId)
+                    return (
+                      <label className="discover-pair-row" key={candidate.item.id}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => toggleDiscoverPairAsset(discoverActiveShuffleItem.id, candidate.item.id, event.target.checked)}
+                        />
+                        <span className="discover-pair-avatar" aria-hidden="true">
+                          {candidateAsset ? (
+                            <img
+                              src={candidateAsset.src}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span>?</span>
+                          )}
+                        </span>
+                        <span className="discover-pair-copy">
+                          <strong>{candidate.item.name || 'Untitled asset'}</strong>
+                          <small>{candidate.role} · {Math.round(candidate.distance)}px</small>
+                        </span>
+                      </label>
+                    )
+                  }) : (
+                    <p>No close assets found.</p>
+                  )}
+                </div>
               </div>
             )}
             <div
@@ -9129,6 +9371,34 @@ function collectFreeExploreShuffleItems(project: EditorProject) {
     item.shuffleInfo?.enabled === true
     || isShuffleInfoSeedCandidate(item)
   ))
+}
+
+function buildDiscoverPairCandidates(project: EditorProject, shuffleItem: EditorItem, limit = 7): DiscoverPairCandidate[] {
+  const shuffleItemIds = new Set(collectFreeExploreShuffleItems(project).map((item) => item.id))
+  return project.items
+    .filter((item) => (
+      item.visible
+      && item.id !== shuffleItem.id
+      && !shuffleItemIds.has(item.id)
+      && isDiscoverPairCandidate(item)
+    ))
+    .map((item) => ({
+      distance: distance(shuffleItem, item),
+      item,
+      role: resolveItemRole(item),
+    }))
+    .filter((entry) => entry.distance <= 2300)
+    .sort((a, b) => a.distance - b.distance || a.item.name.localeCompare(b.item.name))
+    .slice(0, limit)
+}
+
+function isDiscoverPairCandidate(item: EditorItem) {
+  const role = resolveItemRole(item)
+  if (role === 'Foliage' || role === 'Ground & Pools' || role === 'Landmarks' || role === 'Decorations' || role === 'Special Cues' || role === 'Foreground Masks') {
+    return true
+  }
+  const search = `${item.name} ${item.assetId} ${item.notes ?? ''}`.toLowerCase()
+  return /\b(field|lake|pool|water|flower|tree|sapling|stone|reed|grass|vine|fern|orchid|moss|leaf|blossom)\b/.test(search)
 }
 
 function inferShuffleInfoRoomId(project: EditorProject, item: EditorItem): ShuffleInfoRoomId {

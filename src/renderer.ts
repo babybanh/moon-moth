@@ -44,7 +44,7 @@ export type RenderOptions = {
     discoveredShuffleItemIds: string[]
     lightItemIds: string[]
     revealRadius: number
-    revealPoints?: Array<{ assetId?: string; itemId?: string; layerId?: LayerId; point: Point }>
+    revealPoints?: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point }>
     routeLights?: Array<{ id: string; layerId?: LayerId; point: Point; collected: boolean }>
   }
 }
@@ -811,7 +811,7 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
 function drawExploreScreenFogOverlay(
   project: EditorProject,
   options: RenderOptions,
-  revealPoints: Array<{ assetId?: string; itemId?: string; layerId?: LayerId; point: Point }>,
+  revealPoints: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point }>,
   revealRadius: number,
 ) {
   const width = Math.max(1, Math.ceil(options.viewport.width))
@@ -840,10 +840,11 @@ function drawExploreScreenFogOverlay(
   overlay.context.globalCompositeOperation = 'destination-out'
   for (const reveal of revealPoints) {
     const item = reveal.itemId ? project.items.find((candidate) => candidate.id === reveal.itemId) : undefined
-    if (item && drawAssetRevealCutout(overlay.context, item, project, options)) {
+    const revealProgress = revealBloomProgress(reveal.collectedAt, reveal.bloomMs, options.animationTime)
+    if (item && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress)) {
       continue
     }
-    drawCircularRevealCutout(overlay.context, reveal, project, options, revealRadius)
+    drawCircularRevealCutout(overlay.context, reveal, project, options, revealRadius, revealProgress)
   }
   overlay.context.globalCompositeOperation = 'source-over'
   overlay.context.globalAlpha = 1
@@ -856,6 +857,7 @@ function drawAssetRevealCutout(
   item: EditorItem,
   project: EditorProject,
   options: RenderOptions,
+  progress: number,
 ) {
   const layer = project.layers[item.layerId]
   const parallax = layer.parallax
@@ -869,12 +871,14 @@ function drawAssetRevealCutout(
   const width = item.width * options.camera.zoom * parallax
   const height = item.height * options.camera.zoom * parallax
   const frontRevealBoost = isFrontOccluder(item) ? 1.22 : 1
-  const blur = Math.max(12, Math.min(52, Math.max(width, height) * 0.08 * frontRevealBoost))
-  const auraScale = 1.18
-  const auraRadiusX = Math.max(84, Math.min(390, (width * 0.58 + 48) * frontRevealBoost))
-  const auraRadiusY = Math.max(84, Math.min(390, (height * 0.58 + 48) * frontRevealBoost))
-  const auraCoreAlpha = isFrontOccluder(item) ? 0.82 : 0.66
-  const auraMidAlpha = isFrontOccluder(item) ? 0.46 : 0.34
+  const eased = easeInOutSine(progress)
+  const auraEased = easeOutCubic(progress)
+  const blur = Math.max(8, Math.min(52, Math.max(width, height) * 0.08 * frontRevealBoost * (0.58 + eased * 0.42)))
+  const auraScale = 1.05 + eased * 0.13
+  const auraRadiusX = Math.max(72, Math.min(390, (width * (0.3 + auraEased * 0.28) + 48) * frontRevealBoost))
+  const auraRadiusY = Math.max(72, Math.min(390, (height * (0.3 + auraEased * 0.28) + 48) * frontRevealBoost))
+  const auraCoreAlpha = (isFrontOccluder(item) ? 0.82 : 0.66) * eased
+  const auraMidAlpha = (isFrontOccluder(item) ? 0.46 : 0.34) * eased
 
   context.save()
   context.translate(center.x, center.y)
@@ -890,7 +894,7 @@ function drawAssetRevealCutout(
   context.arc(0, 0, 1, 0, Math.PI * 2)
   context.fill()
   context.restore()
-  context.globalAlpha = 0.88
+  context.globalAlpha = 0.88 * eased
   context.filter = `blur(${blur}px)`
   context.drawImage(
     image,
@@ -900,10 +904,27 @@ function drawAssetRevealCutout(
     height * auraScale,
   )
   context.filter = 'none'
-  context.globalAlpha = 0.96
+  context.globalAlpha = 0.96 * (0.34 + eased * 0.66)
   context.drawImage(image, -width / 2, -height / 2, width, height)
   context.restore()
   return true
+}
+
+function revealBloomProgress(collectedAt = 0, bloomMs = 1, animationTime: number) {
+  if (collectedAt <= 0 || bloomMs <= 0) {
+    return 1
+  }
+  return clamp((animationTime - collectedAt) / bloomMs, 0, 1)
+}
+
+function easeOutCubic(value: number) {
+  const t = clamp(value, 0, 1)
+  return 1 - (1 - t) ** 3
+}
+
+function easeInOutSine(value: number) {
+  const t = clamp(value, 0, 1)
+  return -(Math.cos(Math.PI * t) - 1) / 2
 }
 
 function drawCircularRevealCutout(
@@ -912,10 +933,12 @@ function drawCircularRevealCutout(
   project: EditorProject,
   options: RenderOptions,
   revealRadius: number,
+  progress: number,
 ) {
   const parallax = reveal.layerId ? project.layers[reveal.layerId]?.parallax ?? 1 : 1
   const screen = parallaxWorldToScreen(reveal.point, options.camera, options.viewport, parallax)
-  const screenRadius = Math.max(84, Math.min(360, revealRadius * options.camera.zoom * parallax))
+  const eased = easeOutCubic(progress)
+  const screenRadius = Math.max(60, Math.min(360, revealRadius * options.camera.zoom * parallax * (0.42 + eased * 0.58)))
   const revealGradient = context.createRadialGradient(
     screen.x,
     screen.y,
@@ -924,8 +947,8 @@ function drawCircularRevealCutout(
     screen.y,
     screenRadius,
   )
-  revealGradient.addColorStop(0, 'rgba(0, 0, 0, 0.95)')
-  revealGradient.addColorStop(0.62, 'rgba(0, 0, 0, 0.78)')
+  revealGradient.addColorStop(0, `rgba(0, 0, 0, ${0.95 * eased})`)
+  revealGradient.addColorStop(0.62, `rgba(0, 0, 0, ${0.78 * eased})`)
   revealGradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
   context.fillStyle = revealGradient
   context.beginPath()
