@@ -305,6 +305,7 @@ const shuffleInfoAvatarTargetCoverageByName: Record<string, number> = {
   'Cocoon Shrine': 0.89,
   'Great Moonstone': 0.9,
   'Vine Lanterns': 0.86,
+  'Bellflowers': 0.92,
   'Star Petals': 0.86,
   'Orchid Spill': 0.86,
   'Moss Rock': 0.86,
@@ -389,7 +390,7 @@ const shuffleDescriptionMinAssetSwitchMs = 5000
 const shuffleDescriptionReadWindowMs = 7000
 const shuffleDescriptionAttentionCooldownMs = 3000
 const shuffleDescriptionLongDirectionQuietMs = 8000
-const shuffleDescriptionInitialAttentionDelayMs = 8000
+const shuffleDescriptionInitialAttentionDelayMs = 13000
 const shuffleDescriptionBoundarySampleMs = 350
 const shuffleDescriptionRuntimeCardLimit = 3
 const shuffleDescriptionMothRuntimeCardLimit = 7
