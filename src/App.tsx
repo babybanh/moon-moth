@@ -167,7 +167,7 @@ type ForwardControlState = {
 }
 type GameMode = 'journey' | 'explore' | 'loop'
 type GameScreen = 'menu' | GameMode
-type GameHudScreen = GameScreen | 'shuffle-wake'
+type GameHudScreen = GameScreen
 type ExploreControlState = {
   direction: -1 | 0 | 1
   startedAt: number
@@ -192,12 +192,6 @@ type LoopControlState = {
 }
 type ShuffleLoopControlState = LoopControlState & {
   active: boolean
-}
-type ExploreFinishState = {
-  active: boolean
-  direction: -1 | 1
-  targetProgress: number
-  startedAt: number
 }
 type MothMotionState = {
   velocity: number
@@ -394,7 +388,7 @@ const shuffleDescriptionMinAssetSwitchMs = 5000
 const shuffleDescriptionReadWindowMs = 7000
 const shuffleDescriptionAttentionCooldownMs = 3000
 const shuffleDescriptionLongDirectionQuietMs = 8000
-const shuffleDescriptionInitialAttentionDelayMs = 6000
+const shuffleDescriptionInitialAttentionDelayMs = 8000
 const shuffleDescriptionBoundarySampleMs = 350
 const shuffleDescriptionRuntimeCardLimit = 2
 const loopEndpointPauseMs = 2000
@@ -406,8 +400,7 @@ const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
 const exploreRelocationDelayMs = 460
-const exploreIdleFocusDelayMs = 7000
-const exploreIdleFocusResumeDelayMs = 2100
+const gameFocusResumeDelayMs = 2100
 const gameMenuReturnDelayMs = 1050
 const gameHudHomeGraceMs = 5000
 const driftReleaseGlowMs = 3400
@@ -584,15 +577,6 @@ function stoppedForwardControl(): ForwardControlState {
     idlePushStartedAt: 0,
     idlePushUntil: 0,
     idlePushCount: 0,
-  }
-}
-
-function stoppedExploreFinish(): ExploreFinishState {
-  return {
-    active: false,
-    direction: 1,
-    targetProgress: 0,
-    startedAt: 0,
   }
 }
 
@@ -851,10 +835,6 @@ function App() {
   const [journeyDirection, setJourneyDirection] = useState<-1 | 1>(1)
   const [journeyEndpointWaiting, setJourneyEndpointWaiting] = useState(false)
   const [exploreDirection, setExploreDirection] = useState<-1 | 0 | 1>(0)
-  const [exploreFinishing, setExploreFinishing] = useState(false)
-  const [exploreSongEnded, setExploreSongEnded] = useState(false)
-  const [exploreIdleFocusActive, setExploreIdleFocusActive] = useState(false)
-  const [exploreIdleFocusVisible, setExploreIdleFocusVisible] = useState(false)
   const [exploreMenuReturnActive, setExploreMenuReturnActive] = useState(false)
   const [exploreMenuReturnVisible, setExploreMenuReturnVisible] = useState(false)
   const [loopFocusActive, setLoopFocusActive] = useState(false)
@@ -887,10 +867,6 @@ function App() {
   const menuFocusDissolveTimeoutRef = useRef<number | null>(null)
   const firstExploreAutoDriftTimeoutRef = useRef<number | null>(null)
   const exploreRelocationTimeoutRef = useRef<number | null>(null)
-  const exploreIdleFocusTimeoutRefs = useRef<number[]>([])
-  const exploreIdleFocusResumeTimeoutRef = useRef<number | null>(null)
-  const exploreIdleFocusResumeDirectionRef = useRef<-1 | 1 | null>(null)
-  const exploreIdleFocusResumeHeldRef = useRef(false)
   const loopFocusResumeTimeoutRef = useRef<number | null>(null)
   const shuffleLoopDelayedStartTimeoutRef = useRef<number | null>(null)
   const gameMenuReturnTimeoutRef = useRef<number | null>(null)
@@ -922,10 +898,7 @@ function App() {
   const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
   const forwardControlRef = useRef<ForwardControlState>(stoppedForwardControl())
   const exploreControlRef = useRef<ExploreControlState>(stoppedExploreControl())
-  const exploreFinishRef = useRef<ExploreFinishState>(stoppedExploreFinish())
   const exploreHasInteractedRef = useRef(false)
-  const exploreSettledAtRef = useRef(0)
-  const exploreIdleFocusTriggeredRef = useRef(false)
   const loopControlRef = useRef<LoopControlState>(stoppedLoopControl())
   const shuffleLoopControlRef = useRef<ShuffleLoopControlState>(stoppedShuffleLoopControl())
   const gameCanvasGestureRef = useRef<GameCanvasGestureState | null>(null)
@@ -991,9 +964,6 @@ function App() {
     if (exploreRelocationTimeoutRef.current !== null) {
       window.clearTimeout(exploreRelocationTimeoutRef.current)
     }
-    if (exploreIdleFocusResumeTimeoutRef.current !== null) {
-      window.clearTimeout(exploreIdleFocusResumeTimeoutRef.current)
-    }
     if (loopFocusResumeTimeoutRef.current !== null) {
       window.clearTimeout(loopFocusResumeTimeoutRef.current)
     }
@@ -1005,8 +975,6 @@ function App() {
       window.clearTimeout(shuffleDescriptionBoundarySampleTimeoutRef.current)
       shuffleDescriptionBoundarySampleTimeoutRef.current = null
     }
-    exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
-    exploreIdleFocusTimeoutRefs.current = []
     if (gameMenuReturnTimeoutRef.current !== null) {
       window.clearTimeout(gameMenuReturnTimeoutRef.current)
     }
@@ -1511,9 +1479,6 @@ function App() {
         }, musicLoopGapMs)
         return
       }
-      if (gameModeRef.current === 'explore') {
-        beginExploreSongFinish()
-      }
     }
     music.addEventListener('ended', handleEnded)
     musicRef.current = music
@@ -1686,7 +1651,6 @@ function App() {
       previous = time
       const forwardControl = forwardControlRef.current
       const exploreControl = exploreControlRef.current
-      const exploreFinish = exploreFinishRef.current
       let loopControl = loopControlRef.current
       let shuffleLoopControl = shuffleLoopControlRef.current
       const editScrub = editScrubRef.current
@@ -1768,30 +1732,7 @@ function App() {
         shouldAnimate = true
       } else if (appMode === 'play' && !playPaused && gameMode === 'explore') {
         const current = playProgressRef.current
-        if (exploreFinish.active) {
-          const remaining = exploreFinish.targetProgress - current
-          const reachedTarget = Math.abs(remaining) <= 0.0007 || Math.sign(remaining) !== exploreFinish.direction
-          if (reachedTarget) {
-            playProgressRef.current = exploreFinish.targetProgress
-            setPlayProgress(exploreFinish.targetProgress)
-            mothMotionRef.current.velocity = 0
-            mothMotionRef.current.trailVelocity = 0
-            stopExploreFinish()
-            setMessage('Shuffle song ended: moth settled')
-          } else {
-            const heldMs = time - exploreFinish.startedAt
-            targetVelocity = exploreFinish.direction * manualScrubSpeed(heldMs, projectRef.current.gameplay, false, exploreFinish.direction) * 0.72
-            const maxStepVelocity = Math.abs(remaining) / Math.max(delta, 0.001)
-            targetVelocity = exploreFinish.direction * Math.min(Math.abs(targetVelocity), maxStepVelocity)
-            mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * 2.3))
-            const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
-            const clampedNext = exploreFinish.direction > 0
-              ? Math.min(next, exploreFinish.targetProgress)
-              : Math.max(next, exploreFinish.targetProgress)
-            playProgressRef.current = clampedNext
-            setPlayProgress(clampedNext)
-          }
-        } else if (shuffleLoopControl.active) {
+        if (shuffleLoopControl.active) {
           const hitEndpointBeforePulse = (current >= 1 && shuffleLoopControl.direction > 0) || (current <= 0 && shuffleLoopControl.direction < 0)
           if (hitEndpointBeforePulse) {
             clearShuffleLoopPush()
@@ -1874,24 +1815,6 @@ function App() {
             mothMotionRef.current.velocity = 0
             mothMotionRef.current.trailVelocity = 0
             stopExploreControl(undefined, false)
-          }
-          const settledAfterInteraction = exploreHasInteractedRef.current
-            && exploreControlRef.current.direction === 0
-            && !releaseCarryActive
-            && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold
-            && !exploreSongEnded
-            && current > 0.002
-            && current < 0.998
-            && gameMenuReturnTimeoutRef.current === null
-          if (settledAfterInteraction) {
-            if (exploreSettledAtRef.current <= 0) {
-              exploreSettledAtRef.current = time
-            }
-            if (!exploreIdleFocusTriggeredRef.current && time - exploreSettledAtRef.current >= exploreIdleFocusDelayMs) {
-              triggerExploreIdleFocus()
-            }
-          } else {
-            exploreSettledAtRef.current = 0
           }
         }
       } else if (appMode === 'play' && !playPaused && gameMode === 'loop') {
@@ -2020,7 +1943,7 @@ function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [appMode, exploreSongEnded, gameMode, playPaused, workspaceMode])
+  }, [appMode, gameMode, playPaused, workspaceMode])
 
   const renderCamera = useMemo(() => {
     const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
@@ -2055,12 +1978,9 @@ function App() {
   )
   const publicGameMothLoadFailed = publicGameBuild && failedImageSourcesRef.current.has(mothAsset.src)
   const publicGameMothReady = !publicGameBuild || images.has(mothAsset.src) || publicGameMothLoadFailed
-  const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreIdleFocusVisible || exploreMenuReturnVisible || loopFocusVisible
-  const gameFocusActive = gameScreen === 'menu' || exploreIdleFocusActive || exploreMenuReturnActive || loopFocusActive
-  const shuffleRestFocusActive = workspaceMode === 'game'
-    && gameScreen === 'explore'
-    && exploreIdleFocusActive
-    && !exploreMenuReturnActive
+  const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreMenuReturnVisible || loopFocusVisible
+  const gameFocusActive = gameScreen === 'menu' || exploreMenuReturnActive || loopFocusActive
+  const shuffleRestFocusActive = false
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
@@ -2255,8 +2175,8 @@ function App() {
     || (journeyDirection > 0 ? playProgress >= 1 : playProgress <= 0)
   const loopTurnAvailable = gameMode === 'loop'
     && loopControlRef.current.turnRestCount >= loopPulseWaitScheduleMs.length
-  const exploreBackDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress <= 0
-  const exploreForwardDisabled = gameMode !== 'explore' || exploreFinishing || exploreSongEnded || playProgress >= 1
+  const exploreBackDisabled = gameMode !== 'explore' || playProgress <= 0
+  const exploreForwardDisabled = gameMode !== 'explore' || playProgress >= 1
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
@@ -2637,7 +2557,7 @@ function App() {
     && shuffleDescriptionEnabled
     && workspaceMode === 'game'
     && gameMode === 'explore'
-    && (gameHudScreen === 'explore' || (gameHudScreen === 'shuffle-wake' && shuffleDescriptionOpen))
+    && gameHudScreen === 'explore'
     && (!shuffleLoopActive || shuffleDescriptionDismissingToLoop)
     && (shuffleDescriptionInitialRevealReady || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop)
     && shuffleDescriptionPrototypeExamples.length > 0
@@ -2978,7 +2898,7 @@ function App() {
     shuffleDescriptionOpenedAt,
   ])
   const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
-    if (screen !== 'explore' && screen !== 'shuffle-wake') {
+    if (screen !== 'explore') {
       resetShuffleDescriptionCard()
     }
     setGameHudScreen(screen)
@@ -3145,19 +3065,14 @@ function App() {
     clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
-    clearExploreIdleFocus()
     clearLoopFocus()
     exploreHasInteractedRef.current = false
-    exploreSettledAtRef.current = 0
-    exploreIdleFocusTriggeredRef.current = false
     startMenuFocusDissolve()
     setExploreUnlocked(true)
     clearLoopControl()
     clearShuffleLoopPush()
     clearJourneyEndpointWait(1)
     stopExploreControl(undefined, false)
-    stopExploreFinish()
-    setExploreSongEnded(false)
     stopForwardControl(false)
     playProgressRef.current = 0
     setPlayProgress(0)
@@ -3191,7 +3106,6 @@ function App() {
     clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
-    resetExploreIdleFocusTracking()
     clearLoopFocus()
     exploreHasInteractedRef.current = false
     lastShuffleDirectionRef.current = -1
@@ -3221,8 +3135,6 @@ function App() {
     mothMotionRef.current.blurResumeAt = 0
     triggeredTourCueIdsRef.current.clear()
     tourHoldUntilRef.current = 0
-    stopExploreFinish()
-    setExploreSongEnded(false)
     resetShuffleDescriptionInitialReveal()
     prepareShuffleDescriptionEntryCards()
     const finishExploreEntry = () => {
@@ -3255,18 +3167,13 @@ function App() {
     clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
-    clearExploreIdleFocus()
     clearLoopFocus()
     exploreHasInteractedRef.current = false
-    exploreSettledAtRef.current = 0
-    exploreIdleFocusTriggeredRef.current = false
     startMenuFocusDissolve()
     setExploreUnlocked(true)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
-    stopExploreFinish()
     clearShuffleLoopPush()
-    setExploreSongEnded(false)
     resetShuffleDescriptionInitialReveal()
     clearJourneyEndpointWait(1)
     const now = performance.now()
@@ -3308,7 +3215,6 @@ function App() {
     }
     clearDriftDescriptionAutomation()
     clearFirstExploreAutoDrift()
-    clearExploreIdleFocus()
     setWorkspaceMode('editor')
     enterEditModeAtMoth()
     setMessage('Editor view')
@@ -3319,20 +3225,15 @@ function App() {
     clearFirstExploreAutoDrift()
     clearGameMenuReturnTransition()
     clearExploreRelocationTransition()
-    clearExploreIdleFocus()
     clearLoopFocus()
     exploreHasInteractedRef.current = false
     lastShuffleDirectionRef.current = -1
-    exploreSettledAtRef.current = 0
-    exploreIdleFocusTriggeredRef.current = false
     stopMenuFocusDissolve()
     clearLoopControl()
     clearShuffleLoopPush()
     clearJourneyEndpointWait(1)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
-    stopExploreFinish()
-    setExploreSongEnded(false)
     resetShuffleDescriptionInitialReveal()
     setGameScreenWithHomeGrace('menu')
     gameModeRef.current = 'journey'
@@ -3414,13 +3315,7 @@ function App() {
         resetShuffleDescriptionCard()
       }, 1080)
     }
-    const restartMusic = exploreSongEnded || exploreFinishRef.current.active || Boolean(musicRef.current?.ended)
-    if (exploreSongEnded) {
-      setExploreSongEnded(false)
-    }
-    if (exploreFinishRef.current.active) {
-      stopExploreFinish()
-    }
+    const restartMusic = Boolean(musicRef.current?.ended)
     const velocityDirection = Math.sign(mothMotionRef.current.velocity)
     const controlDirection = exploreControlRef.current.direction || exploreControlRef.current.releaseDirection
     let direction = (controlDirection || (velocityDirection < 0 ? -1 : 1)) as -1 | 1
@@ -3430,7 +3325,6 @@ function App() {
     if (direction > 0 && playProgressRef.current >= 1) {
       direction = -1
     }
-    clearExploreIdleFocus()
     setGameHudScreenWithHomeGrace('explore')
     stopExploreControl(undefined, false)
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
@@ -3441,7 +3335,6 @@ function App() {
     setPlayPaused(false)
     setExploreDirection(0)
     exploreHasInteractedRef.current = true
-    resetExploreIdleFocusTracking()
     if (restartMusic) {
       handleMusicRestart(false)
     } else {
@@ -3565,77 +3458,6 @@ function App() {
     setExploreMenuReturnVisible(false)
   }
 
-  function clearExploreIdleFocus() {
-    exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
-    exploreIdleFocusTimeoutRefs.current = []
-    clearExploreIdleFocusResume()
-    exploreIdleFocusTriggeredRef.current = false
-    setExploreIdleFocusActive(false)
-    setExploreIdleFocusVisible(false)
-  }
-
-  function clearExploreIdleFocusResume() {
-    if (exploreIdleFocusResumeTimeoutRef.current !== null) {
-      window.clearTimeout(exploreIdleFocusResumeTimeoutRef.current)
-      exploreIdleFocusResumeTimeoutRef.current = null
-    }
-    exploreIdleFocusResumeDirectionRef.current = null
-    exploreIdleFocusResumeHeldRef.current = false
-  }
-
-  function resetExploreIdleFocusTracking() {
-    exploreSettledAtRef.current = 0
-    exploreIdleFocusTriggeredRef.current = false
-    clearExploreIdleFocus()
-  }
-
-  function triggerExploreIdleFocus() {
-    // Wake is disabled for now while Shuffle infocard behavior is being tuned.
-    return
-  }
-
-  function startExploreIdleFocusReturn(direction: -1 | 1) {
-    clearExploreIdleFocusResume()
-    exploreIdleFocusResumeDirectionRef.current = direction
-    exploreIdleFocusResumeHeldRef.current = true
-    setGameHudScreenWithHomeGrace('explore')
-    setExploreIdleFocusActive(false)
-    setMessage(direction > 0 ? 'Shuffle waking forward' : 'Shuffle waking back')
-    exploreIdleFocusResumeTimeoutRef.current = window.setTimeout(() => {
-      exploreIdleFocusResumeTimeoutRef.current = null
-      const resumeDirection = exploreIdleFocusResumeDirectionRef.current
-      if (!resumeDirection) {
-        return
-      }
-      const wasHeld = exploreIdleFocusResumeHeldRef.current
-      exploreIdleFocusResumeDirectionRef.current = null
-      exploreIdleFocusResumeHeldRef.current = false
-      setExploreIdleFocusVisible(false)
-      exploreIdleFocusTriggeredRef.current = false
-      exploreHasInteractedRef.current = false
-      exploreSettledAtRef.current = 0
-      if (wasHeld) {
-        startExploreControl(resumeDirection, true)
-      } else {
-        nudgeExploreFromRest(resumeDirection)
-      }
-    }, exploreIdleFocusResumeDelayMs)
-  }
-
-  function wakeExploreIdleFocusReturn() {
-    const directionBeforeWake = exploreIdleFocusResumeDirectionRef.current ?? lastShuffleDirectionRef.current ?? -1
-    const wakeDirection = (directionBeforeWake > 0 ? -1 : 1) as -1 | 1
-    clearExploreIdleFocusResume()
-    playHudSfx('mode')
-    setGameHudScreenWithHomeGrace('explore')
-    setExploreIdleFocusActive(false)
-    setExploreIdleFocusVisible(false)
-    exploreIdleFocusTriggeredRef.current = false
-    exploreHasInteractedRef.current = false
-    exploreSettledAtRef.current = 0
-    nudgeExploreFromRest(wakeDirection)
-  }
-
   function returnToGameMenu(message = 'Game menu') {
     playHudSfx('home')
     clearGameMenuReturnTransition()
@@ -3734,7 +3556,7 @@ function App() {
         })
         randomizeHudHoldPulse('loop')
         setMessage(direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
-      }, exploreIdleFocusResumeDelayMs)
+      }, gameFocusResumeDelayMs)
       return
     }
     setPlayPaused(false)
@@ -3754,14 +3576,9 @@ function App() {
     clearDriftDescriptionAutomation()
     clearLoopControl()
     clearJourneyEndpointWait(1)
-    clearExploreIdleFocus()
     exploreHasInteractedRef.current = false
-    exploreSettledAtRef.current = 0
-    exploreIdleFocusTriggeredRef.current = false
     stopForwardControl(false)
     stopExploreControl(undefined, false)
-    stopExploreFinish()
-    setExploreSongEnded(false)
     gameModeRef.current = 'journey'
     setGameMode('journey')
     setGameScreenWithHomeGrace('menu')
@@ -3872,20 +3689,12 @@ function App() {
     setMessage('Drift released: moth drifting')
   }
 
-  function startExploreControl(direction: -1 | 1, fromIdleFocusReturn = false) {
+  function startExploreControl(direction: -1 | 1) {
     if (gameMode !== 'explore') {
       return
     }
     if (gameScreen !== 'explore') {
       setGameScreenWithHomeGrace('explore')
-    }
-    if (exploreSongEnded || exploreFinishRef.current.active) {
-      setMessage('Shuffle song ended: controls locked')
-      return
-    }
-    if (!fromIdleFocusReturn && exploreIdleFocusTriggeredRef.current) {
-      startExploreIdleFocusReturn(direction)
-      return
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
       setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
@@ -3899,12 +3708,6 @@ function App() {
     playHudSfx('hold')
     exploreHasInteractedRef.current = true
     lastShuffleDirectionRef.current = direction
-    if (fromIdleFocusReturn) {
-      exploreSettledAtRef.current = 0
-      exploreIdleFocusTriggeredRef.current = false
-    } else {
-      resetExploreIdleFocusTracking()
-    }
     exploreControlRef.current = {
       direction,
       startedAt: performance.now(),
@@ -3921,7 +3724,7 @@ function App() {
   }
 
   function nudgeExploreFromRest(direction: -1 | 1) {
-    if (gameModeRef.current !== 'explore' || exploreSongEnded || exploreFinishRef.current.active) {
+    if (gameModeRef.current !== 'explore') {
       return
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
@@ -3950,10 +3753,6 @@ function App() {
   }
 
   function stopExploreControl(direction?: -1 | 1, useReleaseCarry = true) {
-    if (direction && exploreIdleFocusResumeDirectionRef.current === direction) {
-      exploreIdleFocusResumeHeldRef.current = false
-      return
-    }
     if (direction && exploreControlRef.current.direction !== direction) {
       return
     }
@@ -3983,69 +3782,6 @@ function App() {
     }
     setExploreDirection(0)
     setMessage(releaseCarryMs > 0 ? 'Shuffle released: gentle push' : 'Shuffle: drifting to a stop')
-  }
-
-  function stopExploreFinish() {
-    if (!exploreFinishRef.current.active) {
-      return
-    }
-    exploreFinishRef.current = stoppedExploreFinish()
-    setExploreFinishing(false)
-    exploreSettledAtRef.current = 0
-  }
-
-  function beginExploreSongFinish() {
-    if (gameModeRef.current !== 'explore') {
-      return
-    }
-    const now = performance.now()
-    const current = playProgressRef.current
-    const control = exploreControlRef.current
-    const hasExploreMotion = control.direction !== 0
-      || control.releaseCarryUntil > now
-      || control.idlePushUntil > now
-      || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
-    if (!hasExploreMotion) {
-      stopExploreControl(undefined, false)
-      stopExploreFinish()
-      mothMotionRef.current.velocity = 0
-      mothMotionRef.current.trailVelocity = 0
-      setExploreSongEnded(true)
-      updateGameplay({ musicEnabled: false }, 'Shuffle song ended', false)
-      setMessage('Shuffle song ended: moth resting')
-      return
-    }
-    const direction: -1 | 1 = control.direction !== 0
-      ? control.direction
-      : control.releaseDirection !== 0
-        ? control.releaseDirection
-        : mothMotionRef.current.velocity < -mothStoppedVelocityThreshold
-          ? -1
-          : 1
-    const targetProgress = findClosestRoutePointProgressInDirection(current, direction)
-    stopExploreControl(undefined, false)
-    exploreFinishRef.current = {
-      active: true,
-      direction,
-      targetProgress,
-      startedAt: now,
-    }
-    setExploreFinishing(true)
-    setExploreSongEnded(true)
-    updateGameplay({ musicEnabled: false }, 'Shuffle song ended', false)
-    setMessage(direction > 0 ? 'Shuffle song ended: settling forward' : 'Shuffle song ended: settling back')
-  }
-
-  function findClosestRoutePointProgressInDirection(current: number, direction: -1 | 1) {
-    const pointProgresses = projectRef.current.route
-      .map((point) => nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, point))
-      .filter((progress) => direction > 0 ? progress > current + 0.001 : progress < current - 0.001)
-    if (pointProgresses.length === 0) {
-      return direction > 0 ? 1 : 0
-    }
-    return pointProgresses.reduce((closest, progress) => (
-      Math.abs(progress - current) < Math.abs(closest - current) ? progress : closest
-    ), pointProgresses[0])
   }
 
   function startEditMothScrub(direction: -1 | 1, shiftKey = false) {
@@ -4115,7 +3851,7 @@ function App() {
     }
 
     if (gameScreen === 'menu') {
-      enterJourneyMode('Explore started')
+      enterExploreMode()
       return null
     }
 
@@ -4160,7 +3896,7 @@ function App() {
 
     if (gameScreen === 'menu') {
       gameCanvasGestureRef.current = { pointerId: event.pointerId, action: null }
-      enterJourneyMode('Explore started')
+      enterExploreMode()
       return true
     }
 
@@ -5083,7 +4819,7 @@ function App() {
       return (
         <div key="game-hud-menu" className={gameHudLayerClass(menuModeQuiet ? 'first-menu-glow' : undefined)} style={gameHudStyle} aria-label="Game menu controls">
           <button
-            className={`game-hud-button icon-only${menuModeQuiet ? ' visual-disabled' : hudTapGlowClass('loop')}`}
+            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('loop')}`}
             type="button"
             aria-label="Loop"
             style={hudButtonStyle('loop')}
@@ -5091,16 +4827,9 @@ function App() {
           >
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
+          <div className="game-hud-placeholder span-2" aria-hidden="true" />
           <button
-            className={`game-hud-button span-2 primary enhanced-glow ambient-pulse${hudTapGlowClass('explore')}`}
-            type="button"
-            style={hudButtonStyle('explore')}
-            onClick={() => enterJourneyMode('Explore started')}
-          >
-            Explore
-          </button>
-          <button
-            className={`game-hud-button icon-only${menuModeQuiet ? ' visual-disabled' : hudTapGlowClass('shuffle')}`}
+            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('shuffle')}`}
             type="button"
             aria-label="Shuffle"
             style={hudButtonStyle('shuffle')}
@@ -5112,19 +4841,15 @@ function App() {
       )
     }
 
-    if (gameHudScreen === 'explore' || gameHudScreen === 'shuffle-wake') {
-      const showWakeButton = gameHudScreen === 'shuffle-wake'
-      const shuffleSongEndedInvite = !shuffleLoopActive && !showWakeButton && (exploreSongEnded || exploreFinishRef.current.active)
+    if (gameHudScreen === 'explore') {
       const shuffleLoopButtonDisabled = false
-      const shuffleDirectionPressed = !showWakeButton && exploreDirection !== 0 && !shuffleLoopActive
+      const shuffleDirectionPressed = exploreDirection !== 0 && !shuffleLoopActive
       const oppositeBackwardDim = shuffleDirectionPressed && exploreDirection > 0
       const oppositeForwardDim = shuffleDirectionPressed && exploreDirection < 0
       const shuffleLoopButtonClass = [
         'game-hud-button icon-only',
-        showWakeButton && !shuffleLoopActive ? 'middle-control' : '',
-        shuffleSongEndedInvite ? 'ambient-pulse' : '',
         shuffleLoopActive ? 'active hold-pulse' : '',
-        !shuffleLoopActive && !shuffleSongEndedInvite ? 'visual-disabled' : '',
+        !shuffleLoopActive ? 'visual-disabled' : '',
         shuffleLoopActive ? hudTapGlowClass('shuffle-loop') : '',
       ].filter(Boolean).join(' ')
       const shuffleLoopButtonStyle = shuffleLoopActive
@@ -5139,7 +4864,6 @@ function App() {
       const shuffleDirectionVisualClass = shuffleLoopActive ? ' visual-disabled' : ''
       const backwardActive = exploreDirection === -1 && !shuffleLoopActive
       const forwardActive = exploreDirection === 1 && !shuffleLoopActive
-      const wakeDisabled = shuffleDescriptionOpen
       return (
         <div key="game-hud-shuffle" className={gameHudLayerClass(shuffleLoopActive ? 'shuffle-loop-active' : '')} style={gameHudStyle} aria-label="Shuffle controls">
           <button
@@ -5153,53 +4877,33 @@ function App() {
           >
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
-          {showWakeButton ? (
-            <button
-              className={`game-hud-button span-2 primary${wakeDisabled ? ' visual-disabled' : ' ambient-pulse'}${wakeDisabled ? '' : hudTapGlowClass('wake')}`}
-              type="button"
-              disabled={wakeDisabled}
-              style={hudButtonPairStyle(['backward', 'forward'])}
-              onClick={() => {
-                if (wakeDisabled) {
-                  return
-                }
-                triggerHudTapGlow('wake')
-                wakeExploreIdleFocusReturn()
-              }}
-            >
-              Wake
-            </button>
-          ) : (
-            <>
-              <button
-                className={`${backwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
-                type="button"
-                aria-label="Move backward"
-                disabled={exploreBackDisabled}
-                style={backwardActive ? { ...hudButtonStyle('backward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'backward') } : hudButtonStyle('backward')}
-                onPointerDown={(event) => handleExplorePointerDown(-1, event)}
-                onPointerUp={(event) => handleExplorePointerEnd(-1, event)}
-                onPointerCancel={(event) => handleExplorePointerEnd(-1, event)}
-                onContextMenu={(event) => event.preventDefault()}
-              >
-                <ChevronsLeft size={iconSize} strokeWidth={iconStrokeWidth} />
-              </button>
-              <button
-                className={`${forwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
-                type="button"
-                aria-label="Move forward"
-                disabled={exploreForwardDisabled}
-                style={forwardActive ? { ...hudButtonStyle('forward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'forward') } : hudButtonStyle('forward')}
-                onPointerDown={(event) => handleExplorePointerDown(1, event)}
-                onPointerUp={(event) => handleExplorePointerEnd(1, event)}
-                onPointerCancel={(event) => handleExplorePointerEnd(1, event)}
-                onContextMenu={(event) => event.preventDefault()}
-              >
-                <ChevronsRight size={iconSize} strokeWidth={iconStrokeWidth} />
-              </button>
-            </>
-          )}
-          {backButton(shuffleSongEndedInvite ? ' ambient-pulse' : '', shuffleDirectionPressed, !showWakeButton && !shuffleSongEndedInvite)}
+          <button
+            className={`${backwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeBackwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('backward')}`}
+            type="button"
+            aria-label="Move backward"
+            disabled={exploreBackDisabled}
+            style={backwardActive ? { ...hudButtonStyle('backward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'backward') } : hudButtonStyle('backward')}
+            onPointerDown={(event) => handleExplorePointerDown(-1, event)}
+            onPointerUp={(event) => handleExplorePointerEnd(-1, event)}
+            onPointerCancel={(event) => handleExplorePointerEnd(-1, event)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <ChevronsLeft size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+          <button
+            className={`${forwardActive ? 'game-hud-button icon-only middle-control enhanced-glow active hold-pulse' : 'game-hud-button icon-only middle-control enhanced-glow ambient-pulse'}${shuffleDirectionVisualClass}${oppositeForwardDim ? ' long-hold-other' : ''}${hudTapGlowClass('forward')}`}
+            type="button"
+            aria-label="Move forward"
+            disabled={exploreForwardDisabled}
+            style={forwardActive ? { ...hudButtonStyle('forward'), ...hudHoldPulseStyle(exploreControlRef.current.startedAt, 'forward') } : hudButtonStyle('forward')}
+            onPointerDown={(event) => handleExplorePointerDown(1, event)}
+            onPointerUp={(event) => handleExplorePointerEnd(1, event)}
+            onPointerCancel={(event) => handleExplorePointerEnd(1, event)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <ChevronsRight size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+          {backButton('', shuffleDirectionPressed, true)}
         </div>
       )
     }
@@ -6779,7 +6483,7 @@ function App() {
   }
 
   function shouldManualLoopMusic() {
-    return gameModeRef.current === 'loop' || shuffleLoopControlRef.current.active
+    return gameModeRef.current === 'explore' || gameModeRef.current === 'loop' || shuffleLoopControlRef.current.active
   }
 
   function handleMusicPlay(history = true) {
