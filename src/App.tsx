@@ -165,7 +165,7 @@ type ForwardControlState = {
   idlePushUntil: number
   idlePushCount: number
 }
-type GameMode = 'journey' | 'explore' | 'loop'
+type GameMode = 'journey' | 'discover' | 'shuffle' | 'loop'
 type GameScreen = 'menu' | GameMode
 type GameHudScreen = GameScreen
 type ExploreControlState = {
@@ -179,6 +179,36 @@ type ExploreControlState = {
   idlePushStartedAt: number
   idlePushUntil: number
   idlePushCount: number
+}
+type FreeExploreInputState = {
+  up: boolean
+  down: boolean
+  left: boolean
+  right: boolean
+}
+type FreeExploreState = {
+  position: Point
+  velocity: Point
+  input: FreeExploreInputState
+  pointerDirection: Point | null
+  pointerStartedAt: number
+  direction: Point
+  releaseDirection: Point
+  startedAt: number
+  releaseStartedAt: number
+  releaseCarryUntil: number
+  idleSince: number
+  idlePushStartedAt: number
+  idlePushUntil: number
+  idlePushCount: number
+  debugFast: boolean
+}
+type FreeExploreRouteLight = {
+  assetId: string
+  id: string
+  itemId: string
+  layerId: LayerId
+  point: Point
 }
 type LoopControlState = {
   direction: -1 | 1
@@ -208,8 +238,10 @@ type EditScrubState = {
 }
 type GameCanvasGestureState = {
   pointerId: number
-  action: 'drift' | 'shuffle-direction' | null
+  action: 'drift' | 'free-direction' | 'shuffle-direction' | null
   direction?: -1 | 1
+  start?: Point
+  startedNearMoth?: boolean
 }
 type ShuffleInfoEntry = {
   item: EditorItem
@@ -403,6 +435,14 @@ const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
 const loopInitialPulseDelayMs = 2500
 const exploreRelocationDelayMs = 460
+const freeExploreDebugSpeedMultiplier = 6
+const freeExploreLightCollectRadius = 165
+const freeExploreShuffleDiscoverRadius = 235
+const freeExploreRevealBaseRadius = 360
+const freeExploreGlowTapRadiusMin = 76
+const freeExploreGlowTapRadiusMax = 154
+const freeExploreTrailMaxPoints = 120
+const freeExploreTrailMinDistance = 8
 const gameFocusResumeDelayMs = 2100
 const gameMenuReturnDelayMs = 1050
 const gameHudHomeGraceMs = 5000
@@ -549,6 +589,55 @@ function stoppedExploreControl(): ExploreControlState {
     idlePushUntil: 0,
     idlePushCount: 0,
   }
+}
+
+function initialFreeExplorePosition(project: EditorProject): Point {
+  const routeData = buildRouteSampleData(project.route, project.routeRenderMode, 72)
+  return sampleRouteData(routeData, 0)
+}
+
+function normalizeVector(vector: Point): Point {
+  const length = Math.hypot(vector.x, vector.y)
+  return length > 0.001 ? { x: vector.x / length, y: vector.y / length } : { x: 0, y: 0 }
+}
+
+function vectorDot(a: Point, b: Point) {
+  return a.x * b.x + a.y * b.y
+}
+
+function stoppedFreeExplore(project: EditorProject): FreeExploreState {
+  return {
+    position: initialFreeExplorePosition(project),
+    velocity: { x: 0, y: 0 },
+    direction: { x: 1, y: 0 },
+    pointerDirection: null,
+    pointerStartedAt: 0,
+    releaseDirection: { x: 0, y: 0 },
+    startedAt: 0,
+    releaseStartedAt: 0,
+    releaseCarryUntil: 0,
+    idleSince: 0,
+    idlePushStartedAt: 0,
+    idlePushUntil: 0,
+    idlePushCount: 0,
+    input: {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+    },
+    debugFast: false,
+  }
+}
+
+function buildFreeExploreRouteLights(project: EditorProject): FreeExploreRouteLight[] {
+  return collectFreeExploreShuffleItems(project).map((item) => ({
+    assetId: item.assetId,
+    id: `asset-light-${item.id}`,
+    itemId: item.id,
+    layerId: item.layerId,
+    point: { x: item.x, y: item.y },
+  }))
 }
 
 function stoppedLoopControl(direction: -1 | 1 = 1): LoopControlState {
@@ -828,6 +917,12 @@ function App() {
   const [message, setMessage] = useState(publicGameBuild ? 'Game menu' : 'Sandbox A loaded')
   const [jsonDraft, setJsonDraft] = useState('')
   const [playProgress, setPlayProgress] = useState(publicGameBuild ? 0 : 0.06)
+  const [freeExplorePosition, setFreeExplorePosition] = useState<Point>(() => initialFreeExplorePosition(project))
+  const [freeExploreCameraCenter, setFreeExploreCameraCenter] = useState<Point>(() => initialFreeExplorePosition(project))
+  const [freeExploreDebugFast, setFreeExploreDebugFast] = useState(false)
+  const [collectedLightItemIds, setCollectedLightItemIds] = useState<string[]>([])
+  const [discoveredShuffleItemIds, setDiscoveredShuffleItemIds] = useState<string[]>([])
+  const [activeShuffleItemId, setActiveShuffleItemId] = useState<string | null>(null)
   const [playPaused, setPlayPaused] = useState(false)
   const [gameMode, setGameMode] = useState<GameMode>('journey')
   const [gameScreen, setGameScreen] = useState<GameScreen>('menu')
@@ -899,6 +994,12 @@ function App() {
   const selectedItemIdsRef = useRef(selectedItemIds)
   const selectedRoutePointIdsRef = useRef(selectedRoutePointIds)
   const playProgressRef = useRef(playProgress)
+  const freeExploreRef = useRef<FreeExploreState>(stoppedFreeExplore(project))
+  const freeExploreCameraCenterRef = useRef<Point>(initialFreeExplorePosition(project))
+  const freeExploreTrailPointsRef = useRef<Point[]>([initialFreeExplorePosition(project)])
+  const collectedLightItemIdsRef = useRef<string[]>([])
+  const discoveredShuffleItemIdsRef = useRef<string[]>([])
+  const activeShuffleItemIdRef = useRef<string | null>(null)
   const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
   const forwardControlRef = useRef<ForwardControlState>(stoppedForwardControl())
   const exploreControlRef = useRef<ExploreControlState>(stoppedExploreControl())
@@ -1075,6 +1176,26 @@ function App() {
   }, [playProgress])
 
   useEffect(() => {
+    freeExploreRef.current.position = freeExplorePosition
+  }, [freeExplorePosition])
+
+  useEffect(() => {
+    freeExploreRef.current.debugFast = freeExploreDebugFast
+  }, [freeExploreDebugFast])
+
+  useEffect(() => {
+    collectedLightItemIdsRef.current = collectedLightItemIds
+  }, [collectedLightItemIds])
+
+  useEffect(() => {
+    discoveredShuffleItemIdsRef.current = discoveredShuffleItemIds
+  }, [discoveredShuffleItemIds])
+
+  useEffect(() => {
+    activeShuffleItemIdRef.current = activeShuffleItemId
+  }, [activeShuffleItemId])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
@@ -1087,6 +1208,26 @@ function App() {
         if (event.key === 'Escape') {
           ;(target as HTMLElement).blur()
         }
+        return
+      }
+      if (
+        appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+        && isFreeExploreKey(event.key)
+      ) {
+        event.preventDefault()
+        startFreeExploreKey(event.key)
+        return
+      }
+      if (
+        appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+        && event.key === 'Tab'
+      ) {
+        event.preventDefault()
+        toggleFreeExploreDebugFast()
         return
       }
       if (event.key === 'Escape') {
@@ -1151,7 +1292,7 @@ function App() {
       }
       if (appMode === 'play' && gameScreen !== 'menu' && event.key === 'ArrowRight') {
         event.preventDefault()
-        if (gameMode === 'explore') {
+        if (gameMode === 'shuffle') {
           if (!event.repeat || exploreControlRef.current.direction !== 1) {
             startExploreControl(1)
           }
@@ -1161,7 +1302,7 @@ function App() {
       }
       if (appMode === 'play' && gameScreen !== 'menu' && event.key === 'ArrowLeft') {
         event.preventDefault()
-        if (gameMode === 'explore') {
+        if (gameMode === 'shuffle') {
           if (!event.repeat || exploreControlRef.current.direction !== -1) {
             startExploreControl(-1)
           }
@@ -1171,6 +1312,16 @@ function App() {
       }
     }
     const handleKeyUp = (event: KeyboardEvent) => {
+      if (
+        appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+        && isFreeExploreKey(event.key)
+      ) {
+        event.preventDefault()
+        stopFreeExploreKey(event.key)
+        return
+      }
       const isSpaceKey = event.key === ' ' || event.code === 'Space'
       if (isSpaceKey && appMode === 'play' && workspaceMode === 'game') {
         event.preventDefault()
@@ -1190,7 +1341,7 @@ function App() {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
         return
       }
-      if (gameMode === 'explore' && gameScreen !== 'menu') {
+      if (gameMode === 'shuffle' && gameScreen !== 'menu') {
         stopExploreControl(event.key === 'ArrowRight' ? 1 : -1)
         return
       }
@@ -1206,6 +1357,7 @@ function App() {
       }
       stopForwardControl(false)
       stopExploreControl(undefined, false)
+      resetFreeExploreInput()
       stopEditMothScrub()
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -1734,7 +1886,138 @@ function App() {
           mothMotionRef.current.trailVelocity = 0
         }
         shouldAnimate = true
-      } else if (appMode === 'play' && !playPaused && gameMode === 'explore') {
+      } else if (appMode === 'play' && !playPaused && gameMode === 'discover') {
+        const state = freeExploreRef.current
+        const inputX = (state.input.right ? 1 : 0) - (state.input.left ? 1 : 0)
+        const inputY = (state.input.down ? 1 : 0) - (state.input.up ? 1 : 0)
+        const keyboardDirection = normalizeVector({ x: inputX, y: inputY })
+        const requestedDirection = state.pointerDirection ?? keyboardDirection
+        const requestActive = Math.hypot(requestedDirection.x, requestedDirection.y) > 0.001
+        let releaseCarryActive = !requestActive
+          && state.releaseCarryUntil > time
+          && Math.hypot(state.releaseDirection.x, state.releaseDirection.y) > 0.001
+        let idlePushActive = !requestActive
+          && !releaseCarryActive
+          && state.idlePushUntil > time
+          && Math.hypot(state.releaseDirection.x || state.direction.x, state.releaseDirection.y || state.direction.y) > 0.001
+        if (!requestActive && !releaseCarryActive && state.idlePushUntil > 0 && state.idlePushUntil <= time) {
+          freeExploreRef.current = {
+            ...state,
+            idleSince: state.idlePushUntil,
+            idlePushStartedAt: 0,
+            idlePushUntil: 0,
+          }
+          idlePushActive = false
+        }
+        const idleState = freeExploreRef.current
+        if (
+          !requestActive
+          && !releaseCarryActive
+          && !idlePushActive
+          && idleState.idleSince > 0
+          && time - idleState.idleSince >= idleForwardPushWaitMs(idleState.idlePushCount)
+        ) {
+          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+          const durationMs = idleForwardPushDurationMs(basePushMs, idleState.idlePushCount)
+          freeExploreRef.current = {
+            ...freeExploreRef.current,
+            idlePushStartedAt: time,
+            idlePushUntil: time + durationMs,
+            idlePushCount: idleState.idlePushCount + 1,
+          }
+          idlePushActive = durationMs > 0
+          setMessage(`Discover gentle push ${freeExploreRef.current.idlePushCount}: ${(durationMs / 1000).toFixed(1)}s`)
+        }
+        const latestState = freeExploreRef.current
+        releaseCarryActive = !requestActive
+          && latestState.releaseCarryUntil > time
+          && Math.hypot(latestState.releaseDirection.x, latestState.releaseDirection.y) > 0.001
+        idlePushActive = !requestActive
+          && !releaseCarryActive
+          && latestState.idlePushUntil > time
+        const carriedDirection = normalizeVector(
+          Math.hypot(latestState.releaseDirection.x, latestState.releaseDirection.y) > 0.001
+            ? latestState.releaseDirection
+            : latestState.direction,
+        )
+        const activeDirection = requestActive
+          ? requestedDirection
+          : (releaseCarryActive || idlePushActive)
+            ? carriedDirection
+            : { x: 0, y: 0 }
+        const movementRequested = Math.hypot(activeDirection.x, activeDirection.y) > 0.001
+        const heldMs = requestActive
+          ? time - latestState.startedAt
+          : releaseCarryActive
+            ? time - latestState.releaseStartedAt
+            : idlePushActive
+              ? time - latestState.idlePushStartedAt
+              : 0
+        const pushScale = requestActive
+          ? 1
+          : projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
+        const routeLength = Math.max(1, routeSampleDataRef.current.totalLength)
+        targetVelocity = movementRequested
+          ? Math.abs(exploreTargetVelocity(1, 0.5, heldMs, projectRef.current.gameplay))
+              * pushScale
+              * (latestState.debugFast ? freeExploreDebugSpeedMultiplier : 1)
+          : 0
+
+        const currentVelocityDirection = normalizeVector(latestState.velocity)
+        const reversingDirection = movementRequested
+          && Math.hypot(currentVelocityDirection.x, currentVelocityDirection.y) > 0.001
+          && vectorDot(activeDirection, currentVelocityDirection) < -0.18
+          && Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold * 6
+        if (reversingDirection) {
+          targetVelocity = 0
+        }
+        const response = reversingDirection ? 1.45 : movementRequested && targetVelocity !== 0 ? 2.8 : 1.75
+        mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
+        const travelDirection = movementRequested && !reversingDirection
+          ? activeDirection
+          : Math.hypot(currentVelocityDirection.x, currentVelocityDirection.y) > 0.001
+            ? currentVelocityDirection
+            : latestState.direction
+        const worldSpeed = mothMotionRef.current.velocity * routeLength
+        let nextPosition = {
+          x: clamp(latestState.position.x + travelDirection.x * worldSpeed * delta, 0, projectRef.current.world.width),
+          y: clamp(latestState.position.y + travelDirection.y * worldSpeed * delta, 0, projectRef.current.world.height),
+        }
+        if (nextPosition.x <= 0 || nextPosition.x >= projectRef.current.world.width) {
+          mothMotionRef.current.velocity = 0
+        }
+        if (nextPosition.y <= 0 || nextPosition.y >= projectRef.current.world.height) {
+          mothMotionRef.current.velocity = 0
+        }
+        if (!movementRequested && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold) {
+          mothMotionRef.current.velocity = 0
+          latestState.velocity = { x: 0, y: 0 }
+        } else {
+          latestState.velocity = {
+            x: travelDirection.x * mothMotionRef.current.velocity * routeLength,
+            y: travelDirection.y * mothMotionRef.current.velocity * routeLength,
+          }
+        }
+        if (movementRequested && !reversingDirection) {
+          latestState.direction = activeDirection
+        }
+        latestState.position = nextPosition
+        appendFreeExploreTrailPoint(nextPosition)
+        const cameraEase = 1 - Math.exp(-delta * 1.8)
+        const nextCameraCenter = {
+          x: freeExploreCameraCenterRef.current.x + (nextPosition.x - freeExploreCameraCenterRef.current.x) * cameraEase,
+          y: freeExploreCameraCenterRef.current.y + (nextPosition.y - freeExploreCameraCenterRef.current.y) * cameraEase,
+        }
+        freeExploreCameraCenterRef.current = nextCameraCenter
+        const nearestProgress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, nextPosition)
+        if (Math.abs(nearestProgress - playProgressRef.current) > 0.0004) {
+          playProgressRef.current = nearestProgress
+          setPlayProgress(nearestProgress)
+        }
+        setFreeExplorePosition(nextPosition)
+        setFreeExploreCameraCenter(nextCameraCenter)
+        syncFreeExploreDiscovery(nextPosition)
+      } else if (appMode === 'play' && !playPaused && gameMode === 'shuffle') {
         const current = playProgressRef.current
         if (shuffleLoopControl.active) {
           const hitEndpointBeforePulse = (current >= 1 && shuffleLoopControl.direction > 0) || (current <= 0 && shuffleLoopControl.direction < 0)
@@ -1938,7 +2221,7 @@ function App() {
       }
       mothMotionRef.current.trailVelocity += (mothMotionRef.current.velocity - mothMotionRef.current.trailVelocity) * (1 - Math.exp(-delta * 1.25))
       const loopPulseActive = gameMode === 'loop' && appMode === 'play' && !playPaused && loopControlRef.current.pulseUntil > time
-      const shuffleLoopPulseActive = gameMode === 'explore' && appMode === 'play' && !playPaused && shuffleLoopControlRef.current.active && shuffleLoopControlRef.current.pulseUntil > time
+      const shuffleLoopPulseActive = gameMode === 'shuffle' && appMode === 'play' && !playPaused && shuffleLoopControlRef.current.active && shuffleLoopControlRef.current.pulseUntil > time
       const motionActive = editScrub.pressed
         || forwardControl.pressed
         || exploreControl.direction !== 0
@@ -1983,13 +2266,20 @@ function App() {
       }
       return project.camera
     }
+    if (gameMode === 'discover') {
+      return {
+        x: freeExploreCameraCenter.x,
+        y: freeExploreCameraCenter.y,
+        zoom: Math.max(project.camera.zoom, followZoom),
+      }
+    }
     const moth = sampleRouteData(routeSampleData, playProgress)
     return {
       x: moth.x,
       y: moth.y,
       zoom: Math.max(project.camera.zoom, followZoom),
     }
-  }, [appMode, editScrubDirection, playProgress, project, routeSampleData, zoomFromMothView])
+  }, [appMode, editScrubDirection, freeExploreCameraCenter, gameMode, playProgress, project, routeSampleData, zoomFromMothView])
 
   const canvasCamera = useMemo(
     () => cameraForCanvasView(renderCamera, project),
@@ -1999,6 +2289,36 @@ function App() {
     () => buildRenderItemBuckets(project),
     [project],
   )
+  const freeExploreActive = appMode === 'play' && gameMode === 'discover' && gameScreen === 'discover'
+  const freeExploreRouteLights = useMemo(
+    () => buildFreeExploreRouteLights(project),
+    [project],
+  )
+  const collectedLightIdSet = useMemo(
+    () => new Set(collectedLightItemIds),
+    [collectedLightItemIds],
+  )
+  const collectedRouteLightPoints = useMemo(
+    () => freeExploreRouteLights
+      .filter((light) => collectedLightIdSet.has(light.id))
+      .map((light) => ({ assetId: light.assetId, itemId: light.itemId, layerId: light.layerId, point: light.point })),
+    [collectedLightIdSet, freeExploreRouteLights],
+  )
+  const freeExploreRevealRadius = freeExploreRevealBaseRadius
+  const freeExploreDiscoveryRender = freeExploreActive
+    ? {
+        activeShuffleItemIds: activeShuffleItemId ? [activeShuffleItemId] : [],
+        collectedLightItemIds,
+        discoveredShuffleItemIds,
+        lightItemIds: [],
+        revealRadius: freeExploreRevealRadius,
+        revealPoints: collectedRouteLightPoints,
+        routeLights: freeExploreRouteLights.map((light) => ({
+          ...light,
+          collected: collectedLightIdSet.has(light.id),
+        })),
+      }
+    : undefined
   const publicGameMothLoadFailed = publicGameBuild && failedImageSourcesRef.current.has(mothAsset.src)
   const publicGameMothReady = !publicGameBuild || images.has(mothAsset.src) || publicGameMothLoadFailed
   const gameFocusVisible = gameScreen === 'menu' || menuFocusDissolving || exploreMenuReturnVisible || loopFocusVisible
@@ -2026,6 +2346,10 @@ function App() {
       mothMotionVelocity: mothMotionRef.current.velocity,
       mothTrailVelocity: mothMotionRef.current.trailVelocity,
       mothForwardActive: forwardPressed || exploreDirection === 1,
+      mothWorldPoint: freeExploreActive ? freeExplorePosition : undefined,
+      mothVelocityVector: freeExploreActive ? freeExploreRef.current.velocity : undefined,
+      mothTrailPoints: freeExploreActive ? freeExploreTrailPointsRef.current : undefined,
+      exploreDiscovery: freeExploreDiscoveryRender,
       hideRoutePath: workspaceMode === 'game' || appMode === 'play',
       hideWorldFrame: workspaceMode === 'game' || appMode === 'play',
       suppressMissingArtwork: publicGameBuild,
@@ -2051,6 +2375,10 @@ function App() {
           mothMotionVelocity: mothMotionRef.current.velocity,
           mothTrailVelocity: mothMotionRef.current.trailVelocity,
           mothForwardActive: forwardPressed || exploreDirection === 1,
+          mothWorldPoint: freeExploreActive ? freeExplorePosition : undefined,
+          mothVelocityVector: freeExploreActive ? freeExploreRef.current.velocity : undefined,
+          mothTrailPoints: freeExploreActive ? freeExploreTrailPointsRef.current : undefined,
+          exploreDiscovery: freeExploreDiscoveryRender,
           hideRoutePath: true,
           hideWorldFrame: true,
           suppressMissingArtwork: publicGameBuild,
@@ -2066,7 +2394,7 @@ function App() {
         menuMothContext.clearRect(0, 0, viewport.width, viewport.height)
       }
     }
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothLoadFailed, publicGameMothReady, publicGameScale, renderItemBuckets, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, exploreDirection, forwardPressed, freeExploreActive, freeExploreDiscoveryRender, freeExplorePosition, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothLoadFailed, publicGameMothReady, publicGameScale, renderItemBuckets, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -2190,7 +2518,7 @@ function App() {
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
   const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold || forwardPressed || exploreDirection !== 0 || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
-  const cameraExtensionVisible = project.gameplay.cameraExtensionEnabled !== false
+  const cameraExtensionVisible = project.gameplay.cameraExtensionEnabled !== false && !freeExploreActive
   const cameraExtensionBlurPaused = cameraExtensionMotionActive && !gameFocusActive
   const journeyGlideHidden = gameMode === 'journey' && journeyEndpointWaiting
   const journeyGlideDisabled = gameMode !== 'journey'
@@ -2198,8 +2526,8 @@ function App() {
     || (journeyDirection > 0 ? playProgress >= 1 : playProgress <= 0)
   const loopTurnAvailable = gameMode === 'loop'
     && loopControlRef.current.turnRestCount >= loopPulseWaitScheduleMs.length
-  const exploreBackDisabled = gameMode !== 'explore' || playProgress <= 0
-  const exploreForwardDisabled = gameMode !== 'explore' || playProgress >= 1
+  const exploreBackDisabled = gameMode !== 'shuffle' || playProgress <= 0
+  const exploreForwardDisabled = gameMode !== 'shuffle' || playProgress >= 1
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
@@ -2570,6 +2898,9 @@ function App() {
       mothFallbackExample,
     ]
   }, [defaultShuffleInfoEntries, shuffleInfoEntries])
+  const activeShuffleDescriptionExampleIndex = activeShuffleItemId
+    ? shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === activeShuffleItemId)
+    : -1
   const cameraExtensionInnerScale = clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
   const shuffleDescriptionInnerSize = gameSurfaceSize * cameraExtensionInnerScale
   const shuffleDescriptionInnerLeft = 2 + ((gameSurfaceSize - 4 - shuffleDescriptionInnerSize) / 2)
@@ -2607,10 +2938,15 @@ function App() {
   const showShuffleDescriptionPrototype = publicGameBuild
     && shuffleDescriptionEnabled
     && workspaceMode === 'game'
-    && gameMode === 'explore'
-    && gameHudScreen === 'explore'
+    && (
+      (gameMode === 'shuffle'
+        && gameHudScreen === 'shuffle'
+        && (shuffleDescriptionInitialRevealReady || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop))
+      || (gameMode === 'discover'
+        && gameHudScreen === 'discover'
+        && (activeShuffleDescriptionExampleIndex >= 0 || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop))
+    )
     && (!shuffleLoopActive || shuffleDescriptionDismissingToLoop)
-    && (shuffleDescriptionInitialRevealReady || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop)
     && shuffleDescriptionPrototypeExamples.length > 0
   const shuffleDescriptionHeldDirectionReady = exploreDirection !== 0
     && exploreControlRef.current.startedAt > 0
@@ -2753,7 +3089,11 @@ function App() {
       shuffleDescriptionPrototypeExamples.findIndex((example) => example.id !== moonMothShuffleDescriptionId),
     )
   const shuffleDescriptionRenderExampleIndex = !shuffleDescriptionOpen && !shuffleDescriptionDismissingToLoop
-    ? (shuffleDescriptionBoundaryEnabled && shuffleDescriptionInitialAttentionReady ? (shuffleDescriptionActiveBoundary?.exampleIndex ?? shuffleDescriptionClosedFallbackExampleIndex) : shuffleDescriptionClosedFallbackExampleIndex)
+    ? (gameMode === 'discover' && activeShuffleDescriptionExampleIndex >= 0
+        ? activeShuffleDescriptionExampleIndex
+        : shuffleDescriptionBoundaryEnabled && shuffleDescriptionInitialAttentionReady
+          ? (shuffleDescriptionActiveBoundary?.exampleIndex ?? shuffleDescriptionClosedFallbackExampleIndex)
+          : shuffleDescriptionClosedFallbackExampleIndex)
     : shuffleDescriptionActiveExampleIndex
   const shuffleDescriptionBaseExample = shuffleDescriptionPrototypeExamples[shuffleDescriptionRenderExampleIndex]
   const shuffleDescriptionActiveCards = shuffleDescriptionBaseExample?.cards ?? []
@@ -2963,7 +3303,7 @@ function App() {
     shuffleDescriptionOpenedAt,
   ])
   const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
-    if (screen !== 'explore') {
+    if (screen !== 'discover' && screen !== 'shuffle') {
       resetShuffleDescriptionCard()
     }
     setGameHudScreen(screen)
@@ -3113,7 +3453,7 @@ function App() {
         playPausedRef.current = false
         scheduleDriftDescriptionIdleTrigger()
       }
-      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'explore' ? 'Shuffle resumed' : 'Play resumed: hold Drift to move')
+      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'shuffle' ? 'Shuffle resumed' : gameMode === 'discover' ? 'Discover resumed' : 'Play resumed: hold Drift to move')
       return next
     })
   }
@@ -3164,7 +3504,74 @@ function App() {
     setMessage(message)
   }
 
-  function enterExploreMode(message = 'Shuffle mode: move freely along the path') {
+  function enterDiscoverMode(message = 'Discover mode: collect light and discover assets') {
+    clearDriftDescriptionAutomation()
+    playHudSfx('mode')
+    triggerHudTapGlow('explore')
+    clearFirstExploreAutoDrift()
+    clearGameMenuReturnTransition()
+    clearExploreRelocationTransition()
+    clearLoopFocus()
+    exploreHasInteractedRef.current = false
+    lastShuffleDirectionRef.current = -1
+    setExploreUnlocked(true)
+    clearLoopControl()
+    clearShuffleLoopPush()
+    clearJourneyEndpointWait(journeyDirectionRef.current)
+    stopForwardControl(false)
+    stopExploreControl(undefined, false)
+    resetFreeExploreInput()
+    const start = initialFreeExplorePosition(projectRef.current)
+    freeExploreRef.current = {
+      ...stoppedFreeExplore(projectRef.current),
+      position: start,
+      debugFast: false,
+    }
+    setFreeExploreDebugFast(false)
+    freeExploreCameraCenterRef.current = start
+    resetFreeExploreTrail(start)
+    setFreeExplorePosition(start)
+    setFreeExploreCameraCenter(start)
+    setCollectedLightItemIds([])
+    setDiscoveredShuffleItemIds([])
+    setActiveShuffleItemId(null)
+    collectedLightItemIdsRef.current = []
+    discoveredShuffleItemIdsRef.current = []
+    activeShuffleItemIdRef.current = null
+    const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, start)
+    playProgressRef.current = progress
+    setPlayProgress(progress)
+    mothMotionRef.current.velocity = 0
+    mothMotionRef.current.trailVelocity = 0
+    mothMotionRef.current.blurResumeAt = 0
+    triggeredTourCueIdsRef.current.clear()
+    tourHoldUntilRef.current = 0
+    resetShuffleDescriptionInitialReveal()
+    prepareShuffleDescriptionEntryCards()
+    const finishExploreEntry = () => {
+      startMenuFocusDissolve()
+      gameModeRef.current = 'discover'
+      setGameMode('discover')
+      setGameScreenWithHomeGrace('discover')
+      setAppMode('play')
+      setPlayPaused(false)
+      handleMusicRestart(false)
+      revealShuffleDescriptionInitialButton()
+      setMessage(message)
+    }
+    if (workspaceMode === 'game' && gameScreen === 'menu') {
+      setGameHudScreenWithHomeGrace('discover')
+      setMessage('Discover view shifting')
+      exploreRelocationTimeoutRef.current = window.setTimeout(() => {
+        exploreRelocationTimeoutRef.current = null
+        finishExploreEntry()
+      }, exploreRelocationDelayMs)
+      return
+    }
+    finishExploreEntry()
+  }
+
+  function enterShuffleMode(message = 'Shuffle mode: move freely along the path') {
     clearDriftDescriptionAutomation()
     playHudSfx('mode')
     triggerHudTapGlow('shuffle')
@@ -3180,6 +3587,7 @@ function App() {
     clearJourneyEndpointWait(journeyDirectionRef.current)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
+    resetFreeExploreInput()
     const route = projectRef.current.route
     let nextMessage = message
     if (route.length > 0) {
@@ -3202,11 +3610,11 @@ function App() {
     tourHoldUntilRef.current = 0
     resetShuffleDescriptionInitialReveal()
     prepareShuffleDescriptionEntryCards()
-    const finishExploreEntry = () => {
+    const finishShuffleEntry = () => {
       startMenuFocusDissolve()
-      gameModeRef.current = 'explore'
-      setGameMode('explore')
-      setGameScreenWithHomeGrace('explore')
+      gameModeRef.current = 'shuffle'
+      setGameMode('shuffle')
+      setGameScreenWithHomeGrace('shuffle')
       setAppMode('play')
       setPlayPaused(false)
       handleMusicRestart(false)
@@ -3214,15 +3622,15 @@ function App() {
       setMessage(nextMessage)
     }
     if (workspaceMode === 'game' && gameScreen === 'menu') {
-      setGameHudScreenWithHomeGrace('explore')
+      setGameHudScreenWithHomeGrace('shuffle')
       setMessage('Shuffle view shifting')
       exploreRelocationTimeoutRef.current = window.setTimeout(() => {
         exploreRelocationTimeoutRef.current = null
-        finishExploreEntry()
+        finishShuffleEntry()
       }, exploreRelocationDelayMs)
       return
     }
-    finishExploreEntry()
+    finishShuffleEntry()
   }
 
   function enterLoopMode(message = 'Loop mode: drifting between both ends') {
@@ -3238,6 +3646,7 @@ function App() {
     setExploreUnlocked(true)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
+    resetFreeExploreInput()
     clearShuffleLoopPush()
     resetShuffleDescriptionInitialReveal()
     clearJourneyEndpointWait(1)
@@ -3299,6 +3708,7 @@ function App() {
     clearJourneyEndpointWait(1)
     stopForwardControl(false)
     stopExploreControl(undefined, false)
+    resetFreeExploreInput()
     resetShuffleDescriptionInitialReveal()
     setGameScreenWithHomeGrace('menu')
     gameModeRef.current = 'journey'
@@ -3359,7 +3769,7 @@ function App() {
   }
 
   function startShuffleLoopPush() {
-    if (gameModeRef.current !== 'explore') {
+    if (gameModeRef.current !== 'shuffle') {
       setMessage('Shuffle loop push is not available right now')
       return
     }
@@ -3390,7 +3800,7 @@ function App() {
     if (direction > 0 && playProgressRef.current >= 1) {
       direction = -1
     }
-    setGameHudScreenWithHomeGrace('explore')
+    setGameHudScreenWithHomeGrace('shuffle')
     stopExploreControl(undefined, false)
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
       setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
@@ -3644,6 +4054,7 @@ function App() {
     exploreHasInteractedRef.current = false
     stopForwardControl(false)
     stopExploreControl(undefined, false)
+    resetFreeExploreInput()
     gameModeRef.current = 'journey'
     setGameMode('journey')
     setGameScreenWithHomeGrace('menu')
@@ -3754,12 +4165,287 @@ function App() {
     setMessage('Drift released: moth drifting')
   }
 
-  function startExploreControl(direction: -1 | 1) {
-    if (gameMode !== 'explore') {
+  function isFreeExploreKey(key: string) {
+    return key === 'ArrowUp'
+      || key === 'ArrowDown'
+      || key === 'ArrowLeft'
+      || key === 'ArrowRight'
+      || key.toLowerCase() === 'w'
+      || key.toLowerCase() === 'a'
+      || key.toLowerCase() === 's'
+      || key.toLowerCase() === 'd'
+  }
+
+  function freeExploreKeyDirection(key: string): keyof FreeExploreInputState | null {
+    const normalized = key.toLowerCase()
+    if (key === 'ArrowUp' || normalized === 'w') {
+      return 'up'
+    }
+    if (key === 'ArrowDown' || normalized === 's') {
+      return 'down'
+    }
+    if (key === 'ArrowLeft' || normalized === 'a') {
+      return 'left'
+    }
+    if (key === 'ArrowRight' || normalized === 'd') {
+      return 'right'
+    }
+    return null
+  }
+
+  function startFreeExploreKey(key: string) {
+    const direction = freeExploreKeyDirection(key)
+    if (!direction) {
       return
     }
-    if (gameScreen !== 'explore') {
-      setGameScreenWithHomeGrace('explore')
+    const input = freeExploreRef.current.input
+    if (!input[direction]) {
+      const wasIdle = !input.up && !input.down && !input.left && !input.right
+      freeExploreRef.current.input = { ...input, [direction]: true }
+      freeExploreRef.current.pointerDirection = null
+      if (wasIdle) {
+        freeExploreRef.current.startedAt = performance.now()
+      }
+      freeExploreRef.current.releaseCarryUntil = 0
+      freeExploreRef.current.releaseStartedAt = 0
+      freeExploreRef.current.releaseDirection = { x: 0, y: 0 }
+      freeExploreRef.current.idleSince = 0
+      freeExploreRef.current.idlePushStartedAt = 0
+      freeExploreRef.current.idlePushUntil = 0
+      freeExploreRef.current.idlePushCount = 0
+      exploreHasInteractedRef.current = true
+      setMessage(freeExploreRef.current.debugFast ? 'Discover debug speed' : 'Discover moving')
+    }
+  }
+
+  function startFreeExplorePointer(direction: Point) {
+    if (gameModeRef.current !== 'discover') {
+      return
+    }
+    const normalizedDirection = normalizeVector(direction)
+    if (Math.hypot(normalizedDirection.x, normalizedDirection.y) <= 0.001) {
+      return
+    }
+    const input = freeExploreRef.current.input
+    const wasIdle = !input.up && !input.down && !input.left && !input.right && !freeExploreRef.current.pointerDirection
+    const now = performance.now()
+    freeExploreRef.current.pointerDirection = normalizedDirection
+    freeExploreRef.current.pointerStartedAt = now
+    freeExploreRef.current.direction = normalizedDirection
+    if (wasIdle) {
+      freeExploreRef.current.startedAt = now
+    }
+    freeExploreRef.current.releaseCarryUntil = 0
+    freeExploreRef.current.releaseStartedAt = 0
+    freeExploreRef.current.releaseDirection = { x: 0, y: 0 }
+    freeExploreRef.current.idleSince = 0
+    freeExploreRef.current.idlePushStartedAt = 0
+    freeExploreRef.current.idlePushUntil = 0
+    freeExploreRef.current.idlePushCount = 0
+    exploreHasInteractedRef.current = true
+    setMessage(freeExploreRef.current.debugFast ? 'Discover debug push' : 'Discover push')
+  }
+
+  function updateFreeExplorePointerDirection(direction: Point) {
+    const normalizedDirection = normalizeVector(direction)
+    if (Math.hypot(normalizedDirection.x, normalizedDirection.y) <= 0.001) {
+      return
+    }
+    freeExploreRef.current.pointerDirection = normalizedDirection
+    freeExploreRef.current.direction = normalizedDirection
+  }
+
+  function pulseFreeExploreToward(direction: Point, options: { carryMs: number; message: string }) {
+    startFreeExplorePointer(direction)
+    if (!freeExploreRef.current.pointerDirection) {
+      return
+    }
+    freeExploreRef.current.pointerDirection = null
+    freeExploreRef.current.pointerStartedAt = 0
+    releaseFreeExploreMotion({
+      carryMs: options.carryMs,
+      allowIdleFollowup: false,
+      message: options.message,
+    })
+  }
+
+  function stopFreeExploreKey(key: string) {
+    const direction = freeExploreKeyDirection(key)
+    if (!direction) {
+      return
+    }
+    const input = freeExploreRef.current.input
+    if (input[direction]) {
+      const nextInput = { ...input, [direction]: false }
+      freeExploreRef.current.input = nextInput
+      const inputStillActive = nextInput.up || nextInput.down || nextInput.left || nextInput.right
+      if (!inputStillActive && !freeExploreRef.current.pointerDirection) {
+        releaseFreeExploreMotion()
+      }
+    }
+  }
+
+  function stopFreeExplorePointer(options: { carryMs?: number; message?: string } = {}) {
+    if (!freeExploreRef.current.pointerDirection) {
+      return
+    }
+    const heldMs = performance.now() - freeExploreRef.current.pointerStartedAt
+    freeExploreRef.current.pointerDirection = null
+    freeExploreRef.current.pointerStartedAt = 0
+    const input = freeExploreRef.current.input
+    const inputStillActive = input.up || input.down || input.left || input.right
+    if (!inputStillActive) {
+      if (typeof options.carryMs === 'number') {
+        releaseFreeExploreMotion({
+          carryMs: options.carryMs,
+          allowIdleFollowup: false,
+          message: options.message ?? 'Discover gesture: push',
+        })
+      } else if (heldMs < 220) {
+        const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+        const tapCarryMs = clamp(basePushMs * 0.2, 280, 560)
+        releaseFreeExploreMotion({
+          carryMs: tapCarryMs,
+          allowIdleFollowup: false,
+          message: 'Discover tap: small push',
+        })
+      } else {
+        releaseFreeExploreMotion()
+      }
+    }
+  }
+
+  function releaseFreeExploreMotion(options: { carryMs?: number; allowIdleFollowup?: boolean; message?: string } = {}) {
+    const now = performance.now()
+    const releaseCarryMs = !playPaused
+      ? options.carryMs ?? projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+      : 0
+    const allowIdleFollowup = options.allowIdleFollowup ?? true
+    freeExploreRef.current.releaseDirection = freeExploreRef.current.direction
+    freeExploreRef.current.releaseStartedAt = now
+    freeExploreRef.current.releaseCarryUntil = releaseCarryMs > 0 ? now + releaseCarryMs : 0
+    freeExploreRef.current.idleSince = allowIdleFollowup
+      ? releaseCarryMs > 0 ? now + releaseCarryMs : now
+      : 0
+    freeExploreRef.current.idlePushStartedAt = 0
+    freeExploreRef.current.idlePushUntil = 0
+    freeExploreRef.current.idlePushCount = 0
+    freeExploreRef.current.startedAt = 0
+    setMessage(options.message ?? (releaseCarryMs > 0 ? 'Discover released: gentle push' : 'Discover drifting to a stop'))
+  }
+
+  function resetFreeExploreInput() {
+    freeExploreRef.current.input = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+    }
+    freeExploreRef.current.pointerDirection = null
+    freeExploreRef.current.pointerStartedAt = 0
+    freeExploreRef.current.startedAt = 0
+    freeExploreRef.current.releaseStartedAt = 0
+    freeExploreRef.current.releaseCarryUntil = 0
+    freeExploreRef.current.releaseDirection = { x: 0, y: 0 }
+    freeExploreRef.current.idleSince = 0
+    freeExploreRef.current.idlePushStartedAt = 0
+    freeExploreRef.current.idlePushUntil = 0
+    freeExploreRef.current.idlePushCount = 0
+  }
+
+  function toggleFreeExploreDebugFast() {
+    setFreeExploreDebugFast((current) => {
+      const next = !current
+      freeExploreRef.current.debugFast = next
+      setMessage(next ? 'Discover debug speed on' : 'Discover debug speed off')
+      return next
+    })
+  }
+
+  function resetFreeExploreTrail(position: Point) {
+    freeExploreTrailPointsRef.current = [position]
+  }
+
+  function appendFreeExploreTrailPoint(position: Point) {
+    const points = freeExploreTrailPointsRef.current
+    const last = points[points.length - 1]
+    if (!last || distance(last, position) >= freeExploreTrailMinDistance) {
+      const next = [...points, position].slice(-freeExploreTrailMaxPoints)
+      freeExploreTrailPointsRef.current = next
+    }
+  }
+
+  function syncFreeExploreDiscovery(position: Point) {
+    const project = projectRef.current
+    const routeLights = buildFreeExploreRouteLights(project)
+    const shuffleItems = collectFreeExploreShuffleItems(project)
+    const currentCollected = new Set(collectedLightItemIdsRef.current)
+    const currentDiscovered = new Set(discoveredShuffleItemIdsRef.current)
+    let collectedChanged = false
+    let discoveredChanged = false
+
+    for (const light of routeLights) {
+      if (!currentCollected.has(light.id) && distance(position, light.point) <= freeExploreLightCollectRadius) {
+        currentCollected.add(light.id)
+        collectedChanged = true
+      }
+    }
+
+    let nearestShuffle: { item: EditorItem; distance: number } | null = null
+    for (const item of shuffleItems) {
+      const itemDistance = distance(position, item)
+      if (itemDistance <= freeExploreShuffleDiscoverRadius) {
+        if (!currentDiscovered.has(item.id)) {
+          currentDiscovered.add(item.id)
+          discoveredChanged = true
+        }
+        if (!nearestShuffle || itemDistance < nearestShuffle.distance) {
+          nearestShuffle = { item, distance: itemDistance }
+        }
+      }
+    }
+
+    if (collectedChanged) {
+      const next = Array.from(currentCollected)
+      collectedLightItemIdsRef.current = next
+      setCollectedLightItemIds(next)
+      const routeLightCollectedCount = routeLights.filter((light) => currentCollected.has(light.id)).length
+      setMessage(`Asset light collected: ${routeLightCollectedCount}/${routeLights.length}`)
+    }
+    if (discoveredChanged) {
+      const next = Array.from(currentDiscovered)
+      discoveredShuffleItemIdsRef.current = next
+      setDiscoveredShuffleItemIds(next)
+    }
+    const nextActiveId = nearestShuffle?.item.id ?? null
+    if (nextActiveId !== activeShuffleItemIdRef.current) {
+      activeShuffleItemIdRef.current = nextActiveId
+      setActiveShuffleItemId(nextActiveId)
+      if (nextActiveId) {
+        const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
+        if (exampleIndex >= 0 && !shuffleDescriptionOpen) {
+          syncClosedShuffleDescriptionAsset(exampleIndex)
+        }
+        setMessage('Asset discovered: info available')
+      }
+    }
+    if (
+      (collectedChanged || discoveredChanged)
+      && routeLights.every((light) => currentCollected.has(light.id))
+      && currentDiscovered.size >= shuffleItems.length
+      && routeLights.length > 0
+      && shuffleItems.length > 0
+    ) {
+      setMessage('Explore complete: all lights and assets found')
+    }
+  }
+
+  function startExploreControl(direction: -1 | 1) {
+    if (gameMode !== 'shuffle') {
+      return
+    }
+    if (gameScreen !== 'shuffle') {
+      setGameScreenWithHomeGrace('shuffle')
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
       setMessage(direction > 0 ? 'Moth is already at route end' : 'Moth is already at route start')
@@ -3790,7 +4476,7 @@ function App() {
   }
 
   function nudgeExploreFromRest(direction: -1 | 1) {
-    if (gameModeRef.current !== 'explore') {
+    if (gameModeRef.current !== 'shuffle') {
       return
     }
     if ((direction < 0 && playProgressRef.current <= 0) || (direction > 0 && playProgressRef.current >= 1)) {
@@ -3820,7 +4506,7 @@ function App() {
   }
 
   function nudgeExploreTowardAnchor(targetProgress: number) {
-    if (gameModeRef.current !== 'explore') {
+    if (gameModeRef.current !== 'shuffle') {
       return
     }
     const target = clamp(targetProgress, 0, 1)
@@ -3955,7 +4641,7 @@ function App() {
     }
 
     if (gameScreen === 'menu') {
-      enterExploreMode()
+      enterDiscoverMode()
       return null
     }
 
@@ -3969,7 +4655,12 @@ function App() {
       return null
     }
 
-    if (gameScreen === 'explore') {
+    if (gameScreen === 'discover') {
+      setMessage('Discover: use arrows/WASD, hold the scene to push, Tab for debug speed')
+      return null
+    }
+
+    if (gameScreen === 'shuffle') {
       if (shuffleLoopControlRef.current.active) {
         startShuffleLoopPush()
         return null
@@ -3978,7 +4669,6 @@ function App() {
       startExploreControl(direction)
       return { action: 'shuffle-direction', direction }
     }
-
     return null
   }
 
@@ -3991,6 +4681,28 @@ function App() {
     }
   }
 
+  function freeExploreMothScreenPoint() {
+    return worldToScreen(freeExploreRef.current.position, canvasCamera, viewport)
+  }
+
+  function freeExploreMothGlowTapRadius() {
+    const mothSize = 154 * canvasCamera.zoom * projectRef.current.gameplay.mothSize
+    return clamp(mothSize * 0.82, freeExploreGlowTapRadiusMin, freeExploreGlowTapRadiusMax)
+  }
+
+  function nearestFreeExploreAssetLight(position: Point) {
+    const lights = buildFreeExploreRouteLights(projectRef.current)
+    if (lights.length === 0) {
+      return null
+    }
+    const collected = new Set(collectedLightItemIdsRef.current)
+    const uncollected = lights.filter((light) => !collected.has(light.id))
+    const candidates = uncollected.length > 0 ? uncollected : lights
+    return candidates
+      .map((light) => ({ light, distance: distance(position, light.point) }))
+      .sort((a, b) => a.distance - b.distance)[0]?.light ?? null
+  }
+
   function handleGameCanvasPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     if (workspaceMode !== 'game' || appMode !== 'play') {
       return false
@@ -4000,7 +4712,7 @@ function App() {
 
     if (gameScreen === 'menu') {
       gameCanvasGestureRef.current = { pointerId: event.pointerId, action: null }
-      enterExploreMode()
+      enterDiscoverMode()
       return true
     }
 
@@ -4016,7 +4728,28 @@ function App() {
       return true
     }
 
-    if (gameScreen === 'explore') {
+    if (gameScreen === 'discover') {
+      const tapPoint = eventToCanvasPoint(event)
+      const mothPoint = freeExploreMothScreenPoint()
+      const startedNearMoth = distance(tapPoint, mothPoint) <= freeExploreMothGlowTapRadius()
+      gameCanvasGestureRef.current = {
+        pointerId: event.pointerId,
+        action: 'free-direction',
+        start: tapPoint,
+        startedNearMoth,
+      }
+      if (!startedNearMoth) {
+        startFreeExplorePointer({
+          x: tapPoint.x - mothPoint.x,
+          y: tapPoint.y - mothPoint.y,
+        })
+      } else {
+        setMessage('Discover: tap moth glow for nearest light')
+      }
+      return true
+    }
+
+    if (gameScreen === 'shuffle') {
       if (shuffleLoopControlRef.current.active) {
         gameCanvasGestureRef.current = { pointerId: event.pointerId, action: null }
         startShuffleLoopPush()
@@ -4031,6 +4764,29 @@ function App() {
     return false
   }
 
+  function handleGameCanvasPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    const gesture = gameCanvasGestureRef.current
+    if (!gesture || gesture.pointerId !== event.pointerId || gesture.action !== 'free-direction') {
+      return false
+    }
+    event.preventDefault()
+    const latest = eventToCanvasPoint(event)
+
+    if (gesture.startedNearMoth) {
+      return true
+    }
+
+    const mothPoint = freeExploreMothScreenPoint()
+    const targetVector = {
+      x: latest.x - mothPoint.x,
+      y: latest.y - mothPoint.y,
+    }
+    if (Math.hypot(targetVector.x, targetVector.y) > 3) {
+      updateFreeExplorePointerDirection(targetVector)
+    }
+    return true
+  }
+
   function handleGameCanvasPointerEnd(event: React.PointerEvent<HTMLCanvasElement>) {
     const gesture = gameCanvasGestureRef.current
     if (!gesture || gesture.pointerId !== event.pointerId) {
@@ -4043,6 +4799,25 @@ function App() {
     gameCanvasGestureRef.current = null
     if (gesture.action === 'drift') {
       stopForwardControl()
+    }
+    if (gesture.action === 'free-direction') {
+      if (gesture.startedNearMoth) {
+        const target = nearestFreeExploreAssetLight(freeExploreRef.current.position)
+        if (target) {
+          const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+          pulseFreeExploreToward({
+            x: target.point.x - freeExploreRef.current.position.x,
+            y: target.point.y - freeExploreRef.current.position.y,
+          }, {
+            carryMs: clamp(basePushMs * 0.44, 760, 1240),
+            message: 'Discover tap: nearest asset light',
+          })
+        } else {
+          setMessage('Discover: no asset light found')
+        }
+      } else {
+        stopFreeExplorePointer()
+      }
     }
     if (gesture.action === 'shuffle-direction' && gesture.direction) {
       stopExploreControl(gesture.direction)
@@ -4613,6 +5388,9 @@ function App() {
   }
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (handleGameCanvasPointerMove(event)) {
+      return
+    }
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) {
       return
@@ -4837,7 +5615,7 @@ function App() {
     const iconSize = context === 'panel' ? 15 : 16
     const className = (active: boolean) => [active ? 'active' : '', baseClass].filter(Boolean).join(' ')
 
-    if (gameMode === 'explore') {
+    if (gameMode === 'shuffle') {
       return (
         <>
           <button
@@ -4931,13 +5709,21 @@ function App() {
           >
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
-          <div className="game-hud-placeholder span-2" aria-hidden="true" />
+          <button
+            className={`game-hud-button span-2 primary menu-entry-choice enhanced-glow${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('explore')}`}
+            type="button"
+            aria-label="Discover"
+            style={hudButtonStyle('explore')}
+            onClick={() => enterDiscoverMode()}
+          >
+            Discover
+          </button>
           <button
             className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('shuffle')}`}
             type="button"
             aria-label="Shuffle"
             style={hudButtonStyle('shuffle')}
-            onClick={() => enterExploreMode()}
+            onClick={() => enterShuffleMode()}
           >
             <Shuffle size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
@@ -4945,7 +5731,40 @@ function App() {
       )
     }
 
-    if (gameHudScreen === 'explore') {
+    if (gameHudScreen === 'discover') {
+      const exploreStatusClass = [
+        'game-hud-button icon-only',
+        freeExploreDebugFast ? 'active hold-pulse' : 'ambient-pulse',
+        hudTapGlowClass('explore'),
+      ].filter(Boolean).join(' ')
+      const exploreStatusStyle = freeExploreDebugFast
+        ? {
+            ...hudButtonStyle('explore'),
+            ...hudHoldPulseStyle(animationTime - 1, 'explore'),
+            '--hud-glow-base': '130, 246, 232',
+            '--hud-glow-active': '130, 246, 232',
+            '--hud-glow-outer': '104, 226, 238',
+          } as CSSProperties
+        : hudButtonStyle('explore')
+      return (
+        <div key="game-hud-discover" className={gameHudLayerClass()} style={gameHudStyle} aria-label="Discover controls">
+          <button
+            className={exploreStatusClass}
+            type="button"
+            aria-label={freeExploreDebugFast ? 'Turn off discover debug speed' : 'Turn on discover debug speed'}
+            aria-pressed={freeExploreDebugFast}
+            style={exploreStatusStyle}
+            onClick={() => toggleFreeExploreDebugFast()}
+          >
+            <Crosshair size={iconSize} strokeWidth={iconStrokeWidth} />
+          </button>
+          <div className="game-hud-placeholder span-2" aria-hidden="true" />
+          {backButton()}
+        </div>
+      )
+    }
+
+    if (gameHudScreen === 'shuffle') {
       const shuffleLoopButtonDisabled = false
       const shuffleDirectionPressed = exploreDirection !== 0 && !shuffleLoopActive
       const oppositeBackwardDim = shuffleDirectionPressed && exploreDirection > 0
@@ -5594,9 +6413,16 @@ function App() {
               Explore
             </button>
             <button
-              className={gameMode === 'explore' ? 'active' : ''}
+              className={gameMode === 'discover' ? 'active' : ''}
               type="button"
-              onClick={() => enterExploreMode()}
+              onClick={() => enterDiscoverMode()}
+            >
+              Discover
+            </button>
+            <button
+              className={gameMode === 'shuffle' ? 'active' : ''}
+              type="button"
+              onClick={() => enterShuffleMode()}
             >
               Shuffle
             </button>
@@ -6590,7 +7416,7 @@ function App() {
   }
 
   function shouldManualLoopMusic() {
-    return gameModeRef.current === 'explore' || gameModeRef.current === 'loop' || shuffleLoopControlRef.current.active
+    return gameModeRef.current === 'shuffle' || gameModeRef.current === 'loop' || shuffleLoopControlRef.current.active
   }
 
   function handleMusicPlay(history = true) {
@@ -8298,6 +9124,13 @@ function isShuffleInfoSeedCandidate(item: EditorItem) {
   return typeof item.notes === 'string' && /\bshuffle assets?\b/i.test(item.notes)
 }
 
+function collectFreeExploreShuffleItems(project: EditorProject) {
+  return project.items.filter((item) => item.visible && (
+    item.shuffleInfo?.enabled === true
+    || isShuffleInfoSeedCandidate(item)
+  ))
+}
+
 function inferShuffleInfoRoomId(project: EditorProject, item: EditorItem): ShuffleInfoRoomId {
   const progress = nearestRouteProgress(project.route, project.routeRenderMode, item)
   const index = Math.min(shuffleInfoRooms.length - 1, Math.max(0, Math.floor(progress * shuffleInfoRooms.length)))
@@ -8569,9 +9402,11 @@ function eventToCanvasPoint(
     | React.DragEvent<HTMLCanvasElement>,
 ): Point {
   const rect = event.currentTarget.getBoundingClientRect()
+  const authoredWidth = Number.parseFloat(event.currentTarget.style.width) || rect.width
+  const authoredHeight = Number.parseFloat(event.currentTarget.style.height) || rect.height
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) * (authoredWidth / Math.max(1, rect.width)),
+    y: (event.clientY - rect.top) * (authoredHeight / Math.max(1, rect.height)),
   }
 }
 
