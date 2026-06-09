@@ -860,7 +860,7 @@ export const defaultProjectData = {
         "forward": {
             "enabled": true,
             "boundaryBefore": 0.012,
-            "boundaryAfter": 0.022,
+            "boundaryAfter": 0.0235,
             "notes": ""
         },
         "backward": {
@@ -881,7 +881,7 @@ export const defaultProjectData = {
         "shuffleAssetId": "artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm",
         "forward": {
             "enabled": true,
-            "boundaryBefore": 0.012,
+            "boundaryBefore": 0.0135,
             "boundaryAfter": 0.004,
             "notes": ""
         },
@@ -945,7 +945,7 @@ export const defaultProjectData = {
         "forward": {
             "enabled": true,
             "boundaryBefore": 0.014,
-            "boundaryAfter": 0.014,
+            "boundaryAfter": 0.0155,
             "notes": ""
         },
         "backward": {
@@ -966,7 +966,7 @@ export const defaultProjectData = {
         "shuffleAssetId": "artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu",
         "forward": {
             "enabled": true,
-            "boundaryBefore": 0.008,
+            "boundaryBefore": 0.0095,
             "boundaryAfter": 0.012,
             "notes": ""
         },
@@ -1052,7 +1052,7 @@ export const defaultProjectData = {
         "forward": {
             "enabled": true,
             "boundaryBefore": 0.012,
-            "boundaryAfter": 0.012,
+            "boundaryAfter": 0.014,
             "notes": ""
         },
         "backward": {
@@ -1073,14 +1073,14 @@ export const defaultProjectData = {
         "shuffleAssetId": "artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf",
         "forward": {
             "enabled": true,
-            "boundaryBefore": 0.05,
+            "boundaryBefore": 0.052,
             "boundaryAfter": 0.023,
             "notes": ""
         },
         "backward": {
             "enabled": true,
             "boundaryBefore": 0.056,
-            "boundaryAfter": 0.022,
+            "boundaryAfter": 0.0235,
             "notes": ""
         }
     },
@@ -1101,7 +1101,7 @@ export const defaultProjectData = {
         },
         "backward": {
             "enabled": true,
-            "boundaryBefore": 0.014,
+            "boundaryBefore": 0.0155,
             "boundaryAfter": 0.01,
             "notes": ""
         }

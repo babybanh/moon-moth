@@ -390,7 +390,8 @@ const shuffleDescriptionAttentionCooldownMs = 3000
 const shuffleDescriptionLongDirectionQuietMs = 8000
 const shuffleDescriptionInitialAttentionDelayMs = 8000
 const shuffleDescriptionBoundarySampleMs = 350
-const shuffleDescriptionRuntimeCardLimit = 2
+const shuffleDescriptionRuntimeCardLimit = 3
+const shuffleDescriptionMothRuntimeCardLimit = 7
 const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
 const musicFadeOutMs = 180
@@ -2477,7 +2478,35 @@ function App() {
       cards: [
         'Its wing glow becomes clearer against darker leaves.',
         'The moth follows moonlight more reliably than the path.',
-      ],
+        'Its movement is gentler when the music leaves space.',
+        'The wings brighten most under open moonlight.',
+        'The moth often turns before the path looks obvious.',
+        'Moonlight gives the moth a wider sense of direction.',
+        'Its glow helps separate foreground branches from the path.',
+        'The moth drifts best when guided lightly.',
+        'Music seems to steady the moth\'s slow turns.',
+        'The moon works like a distant garden marker.',
+        'The moth\'s green light changes against purple flowers.',
+        'Its body stays bright while the garden shifts behind it.',
+        'The moth reads pale surfaces before darker plants.',
+        'A slower drift makes the wing details easier to see.',
+        'The moth often pauses where moonlight feels most even.',
+        'Its glow is small, but it anchors the whole view.',
+        'The music gives the drift a natural pace.',
+        'Moonlit air makes the wings look almost translucent.',
+        'The moth moves through layers, not just along the path.',
+        'Its turns feel softer near open patches of light.',
+        'The moon and moth make the garden easier to read.',
+        'The wings catch color from whatever blooms nearby.',
+        'The moth\'s path is shaped by light, music, and pause.',
+        'A brief release lets the moth keep its own motion.',
+        'The garden feels larger when the moth slows down.',
+        'The moth\'s glow is brightest against the coldest shadows.',
+        'Moonlight shows the path; the moth makes it feel alive.',
+        'The music does not lead loudly, but it keeps time.',
+        'The moth can drift forward or return through the same view.',
+        'Its small light makes the larger moon feel farther away.',
+      ].slice(0, shuffleDescriptionMothRuntimeCardLimit),
       iconKind: 'leaf',
       id: moonMothShuffleDescriptionId,
       publicName: 'Moon Moth',
