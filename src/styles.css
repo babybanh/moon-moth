@@ -512,7 +512,6 @@ input[type="range"] {
   letter-spacing: var(--game-hud-letter-spacing);
   line-height: 1.38;
   pointer-events: none;
-  animation: gameHudRowDissolveIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
   --shuffle-description-glow-base: 156, 126, 255;
   --shuffle-description-glow-active: 185, 156, 255;
   --shuffle-description-glow-outer: 112, 83, 220;
@@ -567,6 +566,7 @@ input[type="range"] {
     0 0 76px rgba(var(--shuffle-description-glow-outer), 0.06);
 }
 
+.shuffle-description-prototype.closed.attention .shuffle-description-avatar,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover {
   background: #000;
   color: rgba(246, 255, 252, 0.96);
@@ -578,11 +578,13 @@ input[type="range"] {
     0 0 178px rgba(var(--shuffle-description-attention-outer), 0.1) !important;
 }
 
+.shuffle-description-prototype.closed.attention .shuffle-description-avatar::before,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover::before {
   opacity: 0;
   animation: none;
 }
 
+.shuffle-description-prototype.closed.attention .shuffle-description-flower-icon-current,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover .shuffle-description-flower-icon-current {
   color: #ffffff;
   opacity: 1;
@@ -822,6 +824,7 @@ input[type="range"] {
 }
 
 .shuffle-description-prototype.open .shuffle-description-avatar img {
+  animation: shuffleDescriptionAssetImageIn 2000ms cubic-bezier(0.22, 1, 0.36, 1) both;
   opacity: 1;
   transform: scale(var(--shuffle-description-avatar-image-scale, 1));
   transition:
@@ -844,15 +847,26 @@ input[type="range"] {
   align-items: center;
   justify-items: stretch;
   overflow: hidden;
+  background: transparent;
   border-radius: calc(var(--shuffle-description-avatar-size) * 0.16);
   padding: 0;
+  cursor: default;
   text-align: left;
   box-shadow: none;
   opacity: var(--shuffle-description-card-opacity);
   transform: translateY(calc(4px * var(--game-hud-scale)));
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
   transition:
     opacity 900ms ease,
     transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shuffle-description-card:focus,
+.shuffle-description-card:focus-visible,
+.shuffle-description-card:active {
+  outline: none;
 }
 
 .shuffle-description-prototype.open .shuffle-description-card {
@@ -885,6 +899,7 @@ input[type="range"] {
   display: grid;
   width: 100%;
   align-content: center;
+  animation: shuffleDescriptionAssetCopyIn 2000ms cubic-bezier(0.22, 1, 0.36, 1) both;
   gap: calc(9px * var(--game-hud-scale));
   text-align: left;
 }
@@ -904,17 +919,29 @@ input[type="range"] {
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  animation: shuffleDescriptionBodyTextIn 2000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: shuffleDescriptionTextLineIn 2000ms cubic-bezier(0.22, 1, 0.36, 1) both;
   text-align: left;
+  text-align-last: left;
+  word-spacing: normal;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.shuffle-description-prototype.description-direction-paused .shuffle-description-card-text {
-  animation-play-state: paused;
+@keyframes shuffleDescriptionTextLineIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(calc(8px * var(--game-hud-scale)));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
 }
 
-@keyframes shuffleDescriptionBodyTextIn {
+@keyframes shuffleDescriptionAssetCopyIn {
   0% {
     opacity: 0;
     filter: blur(5px);
@@ -925,6 +952,18 @@ input[type="range"] {
     opacity: 1;
     filter: blur(0);
     transform: translateY(0);
+  }
+}
+
+@keyframes shuffleDescriptionAssetImageIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
   }
 }
 
@@ -2474,6 +2513,87 @@ canvas {
   padding: 0 8px;
 }
 
+.description-point-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.description-point-list {
+  display: grid;
+  gap: 7px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.description-point-row {
+  display: grid;
+  gap: 2px;
+  justify-content: stretch;
+  min-height: 54px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.description-point-row.active {
+  border-color: rgba(133, 246, 232, 0.46);
+  background: rgba(133, 246, 232, 0.08);
+}
+
+.description-point-row strong,
+.description-point-row span,
+.description-point-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description-point-row strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.description-point-row span,
+.description-point-row small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.description-point-selected {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.description-point-selected-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.description-point-selected-header strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description-direction-tabs {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.description-boundary-editor {
+  display: grid;
+  gap: 9px;
+}
+
+.description-boundary-editor label span {
+  float: right;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .selected-editor {
   display: grid;
   gap: 10px;
@@ -2536,6 +2656,86 @@ canvas {
   border: 1px solid rgba(143, 255, 228, 0.95);
   background: rgba(143, 255, 228, 0.12);
   pointer-events: none;
+}
+
+.description-route-marker {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(216, 234, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(4, 14, 24, 0.58);
+  box-shadow: 0 0 10px rgba(149, 126, 255, 0.12);
+  color: rgba(231, 244, 255, 0.72);
+  cursor: grab;
+  font-size: 10px;
+  font-weight: 700;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+}
+
+.description-route-marker:active {
+  cursor: grabbing;
+}
+
+.description-route-marker.anchor {
+  border-color: rgba(133, 246, 232, 0.42);
+  box-shadow: 0 0 12px rgba(133, 246, 232, 0.14);
+}
+
+.description-route-marker.active {
+  border-color: rgba(255, 255, 255, 0.74);
+  background: rgba(12, 31, 48, 0.78);
+  color: white;
+}
+
+.description-boundary-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: visible;
+  pointer-events: none;
+  --description-boundary-color: 133, 246, 232;
+}
+
+.description-boundary-overlay.backward {
+  --description-boundary-color: 185, 156, 255;
+}
+
+.description-boundary-glow,
+.description-boundary-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.description-boundary-glow {
+  stroke: rgba(var(--description-boundary-color), 0.3);
+  stroke-width: 16;
+  filter: blur(5px);
+}
+
+.description-boundary-line {
+  stroke: rgba(var(--description-boundary-color), 0.94);
+  stroke-width: 5;
+  filter: drop-shadow(0 0 8px rgba(var(--description-boundary-color), 0.55));
+}
+
+.description-boundary-endpoint {
+  fill: rgba(4, 14, 24, 0.92);
+  stroke: rgba(var(--description-boundary-color), 0.96);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 8px rgba(var(--description-boundary-color), 0.48));
+}
+
+.description-boundary-anchor-dot {
+  fill: white;
+  stroke: rgba(4, 14, 24, 0.88);
+  stroke-width: 1.5;
 }
 
 .canvas-popover {

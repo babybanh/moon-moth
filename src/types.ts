@@ -85,6 +85,24 @@ export type ShuffleInfoConfig = {
   cards?: ShuffleInfoCard[]
 }
 
+export type DescriptionDirectionSettings = {
+  enabled: boolean
+  boundaryBefore: number
+  boundaryAfter: number
+  notes: string
+}
+
+export type DescriptionRoutePoint = Point & {
+  id: string
+  label: string
+  routeProgress: number
+  snappedRoutePointId?: string
+  isAnchor: boolean
+  shuffleAssetId?: string
+  forward: DescriptionDirectionSettings
+  backward: DescriptionDirectionSettings
+}
+
 export type Camera = Point & {
   zoom: number
 }
@@ -183,6 +201,7 @@ export type EditorProject = {
   routeRenderMode: RouteRenderMode
   route: RoutePoint[]
   routeGroups?: RouteGroup[]
+  descriptionRoutePoints?: DescriptionRoutePoint[]
   layerOrder: LayerId[]
   layers: Record<LayerId, EditorLayer>
   items: EditorItem[]
@@ -216,8 +235,10 @@ export type Selection =
 export type DragState = {
   pointerId: number
   selection: Selection | null
+  descriptionPointId?: string
+  descriptionPointDragStarted?: boolean
   selectedItemIds: string[]
-  mode: 'pan' | 'move' | 'resize' | 'select-box'
+  mode: 'pan' | 'move' | 'resize' | 'select-box' | 'description-point'
   startScreen: Point
   startWorld: Point
   startCamera: Camera

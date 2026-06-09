@@ -46,6 +46,7 @@ import type {
   ArtworkMode,
   Camera,
   CanvasTarget,
+  DescriptionRoutePoint,
   DragState,
   EditorItem,
   EditorProject,
@@ -154,7 +155,7 @@ function prepareCanvasForRender(
 type EditorView = 'compact' | 'classic'
 type WorkspaceMode = 'editor' | 'game'
 type SelectionBox = { start: Point; current: Point } | null
-type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'Info' | 'HUD' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
+type EditorPanelTitle = 'Scene' | 'Route' | 'Tour' | 'Moth' | 'Glow' | 'Info' | 'Description' | 'HUD' | 'View' | 'Music' | 'Layers' | 'Assets' | 'Selection' | 'JSON'
 type ForwardControlState = {
   pressed: boolean
   startedAt: number
@@ -233,8 +234,36 @@ type ShuffleInfoEntry = {
   nearby: Array<{ item: EditorItem; distance: number }>
 }
 type ShuffleInfoIconKind = 'leaf' | 'moon'
+type ShuffleDescriptionExperiment = 'full' | 'off' | 'button' | 'no-boundary' | 'no-attention'
+type ShuffleDescriptionBoundaryEntry = {
+  end: number
+  exampleIndex: number
+  point: DescriptionRoutePoint
+  start: number
+}
+type ShuffleDescriptionExample = {
+  avatarAlt: string
+  avatarSrc: string
+  avatarScale: number
+  anchorProgress: number
+  cards: string[]
+  iconKind: ShuffleInfoIconKind
+  id: string
+  publicName: string
+  quietZone: boolean
+  silhouette: boolean
+  text: string
+}
 
-const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'Info', 'HUD', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
+const moonMothShuffleDescriptionId = '__moon-moth-info'
+const shuffleDescriptionExperimentOptions = new Set<ShuffleDescriptionExperiment>([
+  'full',
+  'off',
+  'button',
+  'no-boundary',
+  'no-attention',
+])
+const editorPanelTitles: EditorPanelTitle[] = ['Scene', 'Route', 'Tour', 'Moth', 'Glow', 'Info', 'Description', 'HUD', 'View', 'Music', 'Layers', 'Assets', 'Selection', 'JSON']
 const shuffleInfoRooms: Array<{ id: ShuffleInfoRoomId; label: string; shortLabel: string }> = [
   { id: 'moon-room-1', label: 'Moon Room 1', shortLabel: 'Room 1' },
   { id: 'moon-room-2', label: 'Moon Room 2', shortLabel: 'Room 2' },
@@ -250,10 +279,6 @@ const shuffleInfoMoonPublicNames = new Set([
   'Large Moon Stone',
   'Moonstone Fragments',
 ])
-const shuffleDescriptionTestPublicNames = {
-  leaf: 'Firefly Flowers',
-  moon: 'Moonstone Fragments',
-} as const
 const shuffleInfoAvatarMeasuredCoverageByName: Record<string, number> = {
   'Crooked Saplings': 0.401,
   'Crescent Moon': 0.43,
@@ -362,6 +387,16 @@ const hudStylePresets: Record<GameHudStylePreset, {
   },
 }
 const mothStoppedVelocityThreshold = 0.00012
+const shuffleDescriptionDirectionQuietDelayMs = 300
+const shuffleDescriptionDirectionHoldCollapseMs = 5000
+const shuffleDescriptionCollapseSettleMs = 3000
+const shuffleDescriptionMinAssetSwitchMs = 5000
+const shuffleDescriptionReadWindowMs = 7000
+const shuffleDescriptionAttentionCooldownMs = 3000
+const shuffleDescriptionLongDirectionQuietMs = 8000
+const shuffleDescriptionInitialAttentionDelayMs = 6000
+const shuffleDescriptionBoundarySampleMs = 350
+const shuffleDescriptionRuntimeCardLimit = 2
 const loopEndpointPauseMs = 2000
 const musicLoopGapMs = 2000
 const musicFadeOutMs = 180
@@ -480,6 +515,14 @@ function shuffledItems<T>(items: readonly T[]) {
     next[swapIndex] = current
   }
   return next
+}
+
+function readShuffleDescriptionExperiment(): ShuffleDescriptionExperiment {
+  const rawValue = new URLSearchParams(window.location.search).get('shuffleInfoTest')?.trim()
+  if (rawValue && shuffleDescriptionExperimentOptions.has(rawValue as ShuffleDescriptionExperiment)) {
+    return rawValue as ShuffleDescriptionExperiment
+  }
+  return 'full'
 }
 
 function driftDescriptionHoldMsForText(text: string) {
@@ -759,6 +802,13 @@ function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPo
 const maxOpenEditorPanels = 3
 
 function App() {
+  const shuffleDescriptionExperiment = useMemo(readShuffleDescriptionExperiment, [])
+  const shuffleDescriptionEnabled = shuffleDescriptionExperiment !== 'off'
+  const shuffleDescriptionBoundaryEnabled = shuffleDescriptionExperiment !== 'button'
+    && shuffleDescriptionExperiment !== 'no-boundary'
+  const shuffleDescriptionAttentionEnabled = shuffleDescriptionBoundaryEnabled
+    && shuffleDescriptionExperiment !== 'no-attention'
+  const shuffleDescriptionOpenEnabled = shuffleDescriptionExperiment !== 'button'
   const [project, setProject] = useState<EditorProject>(() => publicGameBuild ? createDefaultProject() : readProjectFromStorage('a'))
   const [sandboxId, setSandboxId] = useState<SandboxId>('a')
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(publicGameBuild ? 'game' : 'editor')
@@ -771,6 +821,8 @@ function App() {
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
   const [selectedRoutePointIds, setSelectedRoutePointIds] = useState<string[]>([])
   const [selectedRouteGroupId, setSelectedRouteGroupId] = useState<string | null>(null)
+  const [selectedDescriptionPointId, setSelectedDescriptionPointId] = useState<string | null>(null)
+  const [descriptionDirectionSide, setDescriptionDirectionSide] = useState<'forward' | 'backward'>('forward')
   const [selectionBox, setSelectionBox] = useState<SelectionBox>(null)
   const [editorView, setEditorView] = useState<EditorView>(() => (
     window.localStorage.getItem(editorViewStorageKey) === 'classic' ? 'classic' : 'compact'
@@ -815,9 +867,16 @@ function App() {
   const [, setDriftDescriptionRunId] = useState(0)
   const [shuffleDescriptionOpen, setShuffleDescriptionOpen] = useState(false)
   const [shuffleDescriptionDismissingToLoop, setShuffleDescriptionDismissingToLoop] = useState(false)
-  const [shuffleDescriptionExampleIndex, setShuffleDescriptionExampleIndex] = useState(0)
-  const [shuffleDescriptionLockedExampleIndex, setShuffleDescriptionLockedExampleIndex] = useState<number | null>(null)
+  const [shuffleDescriptionRouteAssetIndex, setShuffleDescriptionRouteAssetIndex] = useState(0)
   const [shuffleDescriptionCardIndex, setShuffleDescriptionCardIndex] = useState(0)
+  const [shuffleDescriptionOpenedAt, setShuffleDescriptionOpenedAt] = useState(0)
+  const [shuffleDescriptionAutoAdvanceCount, setShuffleDescriptionAutoAdvanceCount] = useState(0)
+  const [shuffleDescriptionPendingAssetIndex, setShuffleDescriptionPendingAssetIndex] = useState<number | null>(null)
+  const [shuffleDescriptionAttentionCooldownUntil, setShuffleDescriptionAttentionCooldownUntil] = useState(0)
+  const [shuffleDescriptionLastGardenIconKind, setShuffleDescriptionLastGardenIconKind] = useState<ShuffleInfoIconKind>('leaf')
+  const [shuffleDescriptionInitialRevealReady, setShuffleDescriptionInitialRevealReady] = useState(false)
+  const [shuffleDescriptionInitialAttentionReadyAt, setShuffleDescriptionInitialAttentionReadyAt] = useState(0)
+  const [shuffleDescriptionSampledBoundaryIndex, setShuffleDescriptionSampledBoundaryIndex] = useState<number | null>(null)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -839,6 +898,9 @@ function App() {
   const driftDescriptionIdleTriggerTimeoutRef = useRef<number | null>(null)
   const driftDescriptionDelayedTriggerTimeoutRef = useRef<number | null>(null)
   const driftDescriptionLongHoldOverrideTimeoutRef = useRef<number | null>(null)
+  const shuffleDescriptionBoundarySampleTimeoutRef = useRef<number | null>(null)
+  const shuffleDescriptionCardCursorRef = useRef<Map<string, number>>(new Map())
+  const shuffleDescriptionEntryCardOffsetRef = useRef(1)
   const driftDescriptionSequenceActiveRef = useRef(false)
   const driftDescriptionRef = useRef<DriftDescriptionState | null>(null)
   const driftDescriptionHeldRunCountRef = useRef(0)
@@ -939,6 +1001,10 @@ function App() {
       window.clearTimeout(shuffleLoopDelayedStartTimeoutRef.current)
       shuffleLoopDelayedStartTimeoutRef.current = null
     }
+    if (shuffleDescriptionBoundarySampleTimeoutRef.current !== null) {
+      window.clearTimeout(shuffleDescriptionBoundarySampleTimeoutRef.current)
+      shuffleDescriptionBoundarySampleTimeoutRef.current = null
+    }
     exploreIdleFocusTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
     exploreIdleFocusTimeoutRefs.current = []
     if (gameMenuReturnTimeoutRef.current !== null) {
@@ -983,6 +1049,19 @@ function App() {
   useEffect(() => {
     selectedRoutePointIdsRef.current = selectedRoutePointIds
   }, [selectedRoutePointIds])
+
+  useEffect(() => {
+    if (workspaceMode === 'editor' && (editorView === 'classic' || openEditorPanels.includes('Description'))) {
+      setCanvasTargets((current) => {
+        if (current.includes('path')) {
+          return current
+        }
+        const layerTargets: CanvasTarget[] = current.filter((target) => target === 'background' || target === 'foreground')
+        const fallbackTargets: CanvasTarget[] = ['background', 'foreground']
+        return ['path', ...(layerTargets.length > 0 ? layerTargets : fallbackTargets)]
+      })
+    }
+  }, [editorView, openEditorPanels, workspaceMode])
 
   useEffect(() => {
     const handlePointerMove = (event: globalThis.PointerEvent) => {
@@ -1777,13 +1856,14 @@ function App() {
             ? projectRef.current.gameplay.mothForwardReleasePushScale ?? 0.4
             : 1
           targetVelocity = exploreTargetVelocity(activeDirection, current, heldMs, projectRef.current.gameplay) * pushScale
-          const reversingDirection = activeDirection !== 0
+          const requestedDirection = activeDirection
+          const reversingDirection = requestedDirection !== 0
             && Math.sign(mothMotionRef.current.velocity) !== 0
-            && Math.sign(mothMotionRef.current.velocity) !== activeDirection
+            && Math.sign(mothMotionRef.current.velocity) !== requestedDirection
           if (reversingDirection && Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold * 6) {
             targetVelocity = 0
           }
-          const movementRequested = activeDirection !== 0 && targetVelocity !== 0
+          const movementRequested = requestedDirection !== 0 && targetVelocity !== 0
           const response = reversingDirection ? 1.45 : movementRequested ? 2.8 : 1.75
           mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
           const next = clamp(current + delta * mothMotionRef.current.velocity, 0, 1)
@@ -1913,7 +1993,15 @@ function App() {
       mothMotionRef.current.trailVelocity += (mothMotionRef.current.velocity - mothMotionRef.current.trailVelocity) * (1 - Math.exp(-delta * 1.25))
       const loopPulseActive = gameMode === 'loop' && appMode === 'play' && !playPaused && loopControlRef.current.pulseUntil > time
       const shuffleLoopPulseActive = gameMode === 'explore' && appMode === 'play' && !playPaused && shuffleLoopControlRef.current.active && shuffleLoopControlRef.current.pulseUntil > time
-      const motionActive = editScrub.pressed || forwardControl.pressed || exploreControl.direction !== 0 || exploreControl.releaseCarryUntil > time || forwardControl.releaseCarryUntil > time || forwardControl.idlePushUntil > time || loopPulseActive || shuffleLoopPulseActive || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
+      const motionActive = editScrub.pressed
+        || forwardControl.pressed
+        || exploreControl.direction !== 0
+        || exploreControl.releaseCarryUntil > time
+        || forwardControl.releaseCarryUntil > time
+        || forwardControl.idlePushUntil > time
+        || loopPulseActive
+        || shuffleLoopPulseActive
+        || Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold
       if (motionActive) {
         mothMotionRef.current.blurResumeAt = time + 650
       }
@@ -1973,7 +2061,6 @@ function App() {
     && gameScreen === 'explore'
     && exploreIdleFocusActive
     && !exploreMenuReturnActive
-
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
@@ -2053,6 +2140,43 @@ function App() {
   const selectedRouteGroup = selectedRouteGroupId
     ? (project.routeGroups ?? []).find((group) => group.id === selectedRouteGroupId) ?? null
     : null
+  const selectedDescriptionPoint = selectedDescriptionPointId
+    ? (project.descriptionRoutePoints ?? []).find((point) => point.id === selectedDescriptionPointId) ?? null
+    : null
+  const descriptionPanelActive = workspaceMode === 'editor'
+    && (editorView === 'classic' || openEditorPanels.includes('Description'))
+  const descriptionMarkerEditingActive = descriptionPanelActive
+  const buildDescriptionBoundaryPath = useCallback((
+    point: DescriptionRoutePoint,
+    side: 'forward' | 'backward',
+    sampleCount = 30,
+  ) => {
+    const direction = point[side]
+    if (!direction.enabled) {
+      return null
+    }
+    const startProgress = clamp(point.routeProgress - direction.boundaryBefore, 0, 1)
+    const endProgress = clamp(point.routeProgress + direction.boundaryAfter, 0, 1)
+    const points = Array.from({ length: sampleCount + 1 }, (_, index) => {
+      const progress = startProgress + ((endProgress - startProgress) * (index / sampleCount))
+      return worldToScreen(sampleRouteData(routeSampleData, progress), canvasCamera, viewport)
+    })
+    const path = points.map((screenPoint, index) => `${index === 0 ? 'M' : 'L'} ${screenPoint.x.toFixed(2)} ${screenPoint.y.toFixed(2)}`).join(' ')
+    const anchor = worldToScreen(point, canvasCamera, viewport)
+    return {
+      anchor,
+      directionSide: side,
+      end: points[points.length - 1],
+      path,
+      start: points[0],
+    }
+  }, [canvasCamera, routeSampleData, viewport])
+  const selectedDescriptionBoundary = useMemo(() => {
+    if (!descriptionPanelActive || !selectedDescriptionPoint) {
+      return null
+    }
+    return buildDescriptionBoundaryPath(selectedDescriptionPoint, descriptionDirectionSide)
+  }, [buildDescriptionBoundaryPath, descriptionDirectionSide, descriptionPanelActive, selectedDescriptionPoint])
   const assetsForLayer = useMemo(
     () => assetLibrary.filter((asset) => asset.layerIds.includes(activeLayerId)),
     [activeLayerId],
@@ -2424,7 +2548,23 @@ function App() {
   const hudButtonPairStyle = (ids: GameHudButtonId[]) => ({
     '--game-hud-button-scale': `${ids.reduce((sum, id) => sum + hudButtonScale(id), 0) / ids.length}`,
   }) as CSSProperties
-  const shuffleDescriptionPrototypeExamples = useMemo(() => {
+  const shuffleDescriptionPrototypeExamples = useMemo<ShuffleDescriptionExample[]>(() => {
+    const mothFallbackExample: ShuffleDescriptionExample = {
+      avatarAlt: 'Moon Moth',
+      avatarSrc: mothAsset.src,
+      avatarScale: 0.91,
+      anchorProgress: Number.POSITIVE_INFINITY,
+      cards: [
+        'Its wing glow becomes clearer against darker leaves.',
+        'The moth follows moonlight more reliably than the path.',
+      ],
+      iconKind: 'leaf',
+      id: moonMothShuffleDescriptionId,
+      publicName: 'Moon Moth',
+      quietZone: true,
+      silhouette: false,
+      text: 'Its wing glow becomes clearer against darker leaves.',
+    }
     const collectExamples = (entries: ShuffleInfoEntry[]) => entries.flatMap((entry) => {
       if (!entry.enabled || !entry.asset) {
         return []
@@ -2432,6 +2572,7 @@ function App() {
       const cards = entry.cards
         .map((card) => card.body.trim())
         .filter(Boolean)
+        .slice(0, shuffleDescriptionRuntimeCardLimit)
       if (cards.length === 0) {
         return []
       }
@@ -2445,22 +2586,18 @@ function App() {
         publicName: entry.publicName,
         text: cards[0],
         avatarScale: shuffleInfoAvatarScaleByName[entry.publicName] ?? 1,
+        quietZone: false,
+        anchorProgress: entry.routeProgress,
       }]
     })
     const currentExamples = collectExamples(shuffleInfoEntries)
     const examples = currentExamples.length > 0
       ? currentExamples
       : collectExamples(defaultShuffleInfoEntries)
-    const leafExample = examples.find((example) => example.publicName === shuffleDescriptionTestPublicNames.leaf)
-      ?? examples.find((example) => example.iconKind === 'leaf')
-    const moonExample = examples.find((example) => example.publicName === shuffleDescriptionTestPublicNames.moon)
-      ?? examples.find((example) => example.iconKind === 'moon')
-    return [leafExample, moonExample].reduce<typeof examples>((selectedExamples, example) => {
-      if (example && !selectedExamples.some((selectedExample) => selectedExample.id === example.id)) {
-        selectedExamples.push(example)
-      }
-      return selectedExamples
-    }, [])
+    return [
+      ...examples.sort((a, b) => a.anchorProgress - b.anchorProgress || a.publicName.localeCompare(b.publicName)),
+      mothFallbackExample,
+    ]
   }, [defaultShuffleInfoEntries, shuffleInfoEntries])
   const cameraExtensionInnerScale = clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96)
   const shuffleDescriptionInnerSize = gameSurfaceSize * cameraExtensionInnerScale
@@ -2497,22 +2634,157 @@ function App() {
     '--shuffle-description-card-left': `${shuffleDescriptionBackwardLeft - shuffleDescriptionAvatarLeft}px`,
   } as CSSProperties
   const showShuffleDescriptionPrototype = publicGameBuild
+    && shuffleDescriptionEnabled
     && workspaceMode === 'game'
     && gameMode === 'explore'
     && (gameHudScreen === 'explore' || (gameHudScreen === 'shuffle-wake' && shuffleDescriptionOpen))
     && (!shuffleLoopActive || shuffleDescriptionDismissingToLoop)
+    && (shuffleDescriptionInitialRevealReady || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop)
     && shuffleDescriptionPrototypeExamples.length > 0
+  const shuffleDescriptionHeldDirectionReady = exploreDirection !== 0
+    && exploreControlRef.current.startedAt > 0
+    && animationTime - exploreControlRef.current.startedAt >= shuffleDescriptionDirectionQuietDelayMs
+  const shuffleDescriptionSelectionDirection = shuffleDescriptionHeldDirectionReady
+    ? exploreDirection
+    : lastShuffleDirectionRef.current
+  const shuffleDescriptionActiveExampleIndex = shuffleDescriptionPrototypeExamples.length > 0
+    ? clamp(shuffleDescriptionRouteAssetIndex, 0, shuffleDescriptionPrototypeExamples.length - 1)
+    : 0
+  const shuffleDescriptionBoundaryEntries = useMemo<ShuffleDescriptionBoundaryEntry[]>(() => {
+    if (!showShuffleDescriptionPrototype || !shuffleDescriptionBoundaryEnabled || shuffleDescriptionPrototypeExamples.length === 0) {
+      return []
+    }
+    const exampleIndexByAssetId = new Map(shuffleDescriptionPrototypeExamples.map((example, index) => [example.id, index]))
+    return (project.descriptionRoutePoints ?? [])
+      .filter((point) => point.isAnchor && point.shuffleAssetId && exampleIndexByAssetId.has(point.shuffleAssetId))
+      .flatMap((point) => {
+        const directionSettings = shuffleDescriptionSelectionDirection < 0 ? point.backward : point.forward
+        if (directionSettings.enabled === false || !point.shuffleAssetId) {
+          return []
+        }
+        const start = clamp(point.routeProgress - directionSettings.boundaryBefore, 0, 1)
+        const end = clamp(point.routeProgress + directionSettings.boundaryAfter, 0, 1)
+        return [{
+          end,
+          exampleIndex: exampleIndexByAssetId.get(point.shuffleAssetId) ?? 0,
+          point,
+          start,
+        }]
+      })
+      .sort((a, b) => a.point.routeProgress - b.point.routeProgress)
+  }, [
+    project.descriptionRoutePoints,
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionBoundaryEnabled,
+    shuffleDescriptionPrototypeExamples,
+    shuffleDescriptionSelectionDirection,
+  ])
+  const sampleShuffleDescriptionBoundary = useCallback((progress: number) => {
+    if (shuffleDescriptionBoundaryEntries.length === 0) {
+      return null
+    }
+    const candidates = shuffleDescriptionBoundaryEntries
+      .filter((entry) => progress >= entry.start && progress <= entry.end)
+      .map((entry) => ({
+        ...entry,
+        distance: Math.abs(progress - entry.point.routeProgress),
+      }))
+    if (candidates.length === 0) {
+      return null
+    }
+    const currentExample = shuffleDescriptionPrototypeExamples[shuffleDescriptionActiveExampleIndex]
+    return candidates.sort((a, b) => {
+      const distanceDelta = a.distance - b.distance
+      if (Math.abs(distanceDelta) > 0.000001) {
+        return distanceDelta
+      }
+      if (a.exampleIndex === shuffleDescriptionActiveExampleIndex && b.exampleIndex !== shuffleDescriptionActiveExampleIndex) {
+        return -1
+      }
+      if (b.exampleIndex === shuffleDescriptionActiveExampleIndex && a.exampleIndex !== shuffleDescriptionActiveExampleIndex) {
+        return 1
+      }
+      if (a.point.shuffleAssetId === currentExample?.id && b.point.shuffleAssetId !== currentExample?.id) {
+        return -1
+      }
+      if (b.point.shuffleAssetId === currentExample?.id && a.point.shuffleAssetId !== currentExample?.id) {
+        return 1
+      }
+      return a.point.routeProgress - b.point.routeProgress
+    })[0].exampleIndex
+  }, [
+    shuffleDescriptionBoundaryEntries,
+    shuffleDescriptionActiveExampleIndex,
+    shuffleDescriptionPrototypeExamples,
+  ])
+  const shuffleDescriptionInitialAttentionReady = shuffleDescriptionInitialRevealReady
+    && shuffleDescriptionInitialAttentionReadyAt > 0
+    && animationTime >= shuffleDescriptionInitialAttentionReadyAt
+  useEffect(() => {
+    if (!showShuffleDescriptionPrototype || !shuffleDescriptionBoundaryEnabled || !shuffleDescriptionInitialAttentionReady) {
+      setShuffleDescriptionSampledBoundaryIndex(null)
+      return undefined
+    }
+    let cancelled = false
+    const sample = () => {
+      if (cancelled) {
+        return
+      }
+      setShuffleDescriptionSampledBoundaryIndex(sampleShuffleDescriptionBoundary(playProgressRef.current))
+      shuffleDescriptionBoundarySampleTimeoutRef.current = window.setTimeout(sample, shuffleDescriptionBoundarySampleMs)
+    }
+    sample()
+    return () => {
+      cancelled = true
+      if (shuffleDescriptionBoundarySampleTimeoutRef.current !== null) {
+        window.clearTimeout(shuffleDescriptionBoundarySampleTimeoutRef.current)
+        shuffleDescriptionBoundarySampleTimeoutRef.current = null
+      }
+    }
+  }, [
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionBoundaryEnabled,
+    shuffleDescriptionInitialAttentionReady,
+    sampleShuffleDescriptionBoundary,
+  ])
+  const shuffleDescriptionActiveBoundary = useMemo(() => {
+    if (shuffleDescriptionSampledBoundaryIndex === null) {
+      return null
+    }
+    return shuffleDescriptionBoundaryEntries.find((entry) => entry.exampleIndex === shuffleDescriptionSampledBoundaryIndex) ?? null
+  }, [shuffleDescriptionBoundaryEntries, shuffleDescriptionSampledBoundaryIndex])
+  const shuffleDescriptionMothExampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === moonMothShuffleDescriptionId)
+  const shuffleDescriptionBoundaryActive = shuffleDescriptionActiveBoundary !== null
   const shuffleDescriptionDirectionHoldQuiet = showShuffleDescriptionPrototype
     && !shuffleDescriptionOpen
     && !shuffleLoopActive
+    && (!shuffleDescriptionBoundaryActive || !shuffleDescriptionInitialAttentionReady)
+    && shuffleDescriptionHeldDirectionReady
+  const shuffleDescriptionLongDirectionQuiet = showShuffleDescriptionPrototype
+    && !shuffleDescriptionOpen
+    && !shuffleLoopActive
     && exploreDirection !== 0
-  const shuffleDescriptionRotatingExampleIndex = shuffleDescriptionPrototypeExamples.length > 0
-    ? shuffleDescriptionExampleIndex % shuffleDescriptionPrototypeExamples.length
-    : 0
-  const shuffleDescriptionActiveExampleIndex = shuffleDescriptionOpen && shuffleDescriptionLockedExampleIndex !== null && shuffleDescriptionPrototypeExamples.length > 0
-    ? shuffleDescriptionLockedExampleIndex % shuffleDescriptionPrototypeExamples.length
-    : shuffleDescriptionRotatingExampleIndex
-  const shuffleDescriptionBaseExample = shuffleDescriptionPrototypeExamples[shuffleDescriptionActiveExampleIndex]
+    && exploreControlRef.current.startedAt > 0
+    && animationTime - exploreControlRef.current.startedAt >= shuffleDescriptionLongDirectionQuietMs
+  const shuffleDescriptionAttentionAllowed = shuffleDescriptionBoundaryActive
+    && shuffleDescriptionAttentionEnabled
+    && shuffleDescriptionInitialAttentionReady
+    && animationTime >= shuffleDescriptionAttentionCooldownUntil
+    && !shuffleDescriptionLongDirectionQuiet
+  const shuffleDescriptionCurrentExample = shuffleDescriptionPrototypeExamples[shuffleDescriptionActiveExampleIndex]
+  const shuffleDescriptionClosedFallbackExampleIndex = shuffleDescriptionCurrentExample?.id !== moonMothShuffleDescriptionId
+    ? shuffleDescriptionActiveExampleIndex
+    : Math.max(
+      0,
+      shuffleDescriptionPrototypeExamples.findIndex((example) => (
+        example.id !== moonMothShuffleDescriptionId && example.iconKind === shuffleDescriptionLastGardenIconKind
+      )),
+      shuffleDescriptionPrototypeExamples.findIndex((example) => example.id !== moonMothShuffleDescriptionId),
+    )
+  const shuffleDescriptionRenderExampleIndex = !shuffleDescriptionOpen && !shuffleDescriptionDismissingToLoop
+    ? (shuffleDescriptionBoundaryEnabled && shuffleDescriptionInitialAttentionReady ? (shuffleDescriptionActiveBoundary?.exampleIndex ?? shuffleDescriptionClosedFallbackExampleIndex) : shuffleDescriptionClosedFallbackExampleIndex)
+    : shuffleDescriptionActiveExampleIndex
+  const shuffleDescriptionBaseExample = shuffleDescriptionPrototypeExamples[shuffleDescriptionRenderExampleIndex]
   const shuffleDescriptionActiveCards = shuffleDescriptionBaseExample?.cards ?? []
   const shuffleDescriptionActiveText = shuffleDescriptionActiveCards.length > 0
     ? shuffleDescriptionActiveCards[shuffleDescriptionCardIndex % shuffleDescriptionActiveCards.length]
@@ -2520,43 +2792,191 @@ function App() {
   const shuffleDescriptionActiveExample = shuffleDescriptionBaseExample && shuffleDescriptionActiveText
     ? { ...shuffleDescriptionBaseExample, text: shuffleDescriptionActiveText }
     : shuffleDescriptionBaseExample
-  const shuffleDescriptionDirectionPaused = shuffleDescriptionOpen && !shuffleLoopActive && exploreDirection !== 0
-  const shuffleInfoIconKind = shuffleDescriptionActiveExample?.iconKind ?? 'leaf'
+  const shuffleDescriptionMothInfoActive = shuffleDescriptionActiveExample?.id === moonMothShuffleDescriptionId
+  const shuffleInfoIconKind = shuffleDescriptionMothInfoActive
+    ? shuffleDescriptionLastGardenIconKind
+    : shuffleDescriptionActiveExample?.iconKind ?? 'leaf'
   const ShuffleInfoIcon = shuffleInfoIconKind === 'moon' ? Moon : Leaf
   const shuffleInfoIconLabel = shuffleInfoIconKind === 'moon' ? 'Moon' : 'Leaf'
-  useEffect(() => {
-    if (!showShuffleDescriptionPrototype || shuffleDescriptionOpen || shuffleDescriptionDirectionHoldQuiet || shuffleDescriptionPrototypeExamples.length <= 1) {
-      return undefined
+  const prepareShuffleDescriptionEntryCards = () => {
+    shuffleDescriptionCardCursorRef.current = new Map()
+    shuffleDescriptionEntryCardOffsetRef.current = (shuffleDescriptionEntryCardOffsetRef.current + 1) % 97
+  }
+  const nextShuffleDescriptionCardIndex = (example: ShuffleDescriptionExample | undefined, avoidIndex?: number) => {
+    const cards = example?.cards ?? []
+    if (cards.length <= 1 || !example) {
+      return 0
     }
-    const interval = window.setInterval(() => {
-      setShuffleDescriptionExampleIndex((index) => (index + 1) % shuffleDescriptionPrototypeExamples.length)
-    }, 4200)
-    return () => window.clearInterval(interval)
-  }, [showShuffleDescriptionPrototype, shuffleDescriptionOpen, shuffleDescriptionDirectionHoldQuiet, shuffleDescriptionPrototypeExamples.length])
-  useEffect(() => {
-    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleDescriptionDirectionPaused || shuffleDescriptionActiveCards.length <= 1) {
-      return undefined
+    const storedCursor = shuffleDescriptionCardCursorRef.current.get(example.id)
+    const rawIndex = storedCursor ?? shuffleDescriptionEntryCardOffsetRef.current
+    let nextIndex = ((rawIndex % cards.length) + cards.length) % cards.length
+    if (avoidIndex !== undefined && cards.length > 1 && nextIndex === ((avoidIndex % cards.length) + cards.length) % cards.length) {
+      nextIndex = (nextIndex + 1) % cards.length
     }
-    const interval = window.setInterval(() => {
-      setShuffleDescriptionCardIndex((index) => (index + 1) % shuffleDescriptionActiveCards.length)
-    }, 7000)
-    return () => window.clearInterval(interval)
-  }, [showShuffleDescriptionPrototype, shuffleDescriptionOpen, shuffleDescriptionDirectionPaused, shuffleDescriptionActiveCards.length, shuffleDescriptionActiveExample?.id])
-  const resetShuffleDescriptionCard = () => {
-    setShuffleDescriptionOpen(false)
-    setShuffleDescriptionDismissingToLoop(false)
-    setShuffleDescriptionLockedExampleIndex(null)
-    setShuffleDescriptionCardIndex(0)
+    shuffleDescriptionCardCursorRef.current.set(example.id, nextIndex + 1)
+    return nextIndex
+  }
+  const changeShuffleDescriptionAsset = (exampleIndex: number) => {
+    const nextExample = shuffleDescriptionPrototypeExamples[exampleIndex]
+    setShuffleDescriptionRouteAssetIndex(exampleIndex)
+    setShuffleDescriptionCardIndex(nextShuffleDescriptionCardIndex(nextExample))
+    setShuffleDescriptionAutoAdvanceCount(0)
+    setShuffleDescriptionPendingAssetIndex(null)
+    setShuffleDescriptionOpenedAt(performance.now())
+  }
+  const advanceShuffleDescriptionCard = (
+    exampleIndex = shuffleDescriptionActiveExampleIndex,
+    options: { countAsReadWindow?: boolean } = {},
+  ) => {
+    const nextExample = shuffleDescriptionPrototypeExamples[exampleIndex]
+    setShuffleDescriptionCardIndex(nextShuffleDescriptionCardIndex(nextExample, shuffleDescriptionCardIndex))
+    setShuffleDescriptionAutoAdvanceCount(options.countAsReadWindow ? 1 : 0)
+    setShuffleDescriptionPendingAssetIndex(null)
+    setShuffleDescriptionOpenedAt(performance.now())
+  }
+  const syncClosedShuffleDescriptionAsset = (exampleIndex: number) => {
+    setShuffleDescriptionRouteAssetIndex(exampleIndex)
+    setShuffleDescriptionPendingAssetIndex(null)
   }
   useEffect(() => {
-    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleLoopActive || exploreDirection === 0) {
+    if (!showShuffleDescriptionPrototype) {
+      return
+    }
+    const targetExampleIndex = shuffleDescriptionActiveBoundary?.exampleIndex ?? null
+    if (targetExampleIndex !== null && targetExampleIndex !== shuffleDescriptionActiveExampleIndex) {
+      if (!shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop) {
+        if (!shuffleDescriptionInitialAttentionReady) {
+          return
+        }
+        syncClosedShuffleDescriptionAsset(targetExampleIndex)
+        return
+      }
+      const elapsed = performance.now() - shuffleDescriptionOpenedAt
+      if (shuffleDescriptionOpenedAt <= 0 || elapsed >= shuffleDescriptionMinAssetSwitchMs) {
+        changeShuffleDescriptionAsset(targetExampleIndex)
+        return
+      }
+      setShuffleDescriptionPendingAssetIndex(targetExampleIndex)
+      return
+    }
+    setShuffleDescriptionPendingAssetIndex(null)
+  }, [
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionActiveBoundary,
+    shuffleDescriptionActiveExampleIndex,
+    shuffleDescriptionOpen,
+    shuffleDescriptionDismissingToLoop,
+    shuffleDescriptionOpenedAt,
+    shuffleDescriptionInitialAttentionReady,
+  ])
+  useEffect(() => {
+    if (shuffleDescriptionActiveExample && shuffleDescriptionActiveExample.id !== moonMothShuffleDescriptionId) {
+      setShuffleDescriptionLastGardenIconKind(shuffleDescriptionActiveExample.iconKind)
+    }
+  }, [shuffleDescriptionActiveExample?.id, shuffleDescriptionActiveExample?.iconKind])
+  useEffect(() => {
+    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop || shuffleDescriptionPendingAssetIndex === null) {
+      return undefined
+    }
+    const elapsed = performance.now() - shuffleDescriptionOpenedAt
+    if (shuffleDescriptionOpenedAt <= 0 || elapsed >= shuffleDescriptionMinAssetSwitchMs) {
+      changeShuffleDescriptionAsset(shuffleDescriptionPendingAssetIndex)
       return undefined
     }
     const timeout = window.setTimeout(() => {
-      resetShuffleDescriptionCard()
-    }, 1500)
+      changeShuffleDescriptionAsset(shuffleDescriptionPendingAssetIndex)
+    }, shuffleDescriptionMinAssetSwitchMs - elapsed)
     return () => window.clearTimeout(timeout)
-  }, [exploreDirection, showShuffleDescriptionPrototype, shuffleDescriptionOpen, shuffleLoopActive])
+  }, [
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionOpen,
+    shuffleDescriptionDismissingToLoop,
+    shuffleDescriptionPendingAssetIndex,
+    shuffleDescriptionOpenedAt,
+  ])
+  const resetShuffleDescriptionCard = (options: { autoCollapse?: boolean } = {}) => {
+    setShuffleDescriptionOpen(false)
+    setShuffleDescriptionDismissingToLoop(false)
+    setShuffleDescriptionPendingAssetIndex(null)
+    setShuffleDescriptionAutoAdvanceCount(0)
+    setShuffleDescriptionOpenedAt(0)
+    setShuffleDescriptionSampledBoundaryIndex(null)
+    if (options.autoCollapse) {
+      setShuffleDescriptionAttentionCooldownUntil(performance.now() + shuffleDescriptionAttentionCooldownMs)
+    }
+  }
+  const clearShuffleDescriptionTimers = () => {
+    if (shuffleDescriptionBoundarySampleTimeoutRef.current !== null) {
+      window.clearTimeout(shuffleDescriptionBoundarySampleTimeoutRef.current)
+      shuffleDescriptionBoundarySampleTimeoutRef.current = null
+    }
+  }
+  const resetShuffleDescriptionInitialReveal = () => {
+    clearShuffleDescriptionTimers()
+    setShuffleDescriptionInitialRevealReady(false)
+    setShuffleDescriptionInitialAttentionReadyAt(0)
+    setShuffleDescriptionSampledBoundaryIndex(null)
+  }
+  const revealShuffleDescriptionInitialButton = () => {
+    setShuffleDescriptionInitialRevealReady(true)
+    setShuffleDescriptionInitialAttentionReadyAt(performance.now() + shuffleDescriptionInitialAttentionDelayMs)
+  }
+  const shuffleDescriptionTransitionTarget = () => {
+    return shuffleDescriptionActiveBoundary
+  }
+  useEffect(() => {
+    if (
+      !showShuffleDescriptionPrototype
+      || !shuffleDescriptionOpen
+      || shuffleDescriptionDismissingToLoop
+      || shuffleDescriptionPendingAssetIndex !== null
+    ) {
+      return undefined
+    }
+    const timeout = window.setTimeout(() => {
+      if (shuffleDescriptionActiveCards.length > 1 && shuffleDescriptionAutoAdvanceCount < 1) {
+        advanceShuffleDescriptionCard(shuffleDescriptionActiveExampleIndex, { countAsReadWindow: true })
+        return
+      }
+      resetShuffleDescriptionCard({ autoCollapse: true })
+    }, shuffleDescriptionReadWindowMs)
+    return () => window.clearTimeout(timeout)
+  }, [
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionOpen,
+    shuffleDescriptionDismissingToLoop,
+    shuffleDescriptionPendingAssetIndex,
+    shuffleDescriptionActiveExample?.id,
+    shuffleDescriptionActiveCards.length,
+    shuffleDescriptionCardIndex,
+    shuffleDescriptionAutoAdvanceCount,
+  ])
+  useEffect(() => {
+    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop || shuffleLoopActive || exploreDirection === 0) {
+      return undefined
+    }
+    const startedAt = exploreControlRef.current.startedAt
+    if (startedAt <= 0) {
+      return undefined
+    }
+    const now = performance.now()
+    const holdCollapseAt = startedAt + shuffleDescriptionDirectionHoldCollapseMs
+    const cardSettleAt = shuffleDescriptionOpenedAt > 0
+      ? shuffleDescriptionOpenedAt + shuffleDescriptionCollapseSettleMs
+      : now
+    const remainingMs = Math.max(0, Math.max(holdCollapseAt, cardSettleAt) - now)
+    const timeout = window.setTimeout(() => {
+      resetShuffleDescriptionCard({ autoCollapse: true })
+    }, remainingMs)
+    return () => window.clearTimeout(timeout)
+  }, [
+    exploreDirection,
+    showShuffleDescriptionPrototype,
+    shuffleDescriptionOpen,
+    shuffleDescriptionDismissingToLoop,
+    shuffleLoopActive,
+    shuffleDescriptionOpenedAt,
+  ])
   const setGameHudScreenWithHomeGrace = (screen: GameHudScreen) => {
     if (screen !== 'explore' && screen !== 'shuffle-wake') {
       resetShuffleDescriptionCard()
@@ -2675,6 +3095,7 @@ function App() {
     setSelectedItemIds([])
     setSelectedRoutePointIds([])
     setSelectedRouteGroupId(null)
+    setSelectedDescriptionPointId(null)
     setSelectedRoutePointIds([])
     setSelectedRouteGroupId(null)
     setMessage('Undid last edit')
@@ -2692,6 +3113,7 @@ function App() {
     setSelectedItemIds([])
     setSelectedRoutePointIds([])
     setSelectedRouteGroupId(null)
+    setSelectedDescriptionPointId(null)
     setMessage('Redid edit')
   }
 
@@ -2801,6 +3223,8 @@ function App() {
     tourHoldUntilRef.current = 0
     stopExploreFinish()
     setExploreSongEnded(false)
+    resetShuffleDescriptionInitialReveal()
+    prepareShuffleDescriptionEntryCards()
     const finishExploreEntry = () => {
       startMenuFocusDissolve()
       gameModeRef.current = 'explore'
@@ -2809,6 +3233,7 @@ function App() {
       setAppMode('play')
       setPlayPaused(false)
       handleMusicRestart(false)
+      revealShuffleDescriptionInitialButton()
       setMessage(nextMessage)
     }
     if (workspaceMode === 'game' && gameScreen === 'menu') {
@@ -2842,6 +3267,7 @@ function App() {
     stopExploreFinish()
     clearShuffleLoopPush()
     setExploreSongEnded(false)
+    resetShuffleDescriptionInitialReveal()
     clearJourneyEndpointWait(1)
     const now = performance.now()
     playProgressRef.current = 0
@@ -2907,6 +3333,7 @@ function App() {
     stopExploreControl(undefined, false)
     stopExploreFinish()
     setExploreSongEnded(false)
+    resetShuffleDescriptionInitialReveal()
     setGameScreenWithHomeGrace('menu')
     gameModeRef.current = 'journey'
     setGameMode('journey')
@@ -4241,6 +4668,17 @@ function App() {
     setCamera(fitCameraToWorld(project.world, viewport))
   }
 
+  const clientPointToCanvasPoint = (clientX: number, clientY: number): Point => {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) {
+      return { x: clientX, y: clientY }
+    }
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    }
+  }
+
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (handleGameCanvasPointerDown(event)) {
       return
@@ -4252,6 +4690,11 @@ function App() {
     const world = screenToWorld(screen, canvasCamera, viewport)
     const resizeCorner = findResizeHandle(screen)
     const hit = resizeCorner ? selectionRef.current : hitTest(screen, world)
+
+    if (descriptionPanelActive && !resizeCorner && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
+      addDescriptionPointAtWorld(world)
+      return
+    }
 
     if (event.shiftKey && !resizeCorner) {
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -4351,6 +4794,11 @@ function App() {
         x: drag.startCamera.x - (screen.x - drag.startScreen.x) / dragCanvasCamera.zoom,
         y: drag.startCamera.y - (screen.y - drag.startScreen.y) / dragCanvasCamera.zoom,
       }, false)
+      return
+    }
+
+    if (drag.mode === 'description-point' && drag.descriptionPointId) {
+      moveDescriptionPointToWorld(drag.descriptionPointId, world, false)
       return
     }
 
@@ -4923,10 +5371,12 @@ function App() {
               <div
                 className={[
                   'shuffle-description-prototype',
+                  `test-${shuffleDescriptionExperiment}`,
                   shuffleDescriptionOpen ? 'open' : 'closed',
-                  shuffleDescriptionDismissingToLoop ? 'dismissing-to-loop' : '',
-                  shuffleDescriptionDirectionHoldQuiet ? 'direction-hold-quiet' : '',
-                  shuffleDescriptionDirectionPaused ? 'description-direction-paused' : '',
+	                  shuffleDescriptionDismissingToLoop ? 'dismissing-to-loop' : '',
+	                  (shuffleDescriptionDirectionHoldQuiet || shuffleDescriptionLongDirectionQuiet) ? 'direction-hold-quiet' : '',
+	                  shuffleDescriptionAttentionAllowed && !shuffleDescriptionOpen && !shuffleLoopActive ? 'attention' : '',
+	                  shuffleDescriptionActiveExample?.quietZone ? 'quiet-zone' : '',
                 ].filter(Boolean).join(' ')}
                 style={shuffleDescriptionStyle}
                 aria-live="polite"
@@ -4944,14 +5394,23 @@ function App() {
                       type="button"
                       aria-label={shuffleDescriptionOpen ? 'Close shuffle info' : `Open shuffle info, ${shuffleInfoIconLabel} icon`}
                       onClick={() => {
-                        if (shuffleDescriptionOpen) {
-                          setShuffleDescriptionOpen(false)
-                          setShuffleDescriptionLockedExampleIndex(null)
-                          setShuffleDescriptionCardIndex(0)
+                        if (!shuffleDescriptionOpenEnabled) {
                           return
                         }
-                        setShuffleDescriptionLockedExampleIndex(shuffleDescriptionActiveExampleIndex)
-                        setShuffleDescriptionCardIndex(0)
+                        if (shuffleDescriptionOpen) {
+                          resetShuffleDescriptionCard()
+                          return
+                        }
+                        const targetEntry = shuffleDescriptionTransitionTarget()
+                        const targetExampleIndex = targetEntry?.exampleIndex
+                          ?? (shuffleDescriptionMothExampleIndex >= 0 ? shuffleDescriptionMothExampleIndex : shuffleDescriptionActiveExampleIndex)
+                        if (targetExampleIndex !== shuffleDescriptionActiveExampleIndex) {
+                          changeShuffleDescriptionAsset(targetExampleIndex)
+                        } else {
+                          advanceShuffleDescriptionCard(targetExampleIndex)
+                        }
+                        setShuffleDescriptionPendingAssetIndex(null)
+                        setShuffleDescriptionOpenedAt(performance.now())
                         setShuffleDescriptionOpen(true)
                       }}
                     >
@@ -4959,26 +5418,38 @@ function App() {
                         className={[
                           'shuffle-description-flower-icon',
                           'shuffle-description-flower-icon-current',
-                          `shuffle-description-icon-${shuffleDescriptionActiveExample.iconKind}`,
+                          `shuffle-description-icon-${shuffleInfoIconKind}`,
                         ].join(' ')}
-                        key={shuffleDescriptionActiveExample.iconKind}
+                        key={shuffleInfoIconKind}
                         size={gameHudIconSize}
                         strokeWidth={hudStylePreset.iconStrokeWidth}
                         aria-hidden="true"
                       />
-                      <img src={shuffleDescriptionActiveExample.avatarSrc} alt="" loading="lazy" />
+                      {(shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop) && (
+                        <img
+                          key={shuffleDescriptionActiveExample.id}
+                          src={shuffleDescriptionActiveExample.avatarSrc}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
                     </button>
-                    <div className="shuffle-description-card">
-                      <div className="shuffle-description-copy">
-                        <div className="shuffle-description-card-title">{shuffleDescriptionActiveExample.publicName}</div>
-                        <div
-                          className="shuffle-description-card-text"
-                          key={`${shuffleDescriptionActiveExample.id}-${shuffleDescriptionCardIndex}`}
-                        >
-                          {shuffleDescriptionActiveExample.text}
+                    {(shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop) && (
+                      <div
+                        className="shuffle-description-card"
+                      >
+                        <div className="shuffle-description-copy" key={shuffleDescriptionActiveExample.id}>
+                          <div className="shuffle-description-card-title">{shuffleDescriptionActiveExample.publicName}</div>
+                          <div
+                            className="shuffle-description-card-text"
+                            key={`${shuffleDescriptionActiveExample.id}-${shuffleDescriptionCardIndex}`}
+                          >
+                            {shuffleDescriptionActiveExample.text}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -5023,6 +5494,41 @@ function App() {
                   <div className="game-menu-focus-backdrop" />
                 </div>
               )}
+              {selectedDescriptionBoundary && (
+                <svg className={`description-boundary-overlay ${selectedDescriptionBoundary.directionSide}`} viewBox={`0 0 ${viewport.width} ${viewport.height}`} aria-hidden="true">
+                  <path className="description-boundary-glow" d={selectedDescriptionBoundary.path} />
+                  <path className="description-boundary-line" d={selectedDescriptionBoundary.path} />
+                  <circle className="description-boundary-endpoint" cx={selectedDescriptionBoundary.start.x} cy={selectedDescriptionBoundary.start.y} r="5.5" />
+                  <circle className="description-boundary-endpoint" cx={selectedDescriptionBoundary.end.x} cy={selectedDescriptionBoundary.end.y} r="5.5" />
+                  <circle className="description-boundary-anchor-dot" cx={selectedDescriptionBoundary.anchor.x} cy={selectedDescriptionBoundary.anchor.y} r="4.25" />
+                </svg>
+              )}
+              {descriptionMarkerEditingActive && (project.descriptionRoutePoints ?? []).map((point, index) => {
+                const screen = worldToScreen(point, canvasCamera, viewport)
+                return (
+                  <button
+                    key={point.id}
+	                    className={[
+	                      'description-route-marker',
+	                      point.id === selectedDescriptionPointId ? 'active' : '',
+                      point.isAnchor ? 'anchor' : 'boundary',
+                    ].filter(Boolean).join(' ')}
+                    type="button"
+                    style={{ left: `${screen.x}px`, top: `${screen.y}px` }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setSelectedDescriptionPointId(point.id)
+                    }}
+                    onPointerDown={(event) => handleDescriptionMarkerPointerDown(point.id, event)}
+                    onPointerMove={handleDescriptionMarkerPointerMove}
+                    onPointerUp={handleDescriptionMarkerPointerEnd}
+                    onPointerCancel={handleDescriptionMarkerPointerEnd}
+                    title={`${point.label} · ${Math.round(point.routeProgress * 1000) / 10}%`}
+                  >
+                    {point.isAnchor ? 'A' : index + 1}
+                  </button>
+                )
+              })}
               {workspaceMode === 'editor' && selectionBox && (
                 <div className="selection-rect" style={screenRectStyle(makeScreenRect(selectionBox.start, selectionBox.current))} />
               )}
@@ -5594,6 +6100,47 @@ function App() {
           />
         </EditorSection>
 
+        <EditorSection title="Description" {...panelSectionProps('Description')}>
+          <div className="mini-section-label">Description View</div>
+          <div className="segmented description-view-tabs">
+            <button
+              className={canvasTargets.includes('path') && canvasTargets.includes('background') && canvasTargets.includes('foreground') ? 'active' : ''}
+              type="button"
+              onClick={() => setCanvasTargets(['path', 'background', 'foreground'])}
+            >
+              Path + Both
+            </button>
+            <button
+              className={canvasTargets.includes('path') && canvasTargets.includes('background') && !canvasTargets.includes('foreground') ? 'active' : ''}
+              type="button"
+              onClick={() => setCanvasTargets(['path', 'background'])}
+            >
+              Path + Background
+            </button>
+            <button
+              className={canvasTargets.includes('path') && !canvasTargets.includes('background') && canvasTargets.includes('foreground') ? 'active' : ''}
+              type="button"
+              onClick={() => setCanvasTargets(['path', 'foreground'])}
+            >
+              Path + Foreground
+            </button>
+          </div>
+          <DescriptionPointEditor
+            points={project.descriptionRoutePoints ?? []}
+            selectedPointId={selectedDescriptionPointId}
+            directionSide={descriptionDirectionSide}
+            shuffleAssets={shuffleInfoEntries.filter((entry) => entry.enabled)}
+            route={project.route}
+            onSelectPoint={setSelectedDescriptionPointId}
+            onAddPoint={() => setMessage('Click near the path on the canvas to add a description point')}
+            onSetDirectionSide={setDescriptionDirectionSide}
+            onUpdatePoint={updateDescriptionPoint}
+            onSetAnchor={setDescriptionPointAnchor}
+            onUpdateDirection={updateDescriptionDirection}
+            onDeletePoint={deleteDescriptionPoint}
+          />
+        </EditorSection>
+
         <EditorSection title="HUD" {...panelSectionProps('HUD')}>
           <div className="mini-section-label">Button Selection</div>
           <div className="hud-selection-grid">
@@ -6048,6 +6595,7 @@ function App() {
     setSelectedItemIds([])
     setSelectedRoutePointIds([])
     setSelectedRouteGroupId(null)
+    setSelectedDescriptionPointId(null)
     setSelectionBox(null)
     dragRef.current = null
     if (nextMessage) {
@@ -6551,6 +7099,193 @@ function App() {
       route: current.route.map((point) => (point.id === id ? { ...point, ...patch } : point)),
     }))
   }
+
+  function createDefaultDescriptionDirection(): DescriptionRoutePoint['forward'] {
+    return {
+      enabled: true,
+      boundaryBefore: 0.03,
+      boundaryAfter: 0.03,
+      notes: '',
+    }
+  }
+
+  function descriptionPointRoutePlacement(world: Point, project = projectRef.current, camera = canvasCamera) {
+    const progress = nearestRouteProgress(project.route, project.routeRenderMode, world)
+    const routePoint = sampleRouteData(routeSampleDataRef.current, progress)
+    const snapThreshold = 34 / Math.max(0.08, camera.zoom)
+    let closestRoutePoint: RoutePoint | null = null
+    let closestDistance = Number.POSITIVE_INFINITY
+    for (const candidate of project.route) {
+      const candidateDistance = distance(candidate, world)
+      if (candidateDistance < closestDistance) {
+        closestRoutePoint = candidate
+        closestDistance = candidateDistance
+      }
+    }
+    const snappedRoutePointId = closestRoutePoint && closestDistance <= snapThreshold ? closestRoutePoint.id : undefined
+    return {
+      progress,
+      routePoint,
+      snappedRoutePointId,
+    }
+  }
+
+  function addDescriptionPointAtWorld(world: Point) {
+    const { progress, routePoint, snappedRoutePointId } = descriptionPointRoutePlacement(world)
+    const forward = createDefaultDescriptionDirection()
+    const point: DescriptionRoutePoint = {
+      id: createId('description-point'),
+      label: `Description Point ${(projectRef.current.descriptionRoutePoints ?? []).length + 1}`,
+      x: routePoint.x,
+      y: routePoint.y,
+      routeProgress: progress,
+      snappedRoutePointId,
+      isAnchor: false,
+      shuffleAssetId: undefined,
+      forward,
+      backward: { ...forward },
+    }
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: [...(current.descriptionRoutePoints ?? []), point],
+    }), { message: snappedRoutePointId ? 'Added snapped description point' : 'Added description point' })
+    setSelectedDescriptionPointId(point.id)
+    setSelection(null)
+    setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+  }
+
+  function updateDescriptionPoint(id: string, patch: Partial<DescriptionRoutePoint>) {
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: (current.descriptionRoutePoints ?? []).map((point) => (
+        point.id === id ? { ...point, ...patch } : point
+      )),
+    }), { message: 'Updated description point' })
+  }
+
+  function moveDescriptionPointToWorld(id: string, world: Point, history = false) {
+    const { progress, routePoint, snappedRoutePointId } = descriptionPointRoutePlacement(world)
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: (current.descriptionRoutePoints ?? []).map((point) => (
+        point.id === id
+          ? {
+              ...point,
+              x: routePoint.x,
+              y: routePoint.y,
+              routeProgress: progress,
+              snappedRoutePointId,
+            }
+          : point
+      )),
+    }), { history, message: snappedRoutePointId ? 'Moved snapped description point' : 'Moved description point' })
+  }
+
+  function handleDescriptionMarkerPointerDown(id: string, event: React.PointerEvent<HTMLButtonElement>) {
+    if (!descriptionMarkerEditingActive || appMode !== 'edit') {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const screen = clientPointToCanvasPoint(event.clientX, event.clientY)
+    const world = screenToWorld(screen, canvasCamera, viewport)
+    event.currentTarget.setPointerCapture(event.pointerId)
+    pushHistory(projectRef.current)
+    setSelectedDescriptionPointId(id)
+    setSelection(null)
+    setSelectedItemIds([])
+    setSelectedRoutePointIds([])
+    setSelectedRouteGroupId(null)
+    setMessage('Description anchor selected')
+    dragRef.current = {
+      pointerId: event.pointerId,
+      selection: null,
+      descriptionPointId: id,
+      descriptionPointDragStarted: false,
+      selectedItemIds: [],
+      mode: 'description-point',
+      startScreen: screen,
+      startWorld: world,
+      startCamera: projectRef.current.camera,
+      startProject: cloneProject(projectRef.current),
+    }
+  }
+
+  function handleDescriptionMarkerPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId || drag.mode !== 'description-point' || !drag.descriptionPointId) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const screen = clientPointToCanvasPoint(event.clientX, event.clientY)
+    const dragDistance = distance(screen, drag.startScreen)
+    if (!drag.descriptionPointDragStarted) {
+      if (dragDistance < 8) {
+        return
+      }
+      pushHistory(projectRef.current)
+      dragRef.current = {
+        ...drag,
+        descriptionPointDragStarted: true,
+      }
+    }
+    const dragCanvasCamera = cameraForCanvasView(drag.startCamera, drag.startProject)
+    const world = screenToWorld(screen, dragCanvasCamera, viewport)
+    moveDescriptionPointToWorld(drag.descriptionPointId, world, false)
+  }
+
+  function handleDescriptionMarkerPointerEnd(event: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId || drag.mode !== 'description-point') {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    } catch {
+      // Pointer capture may already be released by the browser.
+    }
+    dragRef.current = null
+  }
+
+  function updateDescriptionDirection(id: string, side: 'forward' | 'backward', patch: Partial<DescriptionRoutePoint['forward']>) {
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: (current.descriptionRoutePoints ?? []).map((point) => (
+        point.id === id
+          ? { ...point, [side]: { ...point[side], ...patch } }
+          : point
+      )),
+    }), { message: 'Updated description boundary' })
+  }
+
+  function setDescriptionPointAnchor(id: string, isAnchor: boolean) {
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: (current.descriptionRoutePoints ?? []).map((point) => {
+        if (point.id !== id) {
+          return point
+        }
+        return isAnchor
+          ? { ...point, isAnchor, forward: { ...point.forward, enabled: true }, backward: { ...point.forward, enabled: true } }
+          : { ...point, isAnchor, shuffleAssetId: undefined, backward: { ...point.forward } }
+      }),
+    }), { message: isAnchor ? 'Marked description anchor' : 'Changed to boundary note' })
+  }
+
+  function deleteDescriptionPoint(id: string) {
+    updateProject((current) => ({
+      ...current,
+      descriptionRoutePoints: (current.descriptionRoutePoints ?? []).filter((point) => point.id !== id),
+    }), { message: 'Deleted description point' })
+    if (selectedDescriptionPointId === id) {
+      setSelectedDescriptionPointId(null)
+    }
+  }
 }
 
 function EditorSection({ title, editorView, isOpen = true, onToggle, children }: {
@@ -6946,6 +7681,178 @@ function GlowBehaviorBatchToggles({ items, onChange }: {
       </div>
     </div>
   )
+}
+
+function DescriptionPointEditor({
+  points,
+  selectedPointId,
+  directionSide,
+  shuffleAssets,
+  route,
+  onSelectPoint,
+  onAddPoint,
+  onSetDirectionSide,
+  onUpdatePoint,
+  onSetAnchor,
+  onUpdateDirection,
+  onDeletePoint,
+}: {
+  points: DescriptionRoutePoint[]
+  selectedPointId: string | null
+  directionSide: 'forward' | 'backward'
+  shuffleAssets: ShuffleInfoEntry[]
+  route: RoutePoint[]
+  onSelectPoint: (id: string | null) => void
+  onAddPoint: () => void
+  onSetDirectionSide: (side: 'forward' | 'backward') => void
+  onUpdatePoint: (id: string, patch: Partial<DescriptionRoutePoint>) => void
+  onSetAnchor: (id: string, isAnchor: boolean) => void
+  onUpdateDirection: (id: string, side: 'forward' | 'backward', patch: Partial<DescriptionRoutePoint['forward']>) => void
+  onDeletePoint: (id: string) => void
+}) {
+  const sortedPoints = [...points].sort((a, b) => a.routeProgress - b.routeProgress)
+  const selectedPoint = selectedPointId ? points.find((point) => point.id === selectedPointId) ?? null : null
+  const direction = selectedPoint?.[directionSide]
+  const formatBoundary = (value: number) => `${Math.round(value * 1000) / 10}%`
+
+  return (
+    <div className="description-point-editor">
+      <p className="target-hint">
+        Path, background, and foreground are visible. Click near the path on the canvas to add description points.
+      </p>
+      <div className="button-grid">
+        <button type="button" onClick={onAddPoint}><Plus size={14} /> Click Canvas To Add</button>
+      </div>
+
+      <div className="description-point-list">
+        {sortedPoints.length > 0 ? sortedPoints.map((point, index) => {
+          const asset = point.shuffleAssetId
+            ? shuffleAssets.find((entry) => entry.item.id === point.shuffleAssetId)
+            : null
+          return (
+            <button
+              key={point.id}
+              type="button"
+              className={point.id === selectedPointId ? 'description-point-row active' : 'description-point-row'}
+              onClick={() => onSelectPoint(point.id)}
+            >
+              <strong>{point.isAnchor ? 'Anchor' : 'Boundary'} {index + 1}</strong>
+              <span>{asset?.publicName ?? point.label}</span>
+              <small>{formatDescriptionPointLocation(point, route)}</small>
+            </button>
+          )
+        }) : (
+          <p className="muted">No description points yet. Click near the path on the canvas to add the first one.</p>
+        )}
+      </div>
+
+      {selectedPoint && (
+        <div className="selected-editor description-point-selected">
+          <div className="description-point-selected-header">
+            <strong>{selectedPoint.label}</strong>
+            <button className="mini" type="button" onClick={() => onDeletePoint(selectedPoint.id)}>
+              <Trash2 size={13} /> Delete
+            </button>
+          </div>
+          <div className="inspector-grid">
+            <label>
+              Label
+              <input
+                type="text"
+                value={selectedPoint.label}
+                onChange={(event) => onUpdatePoint(selectedPoint.id, { label: event.target.value })}
+              />
+            </label>
+            <label>
+              Route
+              <input type="text" value={formatDescriptionPointLocation(selectedPoint, route)} readOnly />
+            </label>
+          </div>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={selectedPoint.isAnchor}
+              onChange={(event) => onSetAnchor(selectedPoint.id, event.target.checked)}
+            />
+            Anchor point
+          </label>
+
+          {selectedPoint.isAnchor && (
+            <label>
+              Shuffle asset
+              <select
+                value={selectedPoint.shuffleAssetId ?? ''}
+                onChange={(event) => onUpdatePoint(selectedPoint.id, { shuffleAssetId: event.target.value || undefined })}
+              >
+                <option value="">Choose asset...</option>
+                {shuffleAssets.map((entry) => (
+                  <option key={entry.item.id} value={entry.item.id}>{entry.publicName}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="segmented description-direction-tabs" aria-label="Description direction">
+            <button className={directionSide === 'forward' ? 'active' : ''} type="button" onClick={() => onSetDirectionSide('forward')}>
+              Forward
+            </button>
+            <button className={directionSide === 'backward' ? 'active' : ''} type="button" onClick={() => onSetDirectionSide('backward')}>
+              Backward
+            </button>
+          </div>
+          {direction && (
+            <div className="description-boundary-editor">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={direction.enabled}
+                  onChange={(event) => onUpdateDirection(selectedPoint.id, directionSide, { enabled: event.target.checked })}
+                />
+                Enabled for {directionSide}
+              </label>
+              <label>
+                Back boundary <span>{formatBoundary(direction.boundaryBefore)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={0.25}
+                  step={0.005}
+                  value={direction.boundaryBefore}
+                  onChange={(event) => onUpdateDirection(selectedPoint.id, directionSide, { boundaryBefore: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Forward boundary <span>{formatBoundary(direction.boundaryAfter)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={0.25}
+                  step={0.005}
+                  value={direction.boundaryAfter}
+                  onChange={(event) => onUpdateDirection(selectedPoint.id, directionSide, { boundaryAfter: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Notes for {directionSide}
+                <textarea
+                  rows={3}
+                  value={direction.notes}
+                  onChange={(event) => onUpdateDirection(selectedPoint.id, directionSide, { notes: event.target.value })}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function formatDescriptionPointLocation(point: DescriptionRoutePoint, route: RoutePoint[]) {
+  const snapped = point.snappedRoutePointId
+    ? route.find((routePoint) => routePoint.id === point.snappedRoutePointId)
+    : null
+  const snapLabel = snapped ? ` · snapped to ${snapped.label}` : ''
+  return `${Math.round(point.routeProgress * 1000) / 10}%${snapLabel}`
 }
 
 function GlowEditor({ item, onChange }: {

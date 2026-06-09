@@ -1,6 +1,6 @@
 import { assetById } from './assets'
 import { defaultProjectData } from './defaultProjectData'
-import type { AssetRole, EditorItem, EditorProject, GameHudButtonId, GameHudSoundPreset, GameHudStylePreset, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, ShuffleInfoRoomId, SubLayer } from './types'
+import type { AssetRole, DescriptionRoutePoint, EditorItem, EditorProject, GameHudButtonId, GameHudSoundPreset, GameHudStylePreset, GameplaySettings, GlowBehavior, LayerId, MusicCueAction, RenderBand, RouteGroup, SandboxId, ShuffleInfoRoomId, SubLayer } from './types'
 
 export const sandboxIds: SandboxId[] = ['a', 'b', 'c']
 
@@ -171,6 +171,7 @@ export function migrateProject(value: unknown): EditorProject {
     routeRenderMode: draft.routeRenderMode ?? fallback.routeRenderMode,
     route: Array.isArray(draft.route) && draft.route.length >= 2 ? draft.route : fallback.route,
     routeGroups: migrateRouteGroups(draft.routeGroups, Array.isArray(draft.route) ? draft.route.map((point) => point.id) : fallback.route.map((point) => point.id)),
+    descriptionRoutePoints: migrateDescriptionRoutePoints((draft as Partial<EditorProject>).descriptionRoutePoints),
     layerOrder: resolveLayerOrder(draft.layerOrder, fallback.layerOrder),
     layers: {
       background: { ...fallback.layers.background, ...draft.layers?.background },
@@ -191,6 +192,36 @@ export function migrateProject(value: unknown): EditorProject {
       : fallback.items,
     gameplay: migrateGameplaySettings(draft.gameplay, fallback.gameplay),
     camera: { ...fallback.camera, ...draft.camera },
+  }
+}
+
+function migrateDescriptionRoutePoints(points: unknown): DescriptionRoutePoint[] {
+  if (!Array.isArray(points)) {
+    return []
+  }
+  return points
+    .filter((point): point is Partial<DescriptionRoutePoint> => Boolean(point && typeof point === 'object'))
+    .map((point, index) => ({
+      id: typeof point.id === 'string' && point.id ? point.id : createId('description-point'),
+      label: typeof point.label === 'string' && point.label ? point.label : `Description Point ${index + 1}`,
+      x: clampNumber(point.x, -100000, 100000, 0),
+      y: clampNumber(point.y, -100000, 100000, 0),
+      routeProgress: clampNumber(point.routeProgress, 0, 1, 0),
+      snappedRoutePointId: typeof point.snappedRoutePointId === 'string' && point.snappedRoutePointId ? point.snappedRoutePointId : undefined,
+      isAnchor: point.isAnchor === true,
+      shuffleAssetId: typeof point.shuffleAssetId === 'string' && point.shuffleAssetId ? point.shuffleAssetId : undefined,
+      forward: migrateDescriptionDirection(point.forward),
+      backward: migrateDescriptionDirection(point.backward),
+    }))
+}
+
+function migrateDescriptionDirection(value: unknown) {
+  const source = value && typeof value === 'object' ? value as Partial<DescriptionRoutePoint['forward']> : {}
+  return {
+    enabled: source.enabled !== false,
+    boundaryBefore: clampNumber(source.boundaryBefore, 0, 0.25, 0.03),
+    boundaryAfter: clampNumber(source.boundaryAfter, 0, 0.25, 0.03),
+    notes: typeof source.notes === 'string' ? source.notes : '',
   }
 }
 
