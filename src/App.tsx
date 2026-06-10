@@ -8795,6 +8795,7 @@ function App() {
     const iconStrokeWidth = hudStylePreset.iconStrokeWidth
     const homeGraceQuiet = gameHudScreen !== 'menu' && gameHudHomeDisabledUntil > animationTime
     const menuModeQuiet = !exploreUnlocked
+    const menuEntryGlowClass = hudTapGlowClass('menu-entry')
     const backButton = (extraClassName = '', suppressLongHoldOther = false, forceVisualQuiet = false) => (
       <button
         className={`game-hud-button icon-only${homeGraceQuiet || forceVisualQuiet ? ' visual-disabled' : hudTapGlowClass('home')}${hudLongHoldActiveId && !suppressLongHoldOther ? ' long-hold-other' : ''}${extraClassName}`}
@@ -8813,20 +8814,26 @@ function App() {
       return (
         <div key="game-hud-menu" className={gameHudLayerClass(menuModeQuiet ? 'first-menu-glow' : undefined)} style={gameHudStyle} aria-label="Game menu controls">
           <button
-            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' visual-disabled' : ` enhanced-glow ambient-pulse${hudTapGlowClass('loop')}`}`}
+            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' visual-disabled' : ` enhanced-glow ambient-pulse${menuEntryGlowClass}`}`}
             type="button"
             aria-label="Loop"
             style={hudButtonStyle('loop')}
-            onClick={() => enterLoopMode()}
+            onClick={() => {
+              triggerHudTapGlow('menu-entry')
+              enterLoopMode()
+            }}
           >
             <Repeat2 size={iconSize} strokeWidth={iconStrokeWidth} />
           </button>
           <button
-            className={`game-hud-button span-2 primary menu-entry-choice enhanced-glow${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('explore')}`}
+            className={`game-hud-button span-2 primary menu-entry-choice enhanced-glow${menuModeQuiet ? ' first-entry-glow ambient-pulse' : ` ambient-pulse${menuEntryGlowClass}`}`}
             type="button"
             aria-label="Explore"
             style={hudButtonStyle('explore')}
-            onClick={() => enterDiscoverMode()}
+            onClick={() => {
+              triggerHudTapGlow('menu-entry')
+              enterDiscoverMode()
+            }}
           >
             Explore
           </button>
