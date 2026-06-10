@@ -981,6 +981,170 @@ input[type="range"] {
   white-space: nowrap;
 }
 
+.discover-dev-save-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(177, 246, 231, 0.26);
+  border-radius: 8px;
+  background: rgba(2, 7, 13, 0.74);
+  color: rgba(235, 255, 250, 0.9);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    0 0 32px rgba(108, 239, 218, 0.16);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.discover-dev-save-button:hover {
+  border-color: rgba(177, 246, 231, 0.56);
+  background: rgba(39, 109, 101, 0.32);
+}
+
+.discover-light-route-panel {
+  position: absolute;
+  z-index: 19;
+  width: min(296px, calc(100% - 24px));
+  border: 1px solid rgba(224, 181, 255, 0.24);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(5, 8, 20, 0.76);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.3),
+    0 0 48px rgba(159, 96, 255, 0.14);
+  color: rgba(249, 245, 255, 0.94);
+  font-family: var(--game-hud-font-family, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: 12px;
+  letter-spacing: 0;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.discover-light-route-header {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 9px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.discover-light-route-header:active {
+  cursor: grabbing;
+}
+
+.discover-light-route-header span,
+.discover-light-route-order span {
+  color: rgba(224, 205, 246, 0.62);
+}
+
+.discover-light-route-header strong {
+  overflow: hidden;
+  color: rgba(255, 251, 255, 0.96);
+  font-size: 13px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discover-light-route-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 9px;
+  padding: 3px;
+  border: 1px solid rgba(224, 181, 255, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.discover-light-route-toggle button {
+  min-width: 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 5px 6px;
+  background: transparent;
+  color: rgba(229, 215, 244, 0.68);
+  font: inherit;
+  cursor: pointer;
+}
+
+.discover-light-route-toggle button.active {
+  background: rgba(183, 122, 255, 0.22);
+  color: rgba(255, 251, 255, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(232, 199, 255, 0.24);
+}
+
+.discover-light-route-order {
+  display: grid;
+  grid-template-columns: 1fr 74px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.discover-light-route-order input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(224, 181, 255, 0.28);
+  border-radius: 6px;
+  padding: 6px 7px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 251, 255, 0.96);
+  font: inherit;
+  text-align: center;
+  outline: none;
+}
+
+.discover-light-route-order input:focus {
+  border-color: rgba(232, 199, 255, 0.76);
+  box-shadow: 0 0 0 2px rgba(169, 104, 255, 0.18);
+}
+
+.discover-light-route-order input:disabled {
+  opacity: 0.52;
+}
+
+.discover-light-route-actions,
+.discover-light-route-guide-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.discover-light-route-guide-actions {
+  margin-bottom: 7px;
+}
+
+.discover-light-route-actions button,
+.discover-light-route-guide-actions button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid rgba(224, 181, 255, 0.2);
+  border-radius: 7px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(249, 245, 255, 0.9);
+  font: inherit;
+  cursor: pointer;
+}
+
+.discover-light-route-actions button:hover,
+.discover-light-route-guide-actions button:hover {
+  border-color: rgba(232, 199, 255, 0.52);
+  background: rgba(174, 112, 255, 0.14);
+}
+
 .shuffle-description-prototype.open .shuffle-description-card {
   transform: translateY(0);
   transition:

@@ -29,6 +29,7 @@ export type RenderOptions = {
   mothMotionVelocity: number
   mothTrailVelocity: number
   mothForwardActive: boolean
+  hideMoth?: boolean
   hideRoutePath?: boolean
   hideWorldFrame?: boolean
   suppressMissingArtwork?: boolean
@@ -46,7 +47,7 @@ export type RenderOptions = {
     lightItemIds: string[]
     revealRadius: number
     revealPoints?: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point; softStart?: boolean }>
-    routeLights?: Array<{ id: string; layerId?: LayerId; point: Point; collected: boolean }>
+    routeLights?: Array<{ id: string; layerId?: LayerId; order?: number; point: Point; collected: boolean; type?: 'asset' | 'guide' | 'start' }>
   }
 }
 
@@ -106,8 +107,8 @@ function renderSceneContent(
       drawLayer(context, project, layerId, options, 'normal')
     }
   }
-  const drawMothAboveDiscovery = Boolean(options.exploreDiscovery && options.mothWorldPoint && options.appMode === 'play')
-  if (!drawMothAboveDiscovery && (showingAll || options.canvasTargets.includes('path'))) {
+  const drawMothAboveDiscovery = Boolean(!options.hideMoth && options.exploreDiscovery && options.mothWorldPoint && options.appMode === 'play')
+  if (!options.hideMoth && !drawMothAboveDiscovery && (showingAll || options.canvasTargets.includes('path'))) {
     drawMothTrail(context, project, options)
     drawMoth(context, project, options)
   }
@@ -766,14 +767,22 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
     const pulse = 0.74 + 0.26 * Math.sin(time * Math.PI * 2 * 0.82 + seededUnit(light.id) * Math.PI * 2)
     const radius = (18 + pulse * 7) * Math.max(0.72, options.camera.zoom ** 0.22)
     const glow = context.createRadialGradient(screen.x, screen.y, 0, screen.x, screen.y, radius * 2.6)
-    glow.addColorStop(0, `rgba(255, 246, 178, ${0.42 + pulse * 0.18})`)
-    glow.addColorStop(0.42, `rgba(183, 255, 225, ${0.22 + pulse * 0.12})`)
-    glow.addColorStop(1, 'rgba(183, 255, 225, 0)')
+    if (light.type !== 'guide') {
+      glow.addColorStop(0, `rgba(250, 218, 255, ${0.44 + pulse * 0.18})`)
+      glow.addColorStop(0.42, `rgba(172, 112, 255, ${0.24 + pulse * 0.12})`)
+      glow.addColorStop(1, 'rgba(172, 112, 255, 0)')
+    } else {
+      glow.addColorStop(0, `rgba(255, 246, 178, ${0.42 + pulse * 0.18})`)
+      glow.addColorStop(0.42, `rgba(183, 255, 225, ${0.22 + pulse * 0.12})`)
+      glow.addColorStop(1, 'rgba(183, 255, 225, 0)')
+    }
     context.fillStyle = glow
     context.beginPath()
     context.arc(screen.x, screen.y, radius * 2.6, 0, Math.PI * 2)
     context.fill()
-    context.strokeStyle = `rgba(255, 246, 178, ${0.58 + pulse * 0.24})`
+    context.strokeStyle = light.type !== 'guide'
+      ? `rgba(245, 210, 255, ${0.6 + pulse * 0.24})`
+      : `rgba(255, 246, 178, ${0.58 + pulse * 0.24})`
     context.lineWidth = Math.max(1.6, 2.6 * options.camera.zoom)
     context.beginPath()
     context.arc(screen.x, screen.y, radius * 0.72, 0, Math.PI * 2)
