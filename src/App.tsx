@@ -9204,6 +9204,7 @@ function App() {
                 publicGameWaitingForScene ? 'public-game-waiting-scene' : '',
                 !publicGameWaitingForMoth && !publicGameWaitingForScene ? 'public-game-scene-visible' : '',
                 workspaceMode === 'game' && gameFocusActive ? 'menu-focus-active' : '',
+                loopFocusActive ? 'loop-focus-active' : '',
                 discoverMenuBackdropActive ? 'discover-menu-backdrop' : '',
                 shuffleRestFocusActive ? 'shuffle-rest-focus-active' : '',
               ].filter(Boolean).join(' ')}
