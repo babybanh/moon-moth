@@ -792,7 +792,7 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
     context.fill()
     context.strokeStyle = light.type !== 'guide'
       ? `rgba(210, 188, 255, ${(0.5 + pulse * 0.18) * alphaScale})`
-      : `rgba(255, 246, 178, ${(0.44 + pulse * 0.18) * alphaScale})`
+      : `rgba(255, 246, 178, ${(0.44 + pulse * 0.18) * alphaScale * 0.8})`
     context.lineWidth = Math.max(1.6, 2.6 * options.camera.zoom)
     context.beginPath()
     context.arc(screen.x, screen.y, radius * 0.72, 0, Math.PI * 2)

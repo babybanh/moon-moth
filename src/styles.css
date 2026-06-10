@@ -572,6 +572,7 @@ input[type="range"] {
 }
 
 .shuffle-description-prototype.closed.attention .shuffle-description-avatar,
+.shuffle-description-prototype.closed.discover-radius-ready .shuffle-description-avatar,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover {
   background: #000;
   color: rgba(246, 255, 252, 0.96);
@@ -584,12 +585,14 @@ input[type="range"] {
 }
 
 .shuffle-description-prototype.closed.attention .shuffle-description-avatar::before,
+.shuffle-description-prototype.closed.discover-radius-ready .shuffle-description-avatar::before,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover::before {
   opacity: 0;
   animation: none;
 }
 
 .shuffle-description-prototype.closed.attention .shuffle-description-flower-icon-current,
+.shuffle-description-prototype.closed.discover-radius-ready .shuffle-description-flower-icon-current,
 .shuffle-description-prototype.closed .shuffle-description-avatar:hover .shuffle-description-flower-icon-current {
   color: #ffffff;
   opacity: 1;
@@ -872,282 +875,6 @@ input[type="range"] {
 .shuffle-description-card:focus-visible,
 .shuffle-description-card:active {
   outline: none;
-}
-
-.discover-pair-panel {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 18;
-  width: min(286px, calc(100% - 28px));
-  max-height: min(310px, calc(100% - 28px));
-  overflow: auto;
-  border: 1px solid rgba(179, 255, 236, 0.2);
-  border-radius: 8px;
-  padding: 10px;
-  background: rgba(3, 10, 21, 0.72);
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.28),
-    0 0 54px rgba(108, 236, 218, 0.1);
-  color: rgba(238, 255, 250, 0.94);
-  font-family: var(--game-hud-font-family, Inter, ui-sans-serif, system-ui, sans-serif);
-  font-size: 12px;
-  letter-spacing: 0;
-  pointer-events: auto;
-  backdrop-filter: blur(10px);
-}
-
-.discover-pair-header {
-  display: grid;
-  gap: 2px;
-  margin-bottom: 8px;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-}
-
-.discover-pair-header:active {
-  cursor: grabbing;
-}
-
-.discover-pair-header span,
-.discover-pair-row small,
-.discover-pair-list p {
-  color: rgba(201, 233, 229, 0.62);
-}
-
-.discover-pair-header strong {
-  color: rgba(250, 255, 253, 0.96);
-  font-size: 13px;
-  line-height: 1.2;
-}
-
-.discover-pair-list {
-  display: grid;
-  gap: 5px;
-}
-
-.discover-pair-list p {
-  margin: 0;
-}
-
-.discover-pair-row {
-  display: grid;
-  grid-template-columns: 16px 36px minmax(0, 1fr);
-  gap: 7px;
-  align-items: center;
-  border-radius: 6px;
-  padding: 5px;
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.discover-pair-row input {
-  width: 14px;
-  height: 14px;
-  margin: 1px 0 0;
-  accent-color: #9ff6df;
-}
-
-.discover-pair-avatar {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(179, 255, 236, 0.14);
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 50% 45%, rgba(155, 246, 223, 0.15), rgba(12, 19, 33, 0.18) 68%),
-    rgba(255, 255, 255, 0.04);
-}
-
-.discover-pair-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 7px rgba(180, 247, 231, 0.22));
-}
-
-.discover-pair-avatar span {
-  color: rgba(201, 233, 229, 0.52);
-  font-size: 12px;
-}
-
-.discover-pair-copy {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.discover-pair-copy strong,
-.discover-pair-copy small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.discover-dev-save-button {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 20;
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(177, 246, 231, 0.26);
-  border-radius: 8px;
-  background: rgba(2, 7, 13, 0.74);
-  color: rgba(235, 255, 250, 0.9);
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.28),
-    0 0 32px rgba(108, 239, 218, 0.16);
-  cursor: pointer;
-  pointer-events: auto;
-  backdrop-filter: blur(10px);
-}
-
-.discover-dev-save-button:hover {
-  border-color: rgba(177, 246, 231, 0.56);
-  background: rgba(39, 109, 101, 0.32);
-}
-
-.discover-light-route-panel {
-  position: absolute;
-  z-index: 19;
-  width: min(296px, calc(100% - 24px));
-  border: 1px solid rgba(224, 181, 255, 0.24);
-  border-radius: 8px;
-  padding: 10px;
-  background: rgba(5, 8, 20, 0.76);
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.3),
-    0 0 48px rgba(159, 96, 255, 0.14);
-  color: rgba(249, 245, 255, 0.94);
-  font-family: var(--game-hud-font-family, Inter, ui-sans-serif, system-ui, sans-serif);
-  font-size: 12px;
-  letter-spacing: 0;
-  pointer-events: auto;
-  backdrop-filter: blur(10px);
-}
-
-.discover-light-route-header {
-  display: grid;
-  gap: 2px;
-  margin-bottom: 9px;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-}
-
-.discover-light-route-header:active {
-  cursor: grabbing;
-}
-
-.discover-light-route-header span,
-.discover-light-route-order span {
-  color: rgba(224, 205, 246, 0.62);
-}
-
-.discover-light-route-header strong {
-  overflow: hidden;
-  color: rgba(255, 251, 255, 0.96);
-  font-size: 13px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.discover-light-route-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-  margin-bottom: 9px;
-  padding: 3px;
-  border: 1px solid rgba(224, 181, 255, 0.14);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.045);
-}
-
-.discover-light-route-toggle button {
-  min-width: 0;
-  border: 0;
-  border-radius: 5px;
-  padding: 5px 6px;
-  background: transparent;
-  color: rgba(229, 215, 244, 0.68);
-  font: inherit;
-  cursor: pointer;
-}
-
-.discover-light-route-toggle button.active {
-  background: rgba(183, 122, 255, 0.22);
-  color: rgba(255, 251, 255, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(232, 199, 255, 0.24);
-}
-
-.discover-light-route-order {
-  display: grid;
-  grid-template-columns: 1fr 74px;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 9px;
-}
-
-.discover-light-route-order input {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid rgba(224, 181, 255, 0.28);
-  border-radius: 6px;
-  padding: 6px 7px;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 251, 255, 0.96);
-  font: inherit;
-  text-align: center;
-  outline: none;
-}
-
-.discover-light-route-order input:focus {
-  border-color: rgba(232, 199, 255, 0.76);
-  box-shadow: 0 0 0 2px rgba(169, 104, 255, 0.18);
-}
-
-.discover-light-route-order input:disabled {
-  opacity: 0.52;
-}
-
-.discover-light-route-actions,
-.discover-light-route-guide-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-
-.discover-light-route-guide-actions {
-  margin-bottom: 7px;
-}
-
-.discover-light-route-actions button,
-.discover-light-route-guide-actions button {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 1px solid rgba(224, 181, 255, 0.2);
-  border-radius: 7px;
-  padding: 7px 8px;
-  background: rgba(255, 255, 255, 0.055);
-  color: rgba(249, 245, 255, 0.9);
-  font: inherit;
-  cursor: pointer;
-}
-
-.discover-light-route-actions button:hover,
-.discover-light-route-guide-actions button:hover {
-  border-color: rgba(232, 199, 255, 0.52);
-  background: rgba(174, 112, 255, 0.14);
 }
 
 .shuffle-description-prototype.open .shuffle-description-card {
@@ -1900,16 +1627,6 @@ canvas {
   width: 100%;
   height: 100%;
   cursor: crosshair;
-}
-
-.public-game-frame .canvas-shell {
-  /* Prevents subpixel/backdrop-filter hairlines where the artwork meets the clipped square shell. */
-  --game-canvas-edge-inset: 3px;
-}
-
-.public-game-frame .canvas-shell > canvas:not(.menu-moth-canvas) {
-  width: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2)) !important;
-  height: calc(100% - (var(--game-canvas-edge-inset, 0px) * 2)) !important;
 }
 
 .camera-extension-overlay {

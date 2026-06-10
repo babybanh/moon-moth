@@ -74,7 +74,7 @@ const defaultViewport: Size = { width: 900, height: 620 }
 const editorViewStorageKey = 'moonMothRouteEditor.editorView'
 const discoverCurveBoundaryStorageKey = 'moonMothRouteEditor.discoverCurveBoundary.preCameraNote.v2'
 const discoverPairingsStorageKey = 'moonMothRouteEditor.discoverPairings.v3'
-const discoverLightRouteStorageKey = 'moonMothRouteEditor.discoverLightRoute.v1'
+const discoverLightRouteStorageKey = 'moonMothRouteEditor.discoverLightRoute.v2'
 type DiscoverCurveBoundaryHistoryEntry = Point[]
 
 const discoverBoundaryReferencePoints: Point[] = [
@@ -676,8 +676,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 1.1,
     'parentOrder': 1,
     'point': {
-      'x': 3751.243961310759,
-      'y': 2250.9684820416305
+      'x': 3682.823462,
+      'y': 2229.12813
     },
     'type': 'guide'
   },
@@ -685,8 +685,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 1.2,
     'parentOrder': 1,
     'point': {
-      'x': 4201.034854099051,
-      'y': 2152.70938325899
+      'x': 4174.273422,
+      'y': 2158.555554
     },
     'type': 'guide'
   },
@@ -694,8 +694,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 10.1,
     'parentOrder': 10,
     'point': {
-      'x': 15281.0289848396,
-      'y': 3823.8730644542547
+      'x': 15148.592877,
+      'y': 3798.678231
     },
     'type': 'guide'
   },
@@ -703,8 +703,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 10.2,
     'parentOrder': 10,
     'point': {
-      'x': 15517.79391266145,
-      'y': 3590.3912579826124
+      'x': 15453.875234,
+      'y': 3653.423603
     },
     'type': 'guide'
   },
@@ -712,8 +712,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 10.3,
     'parentOrder': 10,
     'point': {
-      'x': 15833.829117884561,
-      'y': 3402.3490144048205
+      'x': 15765.118579,
+      'y': 3443.232067
     },
     'type': 'guide'
   },
@@ -721,8 +721,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.1,
     'parentOrder': 11,
     'point': {
-      'x': 16245.130448731048,
-      'y': 2963.821301566494
+      'x': 16258.809904,
+      'y': 2961.046477
     },
     'type': 'guide'
   },
@@ -730,8 +730,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.5,
     'parentOrder': 11,
     'point': {
-      'x': 17840.13303233133,
-      'y': 2464.5809495230865
+      'x': 17816.966816,
+      'y': 2462.423092
     },
     'type': 'guide'
   },
@@ -739,8 +739,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.3,
     'parentOrder': 11,
     'point': {
-      'x': 17029.361606221137,
-      'y': 2644.8792714219667
+      'x': 17033.452717,
+      'y': 2642.031951
     },
     'type': 'guide'
   },
@@ -748,8 +748,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.6,
     'parentOrder': 11,
     'point': {
-      'x': 18245.254595982322,
-      'y': 2344.2902475475644
+      'x': 18227.842796,
+      'y': 2349.460245
     },
     'type': 'guide'
   },
@@ -757,8 +757,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.7,
     'parentOrder': 11,
     'point': {
-      'x': 18691.78805476291,
-      'y': 2508.2297581201915
+      'x': 18629.706435,
+      'y': 2485.437221
     },
     'type': 'guide'
   },
@@ -766,8 +766,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.2,
     'parentOrder': 11,
     'point': {
-      'x': 16705.180571280853,
-      'y': 2870.5019106861773
+      'x': 16677.979543,
+      'y': 2876.019534
     },
     'type': 'guide'
   },
@@ -775,8 +775,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 11.4,
     'parentOrder': 11,
     'point': {
-      'x': 17353.542641161417,
-      'y': 2419.256632157756
+      'x': 17391.103884,
+      'y': 2422.75534
     },
     'type': 'guide'
   },
@@ -784,8 +784,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 12.1,
     'parentOrder': 12,
     'point': {
-      'x': 19420.012332822662,
-      'y': 2319.82638512404
+      'x': 19407.434287,
+      'y': 2326.662743
     },
     'type': 'guide'
   },
@@ -793,8 +793,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 12.2,
     'parentOrder': 12,
     'point': {
-      'x': 19186.526365415004,
-      'y': 1999.6047581643136
+      'x': 19190.909291,
+      'y': 2005.615858
     },
     'type': 'guide'
   },
@@ -802,8 +802,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 12.5,
     'parentOrder': 12,
     'point': {
-      'x': 19543.069460161812,
-      'y': 1119.1898536835524
+      'x': 19556.571133,
+      'y': 1109.587346
     },
     'type': 'guide'
   },
@@ -811,8 +811,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 12.4,
     'parentOrder': 12,
     'point': {
-      'x': 19292.641894009663,
-      'y': 1397.2413285818786
+      'x': 19283.185863,
+      'y': 1405.281346
     },
     'type': 'guide'
   },
@@ -820,8 +820,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 12.3,
     'parentOrder': 12,
     'point': {
-      'x': 18974.56234580363,
-      'y': 1667.6893590166221
+      'x': 18976.024398,
+      'y': 1666.446245
     },
     'type': 'guide'
   },
@@ -829,8 +829,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 13.1,
     'parentOrder': 13,
     'point': {
-      'x': 20303.715174577315,
-      'y': 808.2593987499939
+      'x': 20307.215403,
+      'y': 816.450081
     },
     'type': 'guide'
   },
@@ -838,8 +838,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 13.2,
     'parentOrder': 13,
     'point': {
-      'x': 20456.038514035587,
-      'y': 1164.702414129393
+      'x': 20510.233812,
+      'y': 1165.708677
     },
     'type': 'guide'
   },
@@ -847,8 +847,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 13.4,
     'parentOrder': 13,
     'point': {
-      'x': 21393.25409662999,
-      'y': 1105.3438664865341
+      'x': 21371.032902,
+      'y': 1108.759941
     },
     'type': 'guide'
   },
@@ -856,8 +856,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 13.3,
     'parentOrder': 13,
     'point': {
-      'x': 20947.745462193856,
-      'y': 1173.832111667602
+      'x': 20943.082746,
+      'y': 1173.745537
     },
     'type': 'guide'
   },
@@ -865,8 +865,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 14.1,
     'parentOrder': 14,
     'point': {
-      'x': 21702.869448146797,
-      'y': 1758.7664157974302
+      'x': 21711.537198,
+      'y': 1682.874528
     },
     'type': 'guide'
   },
@@ -874,8 +874,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 14.3,
     'parentOrder': 14,
     'point': {
-      'x': 21799.658015401797,
-      'y': 2423.4709399039266
+      'x': 21793.675071,
+      'y': 2411.926418
     },
     'type': 'guide'
   },
@@ -883,8 +883,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 14.2,
     'parentOrder': 14,
     'point': {
-      'x': 21636.90556175256,
-      'y': 2109.4283644061657
+      'x': 21645.454862,
+      'y': 2063.980554
     },
     'type': 'guide'
   },
@@ -892,8 +892,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.1,
     'parentOrder': 15,
     'point': {
-      'x': 22251.217656971614,
-      'y': 3073.000527784141
+      'x': 22284.158836,
+      'y': 3080.514101
     },
     'type': 'guide'
   },
@@ -901,8 +901,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.2,
     'parentOrder': 15,
     'point': {
-      'x': 22824.86858878404,
-      'y': 3203.8449147355873
+      'x': 22729.107353,
+      'y': 3182.002677
     },
     'type': 'guide'
   },
@@ -910,8 +910,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.3,
     'parentOrder': 15,
     'point': {
-      'x': 23288.7176361208,
-      'y': 3107.681604307273
+      'x': 23175.566793,
+      'y': 3131.13958
     },
     'type': 'guide'
   },
@@ -919,8 +919,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.6,
     'parentOrder': 15,
     'point': {
-      'x': 24503.916515649136,
-      'y': 3531.999961609832
+      'x': 24433.884409,
+      'y': 3519.212775
     },
     'type': 'guide'
   },
@@ -928,8 +928,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.4,
     'parentOrder': 15,
     'point': {
-      'x': 23809.62950834355,
-      'y': 3206.9225299065674
+      'x': 23623.515161,
+      'y': 3171.465169
     },
     'type': 'guide'
   },
@@ -937,8 +937,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 15.5,
     'parentOrder': 15,
     'point': {
-      'x': 24101.033303768465,
-      'y': 3458.4373734685137
+      'x': 24011.688516,
+      'y': 3381.322591
     },
     'type': 'guide'
   },
@@ -946,8 +946,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.1,
     'parentOrder': 16,
     'point': {
-      'x': 25392.272084791566,
-      'y': 3137.9667739677448
+      'x': 25367.875009,
+      'y': 3148.651653
     },
     'type': 'guide'
   },
@@ -955,8 +955,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.4,
     'parentOrder': 16,
     'point': {
-      'x': 26430.24410622401,
-      'y': 2369.828536495686
+      'x': 26644.652891,
+      'y': 2406.976227
     },
     'type': 'guide'
   },
@@ -964,8 +964,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.6,
     'parentOrder': 16,
     'point': {
-      'x': 27632.50115422121,
-      'y': 2318.8871613242845
+      'x': 27741.073488,
+      'y': 2294.741986
     },
     'type': 'guide'
   },
@@ -973,8 +973,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.5,
     'parentOrder': 16,
     'point': {
-      'x': 26977.265932034607,
-      'y': 2464.603558646079
+      'x': 27194.410599,
+      'y': 2416.313208
     },
     'type': 'guide'
   },
@@ -982,8 +982,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.3,
     'parentOrder': 16,
     'point': {
-      'x': 26170.293118163143,
-      'y': 2730.0242515527116
+      'x': 26229.859974,
+      'y': 2647.486669
     },
     'type': 'guide'
   },
@@ -991,8 +991,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 16.2,
     'parentOrder': 16,
     'point': {
-      'x': 25655.804538467302,
-      'y': 2740.3483906725733
+      'x': 25712.154945,
+      'y': 2739.217618
     },
     'type': 'guide'
   },
@@ -1000,8 +1000,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 17.1,
     'parentOrder': 17,
     'point': {
-      'x': 28390.734808602214,
-      'y': 1681.1662724006198
+      'x': 28379.613748,
+      'y': 1734.289526
     },
     'type': 'guide'
   },
@@ -1009,8 +1009,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 17.4,
     'parentOrder': 17,
     'point': {
-      'x': 28636.655344531948,
-      'y': 704.145643858004
+      'x': 28635.020376,
+      'y': 709.070412
     },
     'type': 'guide'
   },
@@ -1018,8 +1018,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 17.3,
     'parentOrder': 17,
     'point': {
-      'x': 28501.22703860926,
-      'y': 1112.075838082169
+      'x': 28514.030296,
+      'y': 1132.092533
     },
     'type': 'guide'
   },
@@ -1027,8 +1027,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 17.2,
     'parentOrder': 17,
     'point': {
-      'x': 28751.30525029953,
-      'y': 1503.0497355854554
+      'x': 28744.092735,
+      'y': 1506.612613
     },
     'type': 'guide'
   },
@@ -1036,8 +1036,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 18.1,
     'parentOrder': 18,
     'point': {
-      'x': 28965.253531389873,
-      'y': 153.79796663196126
+      'x': 28973.170748,
+      'y': 152.861509
     },
     'type': 'guide'
   },
@@ -1045,8 +1045,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 18.2,
     'parentOrder': 18,
     'point': {
-      'x': 29309.977922901086,
-      'y': 113.02357340336437
+      'x': 29350.955274,
+      'y': 101.695655
     },
     'type': 'guide'
   },
@@ -1054,8 +1054,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 2.1,
     'parentOrder': 2,
     'point': {
-      'x': 4895.505851902291,
-      'y': 1597.6635224825793
+      'x': 4907.950198,
+      'y': 1599.004591
     },
     'type': 'guide'
   },
@@ -1063,8 +1063,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 2.2,
     'parentOrder': 2,
     'point': {
-      'x': 5293.0162581780705,
-      'y': 1640.5013351600012
+      'x': 5327.620154,
+      'y': 1655.461244
     },
     'type': 'guide'
   },
@@ -1072,8 +1072,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 3.1,
     'parentOrder': 3,
     'point': {
-      'x': 5921.316700503862,
-      'y': 1627.8874599265382
+      'x': 5929.088196,
+      'y': 1578.710768
     },
     'type': 'guide'
   },
@@ -1081,8 +1081,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 3.3,
     'parentOrder': 3,
     'point': {
-      'x': 5761.302932483983,
-      'y': 1039.3592074099347
+      'x': 5770.737425,
+      'y': 996.210038
     },
     'type': 'guide'
   },
@@ -1090,8 +1090,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 3.2,
     'parentOrder': 3,
     'point': {
-      'x': 5974.4654565441915,
-      'y': 1291.5712275822564
+      'x': 5947.453806,
+      'y': 1259.611281
     },
     'type': 'guide'
   },
@@ -1099,8 +1099,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 3.4,
     'parentOrder': 3,
     'point': {
-      'x': 5843.021536349573,
-      'y': 665.6146899448604
+      'x': 5841.770518,
+      'y': 671.336293
     },
     'type': 'guide'
   },
@@ -1108,8 +1108,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 4.1,
     'parentOrder': 4,
     'point': {
-      'x': 6603.41626810453,
-      'y': 563.5310229183139
+      'x': 6547.856727,
+      'y': 557.172548
     },
     'type': 'guide'
   },
@@ -1117,8 +1117,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 4.2,
     'parentOrder': 4,
     'point': {
-      'x': 6897.572818076575,
-      'y': 823.7123777811812
+      'x': 6876.628846,
+      'y': 805.187443
     },
     'type': 'guide'
   },
@@ -1126,8 +1126,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 5.1,
     'parentOrder': 5,
     'point': {
-      'x': 7255.090480522945,
-      'y': 1589.5759939686209
+      'x': 7254.397213,
+      'y': 1584.04306
     },
     'type': 'guide'
   },
@@ -1135,8 +1135,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 5.2,
     'parentOrder': 5,
     'point': {
-      'x': 7349.351619351468,
-      'y': 2040.1594314229465
+      'x': 7382.192429,
+      'y': 2059.566452
     },
     'type': 'guide'
   },
@@ -1144,8 +1144,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 5.3,
     'parentOrder': 5,
     'point': {
-      'x': 7859.836898011759,
-      'y': 2341.826722151038
+      'x': 7816.144869,
+      'y': 2316.007259
     },
     'type': 'guide'
   },
@@ -1153,8 +1153,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 5.5,
     'parentOrder': 5,
     'point': {
-      'x': 8623.185408142375,
-      'y': 2661.284735084219
+      'x': 8551.012867,
+      'y': 2486.530314
     },
     'type': 'guide'
   },
@@ -1162,8 +1162,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 5.4,
     'parentOrder': 5,
     'point': {
-      'x': 8408.531281090343,
-      'y': 2141.533638422329
+      'x': 8285.66236,
+      'y': 2186.385191
     },
     'type': 'guide'
   },
@@ -1171,8 +1171,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 6.1,
     'parentOrder': 6,
     'point': {
-      'x': 9059.55876899113,
-      'y': 3141.0210964571543
+      'x': 9170.76537,
+      'y': 3192.9105
     },
     'type': 'guide'
   },
@@ -1180,8 +1180,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 6.4,
     'parentOrder': 6,
     'point': {
-      'x': 10055.166802518243,
-      'y': 2372.1706330929924
+      'x': 9940.452127,
+      'y': 2537.847821
     },
     'type': 'guide'
   },
@@ -1189,8 +1189,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 6.3,
     'parentOrder': 6,
     'point': {
-      'x': 9816.033301272193,
-      'y': 2717.5402697036066
+      'x': 9734.403991,
+      'y': 2941.039356
     },
     'type': 'guide'
   },
@@ -1198,8 +1198,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 6.2,
     'parentOrder': 6,
     'point': {
-      'x': 9573.737995021856,
-      'y': 3380.9389866977203
+      'x': 9577.793092,
+      'y': 3369.83623
     },
     'type': 'guide'
   },
@@ -1207,8 +1207,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 6.5,
     'parentOrder': 6,
     'point': {
-      'x': 10487.08455050796,
-      'y': 2429.70015246714
+      'x': 10307.920992,
+      'y': 2405.836365
     },
     'type': 'guide'
   },
@@ -1216,8 +1216,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 7.1,
     'parentOrder': 7,
     'point': {
-      'x': 10840.265629695006,
-      'y': 1926.4614614656575
+      'x': 10854.006714,
+      'y': 1888.723652
     },
     'type': 'guide'
   },
@@ -1225,8 +1225,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 7.4,
     'parentOrder': 7,
     'point': {
-      'x': 11483.307718256343,
-      'y': 908.9507510533749
+      'x': 11577.91227,
+      'y': 862.176993
     },
     'type': 'guide'
   },
@@ -1234,8 +1234,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 7.3,
     'parentOrder': 7,
     'point': {
-      'x': 11158.984664756685,
-      'y': 1263.806275653748
+      'x': 11265.500339,
+      'y': 1147.262986
     },
     'type': 'guide'
   },
@@ -1243,8 +1243,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 7.2,
     'parentOrder': 7,
     'point': {
-      'x': 10968.474558494996,
-      'y': 1574.3550413476275
+      'x': 11017.537327,
+      'y': 1494.378276
     },
     'type': 'guide'
   },
@@ -1252,8 +1252,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.1,
     'parentOrder': 8,
     'point': {
-      'x': 12283.908637535953,
-      'y': 934.5531190998117
+      'x': 12274.866596,
+      'y': 955.261691
     },
     'type': 'guide'
   },
@@ -1261,8 +1261,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.5,
     'parentOrder': 8,
     'point': {
-      'x': 12347.601534932443,
-      'y': 2365.099846580718
+      'x': 12363.340626,
+      'y': 2389.851037
     },
     'type': 'guide'
   },
@@ -1270,8 +1270,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.3,
     'parentOrder': 8,
     'point': {
-      'x': 12511.16802852547,
-      'y': 1504.4811071118818
+      'x': 12509.901014,
+      'y': 1553.595604
     },
     'type': 'guide'
   },
@@ -1279,8 +1279,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.4,
     'parentOrder': 8,
     'point': {
-      'x': 12496.79027208728,
-      'y': 2061.819832257823
+      'x': 12498.609315,
+      'y': 1991.306534
     },
     'type': 'guide'
   },
@@ -1288,8 +1288,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.2,
     'parentOrder': 8,
     'point': {
-      'x': 12118.870490068592,
-      'y': 1312.5323843876913
+      'x': 12161.99872,
+      'y': 1333.634756
     },
     'type': 'guide'
   },
@@ -1297,8 +1297,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 8.6,
     'parentOrder': 8,
     'point': {
-      'x': 12667.475303729543,
-      'y': 2868.131237657847
+      'x': 12598.2911,
+      'y': 2759.332613
     },
     'type': 'guide'
   },
@@ -1306,8 +1306,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 9.1,
     'parentOrder': 9,
     'point': {
-      'x': 13039.922313396703,
-      'y': 3477.37043307223
+      'x': 13081.593177,
+      'y': 3486.423822
     },
     'type': 'guide'
   },
@@ -1315,8 +1315,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 9.2,
     'parentOrder': 9,
     'point': {
-      'x': 13574.370282486334,
-      'y': 3593.4843067207994
+      'x': 13520.676202,
+      'y': 3581.81876
     },
     'type': 'guide'
   },
@@ -1324,8 +1324,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 9.4,
     'parentOrder': 9,
     'point': {
-      'x': 14345.33047642376,
-      'y': 3810.8889213539783
+      'x': 14336.213527,
+      'y': 3811.231058
     },
     'type': 'guide'
   },
@@ -1333,8 +1333,8 @@ const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> =
     'order': 9.3,
     'parentOrder': 9,
     'point': {
-      'x': 13872.665872053765,
-      'y': 3828.626840259845
+      'x': 13887.203318,
+      'y': 3828.081286
     },
     'type': 'guide'
   }
@@ -1418,6 +1418,7 @@ type DiscoverPairCandidate = {
 }
 
 const moonMothShuffleDescriptionId = '__moon-moth-info'
+const discoverVineLanternShuffleItemId = 'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb'
 const shuffleDescriptionExperimentOptions = new Set<ShuffleDescriptionExperiment>([
   'full',
   'off',
@@ -1577,19 +1578,21 @@ const freeExploreRevealBaseRadius = 360
 const freeExploreAssetRevealBloomMs = 2500
 const freeExplorePairedRevealBloomMs = freeExploreAssetRevealBloomMs + 2000
 const freeExplorePairedRevealStaggerMs = 280
-const discoverPairPanelEnabled = true
+const discoverDevToolsEnabled = false
+const discoverPairPanelEnabled = false
 const freeExploreLightMinY = 520
 const freeExploreGlowTapRadiusMin = 76
 const freeExploreGlowTapRadiusMax = 154
 const freeExploreTrailMaxPoints = 120
 const freeExploreTrailMinDistance = 8
 const freeExploreReverseResponse = 2.55
-const freeExploreLightRevealStepMs = 750
+const freeExploreLightRevealStepMs = 650
 const freeExploreLightIdleAutoRevealMs = 10000
 const freeExploreBoundaryInputDisableMs = 1000
 const discoverAssetSpaceReadWindowMs = 2000
 const discoverPurpleDescriptionDelayMs = 500
-const discoverInstructionPromptText = 'Touch and hold to follow the light.'
+const discoverRouteCompleteCollapseDelayMs = 7000
+const discoverInstructionPromptText = 'Touch and Hold to follow the light.'
 const discoverVioletInstructionPromptText = 'Violet light keeps the garden’s secrets.'
 const discoverMusicZoomDurationMs = 125900
 const discoverMusicZoomTargetScale = 0.9
@@ -1968,10 +1971,7 @@ function buildFreeExploreRouteLights(project: EditorProject, lightRouteConfig: R
         layerId: item.layerId,
         order: routeEntry?.order ?? defaultOrderByItemId.get(item.id) ?? 1,
         point: routeEntry?.point
-          ? {
-              x: clamp(routeEntry.point.x, 0, project.world.width),
-              y: clamp(routeEntry.point.y, 0, project.world.height),
-            }
+          ? { x: routeEntry.point.x, y: routeEntry.point.y }
           : freeExploreLightPointForItem(project, item),
         type: 'asset' as const,
       }]
@@ -1984,10 +1984,7 @@ function buildFreeExploreRouteLights(project: EditorProject, lightRouteConfig: R
     layerId: 'background',
     order: startEntry?.order ?? 0,
     point: startEntry?.point
-      ? {
-          x: clamp(startEntry.point.x, 0, project.world.width),
-          y: clamp(startEntry.point.y, 0, project.world.height),
-        }
+      ? { x: startEntry.point.x, y: startEntry.point.y }
       : initialFreeExplorePosition(project),
     type: 'start',
   }
@@ -2000,10 +1997,7 @@ function buildFreeExploreRouteLights(project: EditorProject, lightRouteConfig: R
       itemId: '',
       layerId: 'background' as LayerId,
       order: entry.order ?? ((entry.parentOrder ?? 0) + 0.1),
-      point: {
-        x: clamp(entry.point.x, 0, project.world.width),
-        y: clamp(entry.point.y, 0, project.world.height),
-      },
+      point: { x: entry.point.x, y: entry.point.y },
       type: 'guide' as const,
     }))
   const configuredGuideParents = new Set([
@@ -2053,18 +2047,21 @@ function buildFreeExploreVisibleRouteLights(
   purpleLights.forEach((purpleLight, index) => {
     const isStartTrigger = purpleLight.type === 'start' && index === 0
     const collectedAt = collectedLightCollectedAt[purpleLight.id] ?? 0
+    const visibleAt = visibleAtById.get(purpleLight.id)
+    const autoRevealAt = visibleAt === undefined ? 0 : visibleAt + freeExploreLightIdleAutoRevealMs
     const triggerAt = isStartTrigger
       ? sequenceStartedAt
       : collectedLightIds.has(purpleLight.id)
-        ? collectedAt
-        : (() => {
-            const visibleAt = visibleAtById.get(purpleLight.id)
-            if (visibleAt === undefined) {
-              return 0
-            }
-            const autoRevealAt = visibleAt + freeExploreLightIdleAutoRevealMs
-            return currentTime >= autoRevealAt ? autoRevealAt : 0
-          })()
+        ? (
+            autoRevealAt > 0 && collectedAt >= autoRevealAt && currentTime >= autoRevealAt
+              ? autoRevealAt
+              : collectedAt
+          )
+        : (
+            autoRevealAt > 0 && currentTime >= autoRevealAt
+              ? autoRevealAt
+              : 0
+          )
     if (!isStartTrigger && triggerAt <= 0) {
       return
     }
@@ -2785,6 +2782,7 @@ function App() {
   const [shuffleDescriptionInitialAttentionReadyAt, setShuffleDescriptionInitialAttentionReadyAt] = useState(0)
   const [shuffleDescriptionSampledBoundaryIndex, setShuffleDescriptionSampledBoundaryIndex] = useState<number | null>(null)
   const [discoverDescriptionCollapsedToButton, setDiscoverDescriptionCollapsedToButton] = useState(false)
+  const [discoverRouteCompleteCollapsedToButton, setDiscoverRouteCompleteCollapsedToButton] = useState(false)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -2808,6 +2806,7 @@ function App() {
   const discoverAssetSpaceSwitchTimeoutRef = useRef<number | null>(null)
   const discoverAssetSpacePendingExampleIndexRef = useRef<number | null>(null)
   const discoverPurpleDescriptionDelayTimeoutRef = useRef<number | null>(null)
+  const discoverRouteCompleteCollapseTimeoutRef = useRef<number | null>(null)
   const discoverDescriptionCardStreakRef = useRef(0)
   const shuffleDescriptionCardCursorRef = useRef<Map<string, number>>(new Map())
   const shuffleDescriptionEntryCardOffsetRef = useRef(1)
@@ -2953,6 +2952,10 @@ function App() {
       window.clearTimeout(discoverPurpleDescriptionDelayTimeoutRef.current)
       discoverPurpleDescriptionDelayTimeoutRef.current = null
     }
+    if (discoverRouteCompleteCollapseTimeoutRef.current !== null) {
+      window.clearTimeout(discoverRouteCompleteCollapseTimeoutRef.current)
+      discoverRouteCompleteCollapseTimeoutRef.current = null
+    }
     if (gameMenuReturnTimeoutRef.current !== null) {
       window.clearTimeout(gameMenuReturnTimeoutRef.current)
     }
@@ -3074,7 +3077,7 @@ function App() {
   }, [freeExplorePosition])
 
   useEffect(() => {
-    freeExploreRef.current.debugFast = freeExploreDebugFast
+    freeExploreRef.current.debugFast = discoverDevToolsEnabled && freeExploreDebugFast
   }, [freeExploreDebugFast])
 
   useEffect(() => {
@@ -3270,23 +3273,6 @@ function App() {
   }
 
   useEffect(() => {
-    const saveCurrentDevEdits = () => {
-      saveDiscoverDevProgress(false)
-    }
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        saveCurrentDevEdits()
-      }
-    }
-    window.addEventListener('beforeunload', saveCurrentDevEdits)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => {
-      window.removeEventListener('beforeunload', saveCurrentDevEdits)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [])
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
@@ -3305,248 +3291,10 @@ function App() {
         appMode === 'play'
         && gameMode === 'discover'
         && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverCurveBoundaryVisible
-        && (event.metaKey || event.ctrlKey)
-        && event.key.toLowerCase() === 'z'
-      ) {
-        event.preventDefault()
-        if (event.shiftKey) {
-          redoDiscoverCurveBoundary()
-        } else {
-          undoDiscoverCurveBoundary()
-        }
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverCurveBoundaryVisible
-        && (event.metaKey || event.ctrlKey)
-        && event.key.toLowerCase() === 'y'
-      ) {
-        event.preventDefault()
-        redoDiscoverCurveBoundary()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && !event.metaKey
-        && !event.ctrlKey
-        && event.key.toLowerCase() === 's'
-      ) {
-        event.preventDefault()
-        saveDiscoverDevProgress()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
         && isFreeExploreKey(event.key)
       ) {
         event.preventDefault()
         startFreeExploreKey(event.key)
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && event.key === 'Tab'
-      ) {
-        event.preventDefault()
-        toggleFreeExploreDebugFast()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '2' || event.code === 'Digit2')
-      ) {
-        event.preventDefault()
-        closeDiscoverCurveBoundaryEditor()
-        setDiscoverDevCameraPreset('original')
-        setDiscoverDevZoomedOut(false)
-        setMessage('Discover boundary camera: original')
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '3' || event.code === 'Digit3')
-      ) {
-        event.preventDefault()
-        closeDiscoverCurveBoundaryEditor()
-        setDiscoverDevCameraPreset('wide')
-        setDiscoverDevZoomedOut(false)
-        setMessage('Discover boundary camera: 0.90x')
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '4' || event.code === 'Digit4')
-      ) {
-        event.preventDefault()
-        if (event.repeat) {
-          return
-        }
-        toggleDiscoverCurveBoundaryHandleEditing()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverCurveBoundaryVisible
-        && discoverCurveBoundaryHandleEditing
-        && (event.key === '5' || event.code === 'Digit5')
-      ) {
-        event.preventDefault()
-        addDiscoverCurveBoundaryPoint()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '6' || event.code === 'Digit6')
-      ) {
-        event.preventDefault()
-        if (!discoverLightRouteEditing) {
-          closeDiscoverCurveBoundaryEditor()
-        }
-        setDiscoverLightRouteEditing((current) => {
-          const next = !current
-          if (!next) {
-            setDiscoverSelectedLightId(null)
-            discoverLightRouteDragRef.current = null
-            saveDiscoverLightRouteToStorage(discoverLightRouteConfigRef.current)
-          } else {
-            const lights = buildFreeExploreRouteLights(projectRef.current, discoverLightRouteConfigRef.current)
-              .filter((light) => isDiscoverLightKind(light, discoverLightEditKind))
-            const target = lights.find((light) => light.id === discoverSelectedLightId) ?? lights[0]
-            if (target) {
-              setDiscoverSelectedLightId(target.id)
-              setDiscoverLightRoutePanelPosition(null)
-              moveFreeExploreMothNearLight(target)
-            }
-          }
-          setMessage(next ? 'Discover light route edit on' : 'Discover light route edit off')
-          return next
-        })
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverCurveBoundaryVisible
-        && discoverCurveBoundaryHandleEditing
-        && (event.key === '-' || event.key === 'Delete' || event.key === 'Backspace')
-      ) {
-        event.preventDefault()
-        deleteSelectedDiscoverCurveBoundaryPoint()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverCurveBoundaryVisible
-        && discoverCurveBoundaryHandleEditing
-        && (event.key === '+' || event.key === '=')
-      ) {
-        event.preventDefault()
-        addDiscoverCurveBoundaryPoint()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverLightRouteEditing
-        && discoverLightEditKind === 'guide'
-        && (event.key === '+' || event.key === '=')
-      ) {
-        event.preventDefault()
-        addDiscoverGuideLightAfterSelected()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && discoverLightRouteEditing
-        && discoverLightEditKind === 'guide'
-        && event.key === '-'
-      ) {
-        event.preventDefault()
-        removeSelectedDiscoverGuideLight()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '7' || event.code === 'Digit7')
-      ) {
-        event.preventDefault()
-        if (event.repeat) {
-          return
-        }
-        discoverCurveBoundarySevenHoldRef.current = {
-          chorded: false,
-          down: true,
-          startedWhileEditing: discoverCurveBoundaryVisible,
-        }
-        if (discoverCurveBoundaryVisible) {
-          setMessage('Release 7 to hide curve boundary')
-          return
-        }
-        openDiscoverCurveBoundaryEditor()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '1' || event.code === 'Digit1')
-      ) {
-        event.preventDefault()
-        closeDiscoverCurveBoundaryEditor()
-        toggleDiscoverGlowIsolation()
-        return
-      }
-      if (
-        appMode === 'play'
-        && gameMode === 'discover'
-        && gameScreen !== 'menu'
-        && freeExploreDebugFast
-        && (event.key === '`' || event.code === 'Backquote')
-      ) {
-        event.preventDefault()
-        toggleDiscoverDevZoom()
         return
       }
       if (event.key === 'Escape') {
@@ -4546,6 +4294,7 @@ function App() {
                   waitUntil: time + waitMs,
                   waitIndex: (loopControl.waitIndex + 1) % loopPulseWaitScheduleMs.length,
                 }
+                showLoopRestFocus()
                 setMessage(`Loop resting before next push: ${(waitMs / 1000).toFixed(0)}s`)
               } else if (loopControl.waitUntil <= time) {
                 triggerLoopPulse(loopControl.direction, time, {
@@ -4733,7 +4482,7 @@ function App() {
   )
   useEffect(() => {
     const shell = shellRef.current
-    if (!freeExploreActive || !freeExploreDebugFast || !shell) {
+    if (!discoverDevToolsEnabled || !freeExploreActive || !freeExploreDebugFast || !shell) {
       shell?.removeAttribute('data-discover-debug')
       return
     }
@@ -4773,37 +4522,6 @@ function App() {
     () => freeExploreRouteLights.filter((light) => light.type === 'guide'),
     [freeExploreRouteLights],
   )
-  const discoverSelectedRouteLight = useMemo(
-    () => discoverSelectedLightId
-      ? freeExploreRouteLights.find((light) => light.id === discoverSelectedLightId) ?? null
-      : null,
-    [discoverSelectedLightId, freeExploreRouteLights],
-  )
-  useEffect(() => {
-    setDiscoverLightRouteOrderDraft(discoverSelectedRouteLight ? formatDiscoverLightOrder(discoverSelectedRouteLight.order) : '')
-  }, [discoverSelectedRouteLight?.id, discoverSelectedRouteLight?.order])
-
-  const discoverSelectedLightItem = useMemo(
-    () => discoverSelectedRouteLight
-      ? project.items.find((item) => item.id === discoverSelectedRouteLight.itemId) ?? null
-      : null,
-    [discoverSelectedRouteLight, project.items],
-  )
-  const discoverLightRoutePanelStyle = useMemo<CSSProperties | undefined>(() => {
-    if (!discoverSelectedRouteLight) {
-      return undefined
-    }
-    const screen = worldToScreen(discoverSelectedRouteLight.point, canvasCamera, viewport)
-    const defaultPosition = clampDiscoverLightRoutePanelPosition({
-      x: screen.x + 24,
-      y: screen.y - 72,
-    }, viewport)
-    const position = clampDiscoverLightRoutePanelPosition(discoverLightRoutePanelPosition ?? defaultPosition, viewport)
-    return {
-      left: `${position.x}px`,
-      top: `${position.y}px`,
-    }
-  }, [canvasCamera, discoverLightRoutePanelPosition, discoverSelectedRouteLight, viewport])
   const collectedLightIdSet = useMemo(
     () => new Set(collectedLightItemIds),
     [collectedLightItemIds],
@@ -4812,6 +4530,52 @@ function App() {
     () => buildFreeExploreVisibleRouteLights(freeExploreRouteLights, collectedLightIdSet, collectedLightCollectedAt, discoverMusicZoomStartedAt, animationTime),
     [animationTime, collectedLightCollectedAt, collectedLightIdSet, discoverMusicZoomStartedAt, freeExploreRouteLights],
   )
+  const discoverPurpleAssetLights = useMemo(
+    () => freeExploreRouteLights.filter((light) => light.type === 'asset'),
+    [freeExploreRouteLights],
+  )
+  const discoverPurpleAssetRouteComplete = freeExploreActive
+    && discoverPurpleAssetLights.length > 0
+    && discoverPurpleAssetLights.every((light) => collectedLightIdSet.has(light.id))
+  const shouldSuppressDiscoverVineLanternCard = (exampleIndex: number) => {
+    return gameModeRef.current === 'discover'
+      && !discoverPurpleAssetRouteComplete
+      && shuffleDescriptionPrototypeExamples[exampleIndex]?.id === discoverVineLanternShuffleItemId
+  }
+  useEffect(() => {
+    if (
+      !discoverPurpleAssetRouteComplete
+      || !shuffleDescriptionOpen
+      || shuffleDescriptionDismissingToLoop
+      || discoverRouteCompleteCollapsedToButton
+    ) {
+      clearDiscoverRouteCompleteCollapse()
+      return undefined
+    }
+    const openedAt = shuffleDescriptionOpenedAt > 0 ? shuffleDescriptionOpenedAt : performance.now()
+    const delay = Math.max(0, openedAt + discoverRouteCompleteCollapseDelayMs - performance.now())
+    clearDiscoverRouteCompleteCollapse()
+    discoverRouteCompleteCollapseTimeoutRef.current = window.setTimeout(() => {
+      discoverRouteCompleteCollapseTimeoutRef.current = null
+      if (
+        gameModeRef.current !== 'discover'
+        || !shuffleDescriptionOpenRef.current
+        || shuffleDescriptionDismissingToLoopRef.current
+      ) {
+        return
+      }
+      resetShuffleDescriptionCard({ autoCollapse: true })
+      setDiscoverDescriptionCollapsedToButton(true)
+      setDiscoverRouteCompleteCollapsedToButton(true)
+    }, delay)
+    return () => clearDiscoverRouteCompleteCollapse()
+  }, [
+    discoverPurpleAssetRouteComplete,
+    discoverRouteCompleteCollapsedToButton,
+    shuffleDescriptionDismissingToLoop,
+    shuffleDescriptionOpen,
+    shuffleDescriptionOpenedAt,
+  ])
   const discoverFocusedShuffleItemId = freeExploreDebugFast && discoverGlowIsolated && discoverGlowIsolatedItemId
     ? discoverGlowIsolatedItemId
     : activeShuffleItemId
@@ -4853,30 +4617,10 @@ function App() {
     },
     [collectedLightCollectedAt, collectedLightIdSet, discoverFocusedShuffleItemId, discoverGlowIsolated, discoverPairedAssetIdsByShuffleId, discoverPairSelectedAtByKey, freeExploreDebugFast, freeExploreRouteLights, project.items],
   )
-  const discoverActiveShuffleItem = useMemo(
-    () => discoverFocusedShuffleItemId ? project.items.find((item) => item.id === discoverFocusedShuffleItemId) ?? null : null,
-    [discoverFocusedShuffleItemId, project.items],
-  )
-  const discoverPairCandidates = useMemo(
-    () => discoverPairPanelEnabled && freeExploreDebugFast && freeExploreActive && discoverActiveShuffleItem
-      ? buildDiscoverPairCandidates(project, discoverActiveShuffleItem)
-      : [],
-    [discoverActiveShuffleItem, freeExploreActive, freeExploreDebugFast, project],
-  )
-  const discoverActivePairedAssetIds = discoverActiveShuffleItem
-    ? discoverPairedAssetIdsByShuffleId[discoverActiveShuffleItem.id] ?? []
-    : []
-  const discoverPairPanelVisible = Boolean(
-    discoverPairPanelEnabled
-    && freeExploreDebugFast
-    && freeExploreActive
-    && discoverActiveShuffleItem
-    && collectedLightIdSet.has(`asset-light-${discoverActiveShuffleItem.id}`),
-  )
   const freeExploreRevealRadius = freeExploreRevealBaseRadius
   const freeExploreDiscoveryRender = discoverBackdropActive
     ? {
-        activeShuffleItemIds: freeExploreActive && activeShuffleItemId ? [activeShuffleItemId] : [],
+        activeShuffleItemIds: [],
         collectedLightItemIds: freeExploreActive ? collectedLightItemIds : [],
         discoveredShuffleItemIds: freeExploreActive ? discoveredShuffleItemIds : [],
         fogAlpha: discoverFogAlpha,
@@ -4933,7 +4677,7 @@ function App() {
       canvasTargets,
       viewport,
     })
-    if (freeExploreActive && freeExploreDebugFast) {
+    if (discoverDevToolsEnabled && freeExploreActive && freeExploreDebugFast) {
       if (discoverCurveBoundaryVisible) {
         drawDiscoverBoundaryReference(
           context,
@@ -5082,10 +4826,6 @@ function App() {
   const routeQuickEditorStyle = canvasPopoverKind === 'compact' && activeCanvasPopoverPosition
     ? { left: activeCanvasPopoverPosition.x, top: activeCanvasPopoverPosition.y }
     : undefined
-  const discoverPairPanelStyle = {
-    left: clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport).x,
-    top: clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport).y,
-  }
   useEffect(() => {
     setCanvasPopoverPosition(canvasPopoverAnchor)
   }, [canvasPopoverKey])
@@ -5105,47 +4845,6 @@ function App() {
         y: event.clientY - rect.top - position.y,
       },
     }
-  }
-  const startDiscoverPairPanelDrag = (event: PointerEvent<HTMLElement>) => {
-    const shell = shellRef.current
-    if (!shell) {
-      return
-    }
-    event.preventDefault()
-    event.stopPropagation()
-    const rect = shell.getBoundingClientRect()
-    const position = clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport)
-    discoverPairPanelDragRef.current = {
-      offset: {
-        x: event.clientX - rect.left - position.x,
-        y: event.clientY - rect.top - position.y,
-      },
-    }
-  }
-  const startDiscoverLightRoutePanelDrag = (event: PointerEvent<HTMLElement>) => {
-    const shell = shellRef.current
-    const screenPoint = discoverSelectedRouteLight ? worldToScreen(discoverSelectedRouteLight.point, canvasCamera, viewport) : null
-    const position = discoverLightRoutePanelPosition
-      ? clampDiscoverLightRoutePanelPosition(discoverLightRoutePanelPosition, viewport)
-      : screenPoint
-        ? clampDiscoverLightRoutePanelPosition({
-            x: screenPoint.x + 24,
-            y: screenPoint.y - 72,
-          }, viewport)
-        : null
-    if (!shell || !position) {
-      return
-    }
-    event.preventDefault()
-    event.stopPropagation()
-    const rect = shell.getBoundingClientRect()
-    discoverLightRoutePanelDragRef.current = {
-      offset: {
-        x: event.clientX - rect.left - position.x,
-        y: event.clientY - rect.top - position.y,
-      },
-    }
-    setDiscoverLightRoutePanelPosition(position)
   }
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
@@ -5676,6 +5375,7 @@ function App() {
           shuffleDescriptionOpen
           || shuffleDescriptionDismissingToLoop
           || discoverDescriptionCollapsedToButton
+          || discoverRouteCompleteCollapsedToButton
         ))
     )
     && (!shuffleLoopActive || shuffleDescriptionDismissingToLoop)
@@ -5902,6 +5602,12 @@ function App() {
       discoverPurpleDescriptionDelayTimeoutRef.current = null
     }
   }
+  const clearDiscoverRouteCompleteCollapse = () => {
+    if (discoverRouteCompleteCollapseTimeoutRef.current !== null) {
+      window.clearTimeout(discoverRouteCompleteCollapseTimeoutRef.current)
+      discoverRouteCompleteCollapseTimeoutRef.current = null
+    }
+  }
   const openShuffleDescriptionAssetCard = (exampleIndex: number) => {
     if (exampleIndex < 0 || exampleIndex >= shuffleDescriptionPrototypeExamples.length) {
       return
@@ -5916,6 +5622,7 @@ function App() {
     clearDiscoverAssetSpaceSwitch()
     clearDiscoverPurpleDescriptionDelay()
     setDiscoverDescriptionCollapsedToButton(false)
+    setDiscoverRouteCompleteCollapsedToButton(false)
     openShuffleDescriptionAssetCard(exampleIndex)
     discoverDescriptionCardStreakRef.current += 1
   }
@@ -5957,12 +5664,17 @@ function App() {
       clearDiscoverAssetSpaceSwitch()
       return
     }
+    if (shouldSuppressDiscoverVineLanternCard(exampleIndex)) {
+      clearDiscoverAssetSpaceSwitch()
+      return
+    }
     if (discoverPurpleDescriptionDelayTimeoutRef.current !== null) {
       return
     }
-    setDiscoverDescriptionCollapsedToButton(false)
     if (!shuffleDescriptionOpenRef.current || shuffleDescriptionDismissingToLoopRef.current) {
       clearDiscoverAssetSpaceSwitch()
+      setDiscoverDescriptionCollapsedToButton(false)
+      setDiscoverRouteCompleteCollapsedToButton(false)
       openShuffleDescriptionAssetCard(exampleIndex)
       return
     }
@@ -5983,6 +5695,9 @@ function App() {
       const pendingExampleIndex = discoverAssetSpacePendingExampleIndexRef.current
       discoverAssetSpacePendingExampleIndexRef.current = null
       if (gameModeRef.current !== 'discover' || pendingExampleIndex === null) {
+        return
+      }
+      if (shouldSuppressDiscoverVineLanternCard(pendingExampleIndex)) {
         return
       }
       openShuffleDescriptionAssetCard(pendingExampleIndex)
@@ -6307,7 +6022,7 @@ function App() {
         playPausedRef.current = false
         scheduleDriftDescriptionIdleTrigger()
       }
-      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'shuffle' ? 'Shuffle resumed' : gameMode === 'discover' ? 'Discover resumed' : 'Play resumed: hold Drift to move')
+      setMessage(next ? 'Play paused' : gameMode === 'loop' ? 'Loop resumed' : gameMode === 'shuffle' ? 'Shuffle resumed' : gameMode === 'discover' ? 'Explore resumed' : 'Play resumed: hold Drift to move')
       return next
     })
   }
@@ -6358,7 +6073,7 @@ function App() {
     setMessage(message)
   }
 
-  function enterDiscoverMode(message = 'Discover mode: collect light and discover assets') {
+  function enterDiscoverMode(message = 'Explore mode: collect light and uncover the garden') {
     clearDriftDescriptionAutomation()
     playHudSfx('mode')
     triggerHudTapGlow('explore')
@@ -6398,6 +6113,9 @@ function App() {
     setCollectedLightCollectedAt({})
     setDiscoveredShuffleItemIds([])
     setActiveShuffleItemId(null)
+    setDiscoverDescriptionCollapsedToButton(false)
+    setDiscoverRouteCompleteCollapsedToButton(false)
+    clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
     discoveredShuffleItemIdsRef.current = []
@@ -6411,7 +6129,6 @@ function App() {
     triggeredTourCueIdsRef.current.clear()
     tourHoldUntilRef.current = 0
     resetShuffleDescriptionCard()
-    setDiscoverDescriptionCollapsedToButton(false)
     resetShuffleDescriptionInitialReveal()
     prepareShuffleDescriptionEntryCards()
     const finishExploreEntry = (dissolveMenuFocus = true) => {
@@ -6433,7 +6150,7 @@ function App() {
     }
     if (workspaceMode === 'game' && gameScreen === 'menu') {
       setGameHudScreenWithHomeGrace('discover')
-      setMessage('Discover view shifting')
+      setMessage('Explore view shifting')
       window.requestAnimationFrame(() => {
         startMenuFocusDissolve()
         exploreRelocationTimeoutRef.current = window.setTimeout(() => {
@@ -6607,13 +6324,15 @@ function App() {
     setCollectedLightCollectedAt({})
     setDiscoveredShuffleItemIds([])
     setActiveShuffleItemId(null)
+    setDiscoverDescriptionCollapsedToButton(false)
+    setDiscoverRouteCompleteCollapsedToButton(false)
+    clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
     discoveredShuffleItemIdsRef.current = []
     activeShuffleItemIdRef.current = null
     discoverLightSequenceStartedAtRef.current = 0
     setDiscoverMusicZoomStartedAt(0)
-    setDiscoverDescriptionCollapsedToButton(false)
     resetShuffleDescriptionInitialReveal()
     setGameScreenWithHomeGrace('menu')
     gameModeRef.current = 'journey'
@@ -6646,6 +6365,15 @@ function App() {
     }
     setLoopFocusActive(false)
     setLoopFocusVisible(false)
+  }
+
+  function showLoopRestFocus() {
+    if (loopFocusResumeTimeoutRef.current !== null) {
+      window.clearTimeout(loopFocusResumeTimeoutRef.current)
+      loopFocusResumeTimeoutRef.current = null
+    }
+    setLoopFocusVisible(true)
+    setLoopFocusActive(true)
   }
 
   function clearShuffleLoopPush(direction = shuffleLoopControlRef.current.direction) {
@@ -6727,6 +6455,7 @@ function App() {
   }
 
   function triggerLoopPulse(direction: -1 | 1, time: number, previousControl = loopControlRef.current) {
+    clearLoopFocus()
     const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
     const pushCount = loopPulseDurationCounts[previousControl.pushIndex % loopPulseDurationCounts.length]
     const durationMs = idleForwardPushDurationMs(releaseCarryMs, pushCount)
@@ -6755,6 +6484,7 @@ function App() {
       turnRestCount: loopControlRef.current.turnRestCount,
       pushIndex: loopControlRef.current.pushIndex,
     }
+    showLoopRestFocus()
     setMessage(endpoint === 'end' ? 'Loop resting at the moon' : 'Loop resting at the start')
   }
 
@@ -7117,7 +6847,7 @@ function App() {
       freeExploreRef.current.idlePushCount = 0
       clearFreeExploreBoundaryRedirect(freeExploreRef.current)
       exploreHasInteractedRef.current = true
-      setMessage(freeExploreRef.current.debugFast ? 'Discover debug speed' : 'Discover moving')
+      setMessage(freeExploreRef.current.debugFast ? 'Explore debug speed' : 'Explore moving')
     }
   }
 
@@ -7147,7 +6877,7 @@ function App() {
     freeExploreRef.current.idlePushCount = 0
     clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     exploreHasInteractedRef.current = true
-    setMessage(freeExploreRef.current.debugFast ? 'Discover debug push' : 'Discover push')
+    setMessage(freeExploreRef.current.debugFast ? 'Explore debug push' : 'Explore push')
   }
 
   function updateFreeExplorePointerDirection(direction: Point) {
@@ -7208,7 +6938,7 @@ function App() {
         releaseFreeExploreMotion({
           carryMs: freeExploreRef.current.debugFast ? 0 : undefined,
           allowIdleFollowup: false,
-          message: freeExploreRef.current.debugFast ? 'Discover debug stop' : 'Discover released: gentle push',
+          message: freeExploreRef.current.debugFast ? 'Explore debug stop' : 'Explore released: gentle push',
         })
       }
     }
@@ -7228,7 +6958,7 @@ function App() {
         releaseFreeExploreMotion({
           carryMs: options.carryMs,
           allowIdleFollowup: false,
-          message: options.message ?? 'Discover gesture: push',
+          message: options.message ?? 'Explore gesture: push',
         })
       } else if (heldMs < 220) {
         const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
@@ -7236,12 +6966,12 @@ function App() {
         releaseFreeExploreMotion({
           carryMs: tapCarryMs,
           allowIdleFollowup: false,
-          message: 'Discover tap: small push',
+          message: 'Explore tap: small push',
         })
       } else {
         releaseFreeExploreMotion({
           allowIdleFollowup: false,
-          message: 'Discover released: gentle push',
+          message: 'Explore released: gentle push',
         })
       }
     }
@@ -7264,7 +6994,7 @@ function App() {
     freeExploreRef.current.idlePushCount = 0
     clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     freeExploreRef.current.startedAt = 0
-    setMessage(options.message ?? (releaseCarryMs > 0 ? 'Discover released: gentle push' : 'Discover drifting to a stop'))
+    setMessage(options.message ?? (releaseCarryMs > 0 ? 'Explore released: gentle push' : 'Explore drifting to a stop'))
   }
 
   function resetFreeExploreInput() {
@@ -7388,7 +7118,13 @@ function App() {
     let collectedChanged = false
     let discoveredChanged = false
     const collectedAt = performance.now()
-    const visibleRouteLights = buildFreeExploreVisibleRouteLights(routeLights, currentCollected, currentCollectedAt, discoverLightSequenceStartedAtRef.current)
+    const visibleRouteLights = buildFreeExploreVisibleRouteLights(
+      routeLights,
+      currentCollected,
+      currentCollectedAt,
+      discoverLightSequenceStartedAtRef.current,
+      collectedAt,
+    )
     const newlyCollectedAssetLights: FreeExploreVisibleRouteLight[] = []
 
     for (const light of visibleRouteLights) {
@@ -7436,7 +7172,13 @@ function App() {
         const firstAssetLight = routeLights
           .filter((light) => light.type === 'asset')
           .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0]
-        if (firstAssetLight?.id === latestAssetLight.id) {
+        const allAssetLightsCollected = routeLights
+          .filter((light) => light.type === 'asset')
+          .every((light) => currentCollected.has(light.id))
+        if (
+          firstAssetLight?.id === latestAssetLight.id
+          || (latestAssetLight.itemId === discoverVineLanternShuffleItemId && !allAssetLightsCollected)
+        ) {
           scheduleDiscoverVioletInstructionPrompt(true)
         } else {
           const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === latestAssetLight.itemId)
@@ -7695,7 +7437,7 @@ function App() {
     }
 
     if (gameScreen === 'discover') {
-      setMessage('Discover: use arrows/WASD, hold the scene to push, Tab for debug speed')
+      setMessage('Explore: use arrows/WASD or hold the scene to follow the light')
       return null
     }
 
@@ -7767,6 +7509,7 @@ function App() {
   }
 
   function updateDiscoverLightRoutePoint(lightId: string, point: Point, save = false) {
+    const boundedPoint = clampDiscoverPointToCurveBoundary(point, discoverCurveBoundaryPointsRef.current)
     setDiscoverLightRouteConfig((current) => {
       const light = buildFreeExploreRouteLights(projectRef.current, current).find((candidate) => candidate.id === lightId)
       const routeType = light?.type ?? current[lightId]?.type ?? 'asset'
@@ -7781,8 +7524,8 @@ function App() {
           ...(order === undefined ? {} : { order }),
           ...(parentOrder === undefined ? {} : { parentOrder }),
           point: {
-            x: clamp(point.x, 0, projectRef.current.world.width),
-            y: clamp(point.y, 0, projectRef.current.world.height),
+            x: boundedPoint.x,
+            y: boundedPoint.y,
           },
           type: routeType,
         },
@@ -7894,22 +7637,6 @@ function App() {
     setMessage(`Light route moved to ${formatDiscoverLightOrder(order)}`)
   }
 
-  function commitDiscoverLightRouteOrderDraft(input?: HTMLInputElement | null) {
-    if (!discoverSelectedRouteLight) {
-      input?.blur()
-      return
-    }
-    const parsedOrder = discoverSelectedRouteLight.type === 'guide'
-      ? Number.parseFloat(discoverLightRouteOrderDraft.trim())
-      : Number.parseInt(discoverLightRouteOrderDraft.trim(), 10)
-    if (Number.isFinite(parsedOrder)) {
-      updateDiscoverLightRouteOrder(discoverSelectedRouteLight.id, parsedOrder)
-    } else {
-      setDiscoverLightRouteOrderDraft(formatDiscoverLightOrder(discoverSelectedRouteLight.order))
-    }
-    input?.blur()
-  }
-
   function handleDiscoverLightRoutePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
     const drag = discoverLightRouteDragRef.current
     if (!drag || drag.pointerId !== event.pointerId) {
@@ -7937,10 +7664,10 @@ function App() {
 
   function moveFreeExploreMothNearLight(light: FreeExploreRouteLight) {
     const offset = { x: -225, y: 68 }
-    const position = {
-      x: clamp(light.point.x + offset.x, 0, projectRef.current.world.width),
-      y: clamp(light.point.y + offset.y, 0, projectRef.current.world.height),
-    }
+    const position = clampDiscoverPointToCurveBoundary({
+      x: light.point.x + offset.x,
+      y: light.point.y + offset.y,
+    }, discoverCurveBoundaryPointsRef.current)
     resetFreeExploreInput()
     freeExploreRef.current.position = position
     freeExploreRef.current.velocity = { x: 0, y: 0 }
@@ -7954,170 +7681,6 @@ function App() {
     const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, position)
     playProgressRef.current = progress
     setPlayProgress(progress)
-  }
-
-  function selectDiscoverLightByStep(direction: -1 | 1) {
-    const lights = buildFreeExploreRouteLights(projectRef.current, discoverLightRouteConfigRef.current)
-      .filter((light) => isDiscoverLightKind(light, discoverLightEditKind))
-    if (lights.length === 0) {
-      setMessage(discoverLightEditKind === 'guide' ? 'No yellow guide lights found' : 'No purple lights found')
-      return
-    }
-    const currentIndex = discoverSelectedLightId
-      ? lights.findIndex((light) => light.id === discoverSelectedLightId)
-      : -1
-    const nextIndex = currentIndex >= 0
-      ? (currentIndex + direction + lights.length) % lights.length
-      : direction > 0 ? 0 : lights.length - 1
-    const nextLight = lights[nextIndex]
-    setDiscoverSelectedLightId(nextLight.id)
-    setDiscoverLightRoutePanelPosition(null)
-    moveFreeExploreMothNearLight(nextLight)
-    setMessage(`Light route ${formatDiscoverLightOrder(nextLight.order)} selected`)
-  }
-
-  function selectDiscoverLightEditKind(kind: DiscoverLightEditKind) {
-    setDiscoverLightEditKind(kind)
-    const lights = buildFreeExploreRouteLights(projectRef.current, discoverLightRouteConfigRef.current)
-      .filter((light) => isDiscoverLightKind(light, kind))
-    const current = lights.find((light) => light.id === discoverSelectedLightId)
-    const target = current ?? lights[0]
-    if (target) {
-      setDiscoverSelectedLightId(target.id)
-      setDiscoverLightRoutePanelPosition(null)
-      moveFreeExploreMothNearLight(target)
-    }
-    setMessage(kind === 'guide' ? 'Editing yellow guide lights' : 'Editing purple lights')
-  }
-
-  function addDiscoverGuideLightAfterSelected() {
-    setDiscoverLightRouteConfig((current) => {
-      const lights = buildFreeExploreRouteLights(projectRef.current, current)
-      const purpleLights = lights
-        .filter((light) => light.type !== 'guide')
-        .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-      if (purpleLights.length < 2) {
-        setMessage('Need purple route lights first')
-        return current
-      }
-      const selectedLight = discoverSelectedLightId
-        ? lights.find((light) => light.id === discoverSelectedLightId) ?? null
-        : null
-      const maxParentOrder = Math.round(purpleLights[purpleLights.length - 2].order)
-      const rawParentOrder = selectedLight?.type === 'guide'
-        ? discoverLightParentOrder(selectedLight.order)
-        : Math.round(selectedLight?.order ?? 0)
-      const parentOrder = clamp(rawParentOrder, 0, maxParentOrder)
-      const parentLight = purpleLights.find((light) => Math.round(light.order) === parentOrder)
-      const nextPurpleLight = purpleLights.find((light) => Math.round(light.order) > parentOrder)
-      if (!parentLight || !nextPurpleLight) {
-        setMessage('No yellow range after this purple light')
-        return current
-      }
-      const parentGuides = lights
-        .filter((light) => light.type === 'guide' && discoverLightParentOrder(light.order) === parentOrder)
-        .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-      const selectedGuideIndex = selectedLight?.type === 'guide'
-        ? parentGuides.findIndex((light) => light.id === selectedLight.id)
-        : -1
-      const insertIndex = selectedGuideIndex >= 0 ? selectedGuideIndex + 1 : parentGuides.length
-      const previousPoint = selectedGuideIndex >= 0
-        ? parentGuides[selectedGuideIndex].point
-        : insertIndex > 0
-          ? parentGuides[insertIndex - 1].point
-          : parentLight.point
-      const nextPoint = parentGuides[insertIndex]?.point ?? nextPurpleLight.point
-      const newLight: FreeExploreRouteLight = {
-        assetId: '',
-        id: createId(`guide-light-${parentOrder}`),
-        itemId: '',
-        layerId: 'background',
-        order: discoverGuideOrder(parentOrder, insertIndex),
-        point: {
-          x: lerp(previousPoint.x, nextPoint.x, 0.5),
-          y: lerp(previousPoint.y, nextPoint.y, 0.5),
-        },
-        type: 'guide',
-      }
-      const nextGuides = [...parentGuides]
-      nextGuides.splice(insertIndex, 0, newLight)
-      const next = { ...current }
-      Object.keys(next).forEach((id) => {
-        const entry = next[id]
-        const entryParentOrder = entry.parentOrder ?? (typeof entry.order === 'number' ? discoverLightParentOrder(entry.order) : undefined)
-        if (entry.type === 'guide' && entryParentOrder === parentOrder) {
-          delete next[id]
-        }
-      })
-      nextGuides.forEach((light, index) => {
-        next[light.id] = {
-          order: discoverGuideOrder(parentOrder, index),
-          parentOrder,
-          point: { x: light.point.x, y: light.point.y },
-          type: 'guide',
-        }
-      })
-      discoverLightRouteConfigRef.current = next
-      saveDiscoverLightRouteToStorage(next)
-      setDiscoverLightEditKind('guide')
-      setDiscoverSelectedLightId(newLight.id)
-      setDiscoverLightRoutePanelPosition(null)
-      setMessage(`Yellow light ${formatDiscoverLightOrder(newLight.order)} added`)
-      return next
-    })
-  }
-
-  function removeSelectedDiscoverGuideLight() {
-    if (!discoverSelectedLightId) {
-      return
-    }
-    setDiscoverLightRouteConfig((current) => {
-      const lights = buildFreeExploreRouteLights(projectRef.current, current)
-      const selectedLight = lights.find((light) => light.id === discoverSelectedLightId)
-      if (!selectedLight || selectedLight.type !== 'guide') {
-        setMessage('Select a yellow guide light first')
-        return current
-      }
-      const parentOrder = discoverLightParentOrder(selectedLight.order)
-      const remainingGuides = lights
-        .filter((light) => light.type === 'guide' && discoverLightParentOrder(light.order) === parentOrder && light.id !== selectedLight.id)
-        .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-      const next = { ...current }
-      Object.keys(next).forEach((id) => {
-        const entry = next[id]
-        const entryParentOrder = entry.parentOrder ?? (typeof entry.order === 'number' ? discoverLightParentOrder(entry.order) : undefined)
-        if (entry.type === 'guide' && entryParentOrder === parentOrder) {
-          delete next[id]
-        }
-      })
-      if (remainingGuides.length === 0) {
-        next[discoverGuideLightId(parentOrder, 1)] = {
-          hidden: true,
-          order: discoverGuideOrder(parentOrder, 0),
-          parentOrder,
-          type: 'guide',
-        }
-      } else {
-        remainingGuides.forEach((light, index) => {
-          next[light.id] = {
-            order: discoverGuideOrder(parentOrder, index),
-            parentOrder,
-            point: { x: light.point.x, y: light.point.y },
-            type: 'guide',
-          }
-        })
-      }
-      const nextSelected = remainingGuides[Math.min(remainingGuides.length - 1, 0)]
-        ?? lights.find((light) => light.type === 'guide' && discoverLightParentOrder(light.order) > parentOrder)
-        ?? [...lights].reverse().find((light) => light.type === 'guide' && discoverLightParentOrder(light.order) < parentOrder)
-        ?? null
-      setDiscoverSelectedLightId(nextSelected?.id ?? null)
-      setDiscoverLightRoutePanelPosition(null)
-      discoverLightRouteConfigRef.current = next
-      saveDiscoverLightRouteToStorage(next)
-      setMessage('Yellow guide light removed')
-      return next
-    })
   }
 
   function findDiscoverCurveBoundaryPoint(screen: Point) {
@@ -8275,7 +7838,7 @@ function App() {
           y: tapPoint.y - mothPoint.y,
         })
       } else {
-        setMessage('Discover: tap moth glow for nearest light')
+        setMessage('Explore: tap moth glow for nearest light')
       }
       return true
     }
@@ -8341,10 +7904,10 @@ function App() {
             y: target.point.y - freeExploreRef.current.position.y,
           }, {
             carryMs: clamp(basePushMs * 0.44, 760, 1240),
-            message: 'Discover tap: nearest asset light',
+            message: 'Explore tap: nearest asset light',
           })
         } else {
-          setMessage('Discover: no asset light found')
+          setMessage('Explore: no asset light found')
         }
       } else {
         stopFreeExplorePointer()
@@ -9261,11 +8824,11 @@ function App() {
           <button
             className={`game-hud-button span-2 primary menu-entry-choice enhanced-glow${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('explore')}`}
             type="button"
-            aria-label="Discover"
+            aria-label="Explore"
             style={hudButtonStyle('explore')}
             onClick={() => enterDiscoverMode()}
           >
-            Discover
+            Explore
           </button>
           <div className="game-hud-placeholder" aria-hidden="true" />
         </div>
@@ -9273,32 +8836,9 @@ function App() {
     }
 
     if (gameHudScreen === 'discover') {
-      const exploreStatusClass = [
-        'game-hud-button icon-only',
-        freeExploreDebugFast ? 'active hold-pulse' : 'ambient-pulse',
-        hudTapGlowClass('explore'),
-      ].filter(Boolean).join(' ')
-      const exploreStatusStyle = freeExploreDebugFast
-        ? {
-            ...hudButtonStyle('explore'),
-            ...hudHoldPulseStyle(animationTime - 1, 'explore'),
-            '--hud-glow-base': '130, 246, 232',
-            '--hud-glow-active': '130, 246, 232',
-            '--hud-glow-outer': '104, 226, 238',
-          } as CSSProperties
-        : hudButtonStyle('explore')
       return (
-        <div key="game-hud-discover" className={gameHudLayerClass()} style={gameHudStyle} aria-label="Discover controls">
-          <button
-            className={exploreStatusClass}
-            type="button"
-            aria-label={freeExploreDebugFast ? 'Turn off discover debug speed' : 'Turn on discover debug speed'}
-            aria-pressed={freeExploreDebugFast}
-            style={exploreStatusStyle}
-            onClick={() => toggleFreeExploreDebugFast()}
-          >
-            <Crosshair size={iconSize} strokeWidth={iconStrokeWidth} />
-          </button>
+        <div key="game-hud-discover" className={gameHudLayerClass()} style={gameHudStyle} aria-label="Explore controls">
+          <div className="game-hud-placeholder" aria-hidden="true" />
           <div className="game-hud-placeholder span-2" aria-hidden="true" />
           {backButton()}
         </div>
@@ -9545,6 +9085,9 @@ function App() {
 	                  shuffleDescriptionDismissingToLoop ? 'dismissing-to-loop' : '',
 	                  (shuffleDescriptionDirectionHoldQuiet || shuffleDescriptionLongDirectionQuiet) ? 'direction-hold-quiet' : '',
 	                  shuffleDescriptionAttentionAllowed && !shuffleDescriptionOpen && !shuffleLoopActive ? 'attention' : '',
+	                  discoverDescriptionCollapsedToButton ? 'discover-description-collapsed' : '',
+	                  discoverRouteCompleteCollapsedToButton ? 'discover-route-complete-collapsed' : '',
+	                  (discoverDescriptionCollapsedToButton || discoverRouteCompleteCollapsedToButton) && activeShuffleItemId ? 'discover-radius-ready' : '',
 	                  shuffleDescriptionActiveExample?.quietZone ? 'quiet-zone' : '',
                 ].filter(Boolean).join(' ')}
                 style={shuffleDescriptionStyle}
@@ -9568,14 +9111,27 @@ function App() {
                         }
                         if (shuffleDescriptionOpen) {
                           if (gameMode === 'discover') {
+                            resetShuffleDescriptionCard()
                             setDiscoverDescriptionCollapsedToButton(true)
+                            if (discoverPurpleAssetRouteComplete) {
+                              setDiscoverRouteCompleteCollapsedToButton(true)
+                            }
+                            return
                           }
                           resetShuffleDescriptionCard()
                           return
                         }
-                        if (gameMode === 'discover' && discoverDescriptionCollapsedToButton) {
+                        if (gameMode === 'discover' && (discoverDescriptionCollapsedToButton || discoverRouteCompleteCollapsedToButton)) {
+                          const targetId = activeShuffleItemIdRef.current ?? activeShuffleItemId
+                          const targetExampleIndex = targetId
+                            ? shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === targetId)
+                            : shuffleDescriptionActiveExampleIndex
+                          if (targetExampleIndex >= 0 && shouldSuppressDiscoverVineLanternCard(targetExampleIndex)) {
+                            return
+                          }
                           setDiscoverDescriptionCollapsedToButton(false)
-                          openShuffleDescriptionAssetCard(shuffleDescriptionActiveExampleIndex)
+                          setDiscoverRouteCompleteCollapsedToButton(false)
+                          openShuffleDescriptionAssetCard(targetExampleIndex >= 0 ? targetExampleIndex : shuffleDescriptionActiveExampleIndex)
                           return
                         }
                         const targetEntry = shuffleDescriptionInfoTarget()
@@ -9632,143 +9188,6 @@ function App() {
                     )}
                   </div>
                 )}
-              </div>
-            )}
-            {publicGameBootReady && freeExploreDebugFast && freeExploreActive && (
-              <button
-                type="button"
-                className="discover-dev-save-button"
-                aria-label="Save discover dev progress"
-                title="Save dev progress (S)"
-                onClick={() => saveDiscoverDevProgress()}
-              >
-                <Save size={17} />
-              </button>
-            )}
-            {publicGameBootReady && discoverPairPanelVisible && discoverActiveShuffleItem && (
-              <div className="discover-pair-panel" style={discoverPairPanelStyle} aria-label="Discover glow group">
-                <div className="discover-pair-header" onPointerDown={startDiscoverPairPanelDrag}>
-                  <span>Glow Group</span>
-                  <strong>{discoverActiveShuffleItem.shuffleInfo?.publicName?.trim() || discoverActiveShuffleItem.name}</strong>
-                </div>
-                <div className="discover-pair-list">
-                  {discoverPairCandidates.length > 0 ? discoverPairCandidates.map((candidate) => {
-                    const checked = discoverActivePairedAssetIds.includes(candidate.item.id)
-                    const candidateAsset = assetById.get(candidate.item.assetId)
-                    return (
-                      <label className="discover-pair-row" key={candidate.item.id}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => toggleDiscoverPairAsset(discoverActiveShuffleItem.id, candidate.item.id, event.target.checked)}
-                        />
-                        <span className="discover-pair-avatar" aria-hidden="true">
-                          {candidateAsset ? (
-                            <img
-                              src={candidateAsset.src}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <span>?</span>
-                          )}
-                        </span>
-                        <span className="discover-pair-copy">
-                          <strong>{candidate.item.name || 'Untitled asset'}</strong>
-                          <small>{candidate.role} · {Math.round(candidate.distance)}px</small>
-                        </span>
-                      </label>
-                    )
-                  }) : (
-                    <p>No close assets found.</p>
-                  )}
-                </div>
-              </div>
-            )}
-            {publicGameBootReady && freeExploreDebugFast && discoverLightRouteEditing && discoverSelectedRouteLight && discoverLightRoutePanelStyle && (
-              <div className="discover-light-route-panel" style={discoverLightRoutePanelStyle} aria-label="Discover light route editor">
-                <div className="discover-light-route-header" onPointerDown={startDiscoverLightRoutePanelDrag}>
-                  <span>{discoverLightEditKind === 'guide' ? 'Yellow Guide Light' : 'Purple Light'}</span>
-                  <strong>
-                    {discoverSelectedRouteLight.type === 'start'
-                      ? 'Start Trigger'
-                      : discoverSelectedRouteLight.type === 'guide'
-                        ? `Guide ${formatDiscoverLightOrder(discoverSelectedRouteLight.order)}`
-                        : discoverSelectedLightItem?.shuffleInfo?.publicName?.trim() || discoverSelectedLightItem?.name || 'Asset light'}
-                  </strong>
-                </div>
-                <div className="discover-light-route-toggle" aria-label="Light type">
-                  <button
-                    type="button"
-                    className={discoverLightEditKind === 'asset' ? 'active' : ''}
-                    onClick={() => selectDiscoverLightEditKind('asset')}
-                  >
-                    Purple
-                  </button>
-                  <button
-                    type="button"
-                    className={discoverLightEditKind === 'guide' ? 'active' : ''}
-                    onClick={() => selectDiscoverLightEditKind('guide')}
-                  >
-                    Yellow
-                  </button>
-                </div>
-                <label className="discover-light-route-order">
-                  <span>Order</span>
-                  <input
-                    type="text"
-                    inputMode={discoverSelectedRouteLight.type === 'guide' ? 'decimal' : 'numeric'}
-                    disabled={discoverSelectedRouteLight.type === 'start'}
-                    value={discoverLightRouteOrderDraft}
-                    onChange={(event) => {
-                      const pattern = discoverSelectedRouteLight.type === 'guide' ? /[^\d.]/g : /[^\d]/g
-                      const nextValue = event.target.value.replace(pattern, '')
-                      if (discoverSelectedRouteLight.type === 'guide') {
-                        const [whole = '', ...decimalParts] = nextValue.split('.')
-                        setDiscoverLightRouteOrderDraft(decimalParts.length > 0 ? `${whole}.${decimalParts.join('')}` : whole)
-                      } else {
-                        setDiscoverLightRouteOrderDraft(nextValue)
-                      }
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        commitDiscoverLightRouteOrderDraft(event.currentTarget)
-                      }
-                      if (event.key === 'Escape') {
-                        event.preventDefault()
-                        setDiscoverLightRouteOrderDraft(formatDiscoverLightOrder(discoverSelectedRouteLight.order))
-                        event.currentTarget.blur()
-                      }
-                    }}
-                    onBlur={() => {
-                      setDiscoverLightRouteOrderDraft(formatDiscoverLightOrder(discoverSelectedRouteLight.order))
-                    }}
-                  />
-                </label>
-                {discoverLightEditKind === 'guide' && (
-                  <div className="discover-light-route-guide-actions">
-                    <button type="button" onClick={addDiscoverGuideLightAfterSelected} aria-label="Add yellow guide light">
-                      <Plus size={15} />
-                      <span>Add</span>
-                    </button>
-                    <button type="button" onClick={removeSelectedDiscoverGuideLight} aria-label="Remove selected yellow guide light">
-                      <Minus size={15} />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                )}
-                <div className="discover-light-route-actions">
-                  <button type="button" onClick={() => selectDiscoverLightByStep(-1)} aria-label="Previous light">
-                    <ChevronLeft size={16} />
-                    <span>Back</span>
-                  </button>
-                  <button type="button" onClick={() => selectDiscoverLightByStep(1)} aria-label="Next light">
-                    <span>Next</span>
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
               </div>
             )}
             <div
@@ -10105,7 +9524,7 @@ function App() {
               type="button"
               onClick={() => enterDiscoverMode()}
             >
-              Discover
+              Explore
             </button>
             <button
               className={gameMode === 'shuffle' ? 'active' : ''}
