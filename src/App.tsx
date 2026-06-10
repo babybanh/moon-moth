@@ -32,6 +32,7 @@ import {
   idleForwardPushDurationMs,
   idleForwardPushWaitMs,
   insertRoutePoint,
+  lerp,
   manualScrubSpeed,
   nearestRouteProgress,
   sampleRouteData,
@@ -71,7 +72,106 @@ import type {
 
 const defaultViewport: Size = { width: 900, height: 620 }
 const editorViewStorageKey = 'moonMothRouteEditor.editorView'
-const discoverPairingsStorageKey = 'moonMothRouteEditor.discoverPairings.v1'
+const discoverPairingsStorageKey = 'moonMothRouteEditor.discoverPairings.v3'
+const defaultDiscoverPairingsByShuffleId: Record<string, string[]> = {
+  'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m',
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
+    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+  ],
+  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': [
+    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
+    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': [
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa',
+    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51',
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
+  ],
+  'artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': [
+    'artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w',
+    'artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
+    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s',
+    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo',
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': [
+    'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
+    'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr',
+  ],
+  'artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': [
+    'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
+    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
+    'artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s',
+    'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4',
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx': [
+    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling-png-juo6sf',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo',
+    'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
+    'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
+    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z',
+  ],
+  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': [
+    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
+  ],
+  'moon-glow-1': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
+  ],
+}
 const publicGameBuild = import.meta.env.VITE_MOON_MOTH_GAME_ONLY === 'true'
 const gameSurfaceSize = 628
 const publicGameHorizontalMargin = 0
@@ -447,12 +547,20 @@ const freeExploreDebugSpeedMultiplier = 2
 const freeExploreLightCollectRadius = 165
 const freeExploreShuffleDiscoverRadius = 235
 const freeExploreRevealBaseRadius = 360
-const freeExploreRevealBloomMs = 2500
+const freeExploreAssetRevealBloomMs = 2500
+const freeExplorePairedRevealBloomMs = freeExploreAssetRevealBloomMs + 2000
+const freeExplorePairedRevealStaggerMs = 280
+const discoverPairPanelEnabled = true
 const freeExploreLightMinY = 520
 const freeExploreGlowTapRadiusMin = 76
 const freeExploreGlowTapRadiusMax = 154
 const freeExploreTrailMaxPoints = 120
 const freeExploreTrailMinDistance = 8
+const discoverMusicZoomDurationMs = 125900
+const discoverMusicZoomTargetScale = 0.9
+const discoverFogAlphaStart = 0.72
+const discoverFogAlphaTarget = 0.6
+const discoverFogAlphaFinal = 0.5
 const gameFocusResumeDelayMs = 2100
 const gameMenuReturnDelayMs = 1050
 const gameHudHomeGraceMs = 5000
@@ -615,6 +723,21 @@ function vectorDot(a: Point, b: Point) {
   return a.x * b.x + a.y * b.y
 }
 
+function easeOutCubic(value: number) {
+  const t = clamp(value, 0, 1)
+  return 1 - (1 - t) ** 3
+}
+
+function easeInOutSine(value: number) {
+  const t = clamp(value, 0, 1)
+  return -(Math.cos(Math.PI * t) - 1) / 2
+}
+
+function easeInCubic(value: number) {
+  const t = clamp(value, 0, 1)
+  return t * t * t
+}
+
 function freeExploreKeyboardDirection(input: FreeExploreInputState, priority: FreeExploreInputKey[] = []): Point {
   let x = (input.right ? 1 : 0) - (input.left ? 1 : 0)
   let y = (input.down ? 1 : 0) - (input.up ? 1 : 0)
@@ -748,27 +871,38 @@ function loadImageElementOnce(src: string): Promise<[string, HTMLImageElement | 
   })
 }
 
+function cloneDiscoverPairings(pairings: Record<string, string[]> = defaultDiscoverPairingsByShuffleId) {
+  return Object.fromEntries(Object.entries(pairings).map(([shuffleItemId, assetItemIds]) => [
+    shuffleItemId,
+    [...assetItemIds],
+  ]))
+}
+
+function sanitizeDiscoverPairings(parsed: unknown): Record<string, string[]> | null {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null
+  }
+  const pairings = Object.fromEntries(
+    Object.entries(parsed)
+      .filter((entry): entry is [string, string[]] => typeof entry[0] === 'string' && Array.isArray(entry[1]))
+      .map(([shuffleItemId, assetItemIds]) => [
+        shuffleItemId,
+        assetItemIds.filter((assetItemId): assetItemId is string => typeof assetItemId === 'string'),
+      ])
+      .filter(([, assetItemIds]) => assetItemIds.length > 0),
+  )
+  return Object.keys(pairings).length > 0 ? pairings : null
+}
+
 function readDiscoverPairingsFromStorage(): Record<string, string[]> {
   try {
     const raw = window.localStorage.getItem(discoverPairingsStorageKey)
     if (!raw) {
-      return {}
+      return cloneDiscoverPairings()
     }
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return {}
-    }
-    return Object.fromEntries(
-      Object.entries(parsed)
-        .filter((entry): entry is [string, string[]] => typeof entry[0] === 'string' && Array.isArray(entry[1]))
-        .map(([shuffleItemId, assetItemIds]) => [
-          shuffleItemId,
-          assetItemIds.filter((assetItemId): assetItemId is string => typeof assetItemId === 'string'),
-        ])
-        .filter(([, assetItemIds]) => assetItemIds.length > 0),
-    )
+    return sanitizeDiscoverPairings(JSON.parse(raw) as unknown) ?? cloneDiscoverPairings()
   } catch {
-    return {}
+    return cloneDiscoverPairings()
   }
 }
 
@@ -948,6 +1082,15 @@ function clampCanvasPopoverPosition(point: Point, viewport: Size, kind: CanvasPo
   }
 }
 
+function clampDiscoverPairPanelPosition(point: Point, viewport: Size): Point {
+  const width = 286
+  const height = 310
+  return {
+    x: clamp(point.x, 12, Math.max(12, viewport.width - width)),
+    y: clamp(point.y, 12, Math.max(12, viewport.height - height)),
+  }
+}
+
 const maxOpenEditorPanels = 3
 
 function App() {
@@ -992,6 +1135,10 @@ function App() {
   const [freeExplorePosition, setFreeExplorePosition] = useState<Point>(() => initialFreeExplorePosition(project))
   const [freeExploreCameraCenter, setFreeExploreCameraCenter] = useState<Point>(() => initialFreeExplorePosition(project))
   const [freeExploreDebugFast, setFreeExploreDebugFast] = useState(false)
+  const [discoverGlowIsolated, setDiscoverGlowIsolated] = useState(false)
+  const [discoverGlowIsolatedItemId, setDiscoverGlowIsolatedItemId] = useState<string | null>(null)
+  const [discoverDevZoomedOut, setDiscoverDevZoomedOut] = useState(false)
+  const [discoverMusicZoomStartedAt, setDiscoverMusicZoomStartedAt] = useState(0)
   const [collectedLightItemIds, setCollectedLightItemIds] = useState<string[]>([])
   const [collectedLightCollectedAt, setCollectedLightCollectedAt] = useState<Record<string, number>>({})
   const [discoveredShuffleItemIds, setDiscoveredShuffleItemIds] = useState<string[]>([])
@@ -1038,6 +1185,7 @@ function App() {
   const [animationTime, setAnimationTime] = useState(0)
   const [zoomFromMothView, setZoomFromMothView] = useState(false)
   const [canvasPopoverPosition, setCanvasPopoverPosition] = useState<Point | null>(null)
+  const [discoverPairPanelPosition, setDiscoverPairPanelPosition] = useState<Point>(() => ({ x: 14, y: 14 }))
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const menuMothCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const menuFocusDissolveTimeoutRef = useRef<number | null>(null)
@@ -1098,6 +1246,7 @@ function App() {
   const triggeredTourCueIdsRef = useRef<Set<string>>(new Set())
   const cameraRef = useRef<Camera>(project.camera)
   const canvasPopoverDragRef = useRef<{ offset: Point; kind: CanvasPopoverKind } | null>(null)
+  const discoverPairPanelDragRef = useRef<{ offset: Point } | null>(null)
   const copiedItemsRef = useRef<EditorItem[]>([])
   const musicRef = useRef<HTMLAudioElement | null>(null)
   const hudAudioContextRef = useRef<AudioContext | null>(null)
@@ -1216,12 +1365,23 @@ function App() {
 
   useEffect(() => {
     const handlePointerMove = (event: globalThis.PointerEvent) => {
+      const pairDrag = discoverPairPanelDragRef.current
       const drag = canvasPopoverDragRef.current
       const shell = shellRef.current
-      if (!drag || !shell) {
+      if (!shell || (!drag && !pairDrag)) {
         return
       }
       const rect = shell.getBoundingClientRect()
+      if (pairDrag) {
+        setDiscoverPairPanelPosition(clampDiscoverPairPanelPosition({
+          x: event.clientX - rect.left - pairDrag.offset.x,
+          y: event.clientY - rect.top - pairDrag.offset.y,
+        }, viewport))
+        return
+      }
+      if (!drag) {
+        return
+      }
       setCanvasPopoverPosition(clampCanvasPopoverPosition({
         x: event.clientX - rect.left - drag.offset.x,
         y: event.clientY - rect.top - drag.offset.y,
@@ -1229,6 +1389,7 @@ function App() {
     }
     const handlePointerUp = () => {
       canvasPopoverDragRef.current = null
+      discoverPairPanelDragRef.current = null
     }
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
@@ -1310,6 +1471,28 @@ function App() {
       ) {
         event.preventDefault()
         toggleFreeExploreDebugFast()
+        return
+      }
+      if (
+        appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+        && freeExploreDebugFast
+        && (event.key === '1' || event.code === 'Digit1')
+      ) {
+        event.preventDefault()
+        toggleDiscoverGlowIsolation()
+        return
+      }
+      if (
+        appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+        && freeExploreDebugFast
+        && (event.key === '`' || event.code === 'Backquote')
+      ) {
+        event.preventDefault()
+        toggleDiscoverDevZoom()
         return
       }
       if (event.key === 'Escape') {
@@ -2334,6 +2517,48 @@ function App() {
     return () => cancelAnimationFrame(frame)
   }, [appMode, gameMode, playPaused, workspaceMode])
 
+  const discoverMusicVisualCycle = useMemo(() => {
+    const music = musicRef.current
+    const musicDurationMs = music && Number.isFinite(music.duration) && music.duration > 0
+      ? music.duration * 1000
+      : discoverMusicZoomDurationMs
+    if (gameMode !== 'discover' || discoverMusicZoomStartedAt <= 0) {
+      return {
+        fogAlpha: discoverFogAlphaStart,
+        zoomScale: 1,
+      }
+    }
+    const elapsedTrackProgress = Math.max(0, animationTime - discoverMusicZoomStartedAt) / musicDurationMs
+    const cycleDurationMs = musicDurationMs * 3
+    const cycleTrackProgress = (Math.max(0, animationTime - discoverMusicZoomStartedAt) % cycleDurationMs) / musicDurationMs
+    const fogAlpha = elapsedTrackProgress < 1
+      ? lerp(discoverFogAlphaStart, discoverFogAlphaTarget, easeInCubic(elapsedTrackProgress))
+      : elapsedTrackProgress < 2
+        ? discoverFogAlphaTarget
+        : elapsedTrackProgress < 3
+          ? lerp(discoverFogAlphaTarget, discoverFogAlphaFinal, easeInCubic(elapsedTrackProgress - 2))
+          : discoverFogAlphaFinal
+    if (cycleTrackProgress < 1) {
+      const eased = easeInCubic(cycleTrackProgress)
+      return {
+        fogAlpha,
+        zoomScale: lerp(1, discoverMusicZoomTargetScale, eased),
+      }
+    }
+    if (cycleTrackProgress < 2) {
+      return {
+        fogAlpha,
+        zoomScale: discoverMusicZoomTargetScale,
+      }
+    }
+    return {
+      fogAlpha,
+      zoomScale: lerp(discoverMusicZoomTargetScale, 1, easeInCubic(cycleTrackProgress - 2)),
+    }
+  }, [animationTime, discoverMusicZoomStartedAt, gameMode])
+
+  const discoverFogAlpha = discoverMusicVisualCycle.fogAlpha
+
   const renderCamera = useMemo(() => {
     const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
     const tourZoom = activeGroup?.cameraZoom
@@ -2350,10 +2575,11 @@ function App() {
       return project.camera
     }
     if (gameMode === 'discover') {
+      const zoom = Math.max(project.camera.zoom, followZoom)
       return {
         x: freeExploreCameraCenter.x,
         y: freeExploreCameraCenter.y,
-        zoom: Math.max(project.camera.zoom, followZoom),
+        zoom: zoom * discoverMusicVisualCycle.zoomScale * (freeExploreDebugFast && discoverDevZoomedOut ? 0.5 : 1),
       }
     }
     const moth = sampleRouteData(routeSampleData, playProgress)
@@ -2362,7 +2588,7 @@ function App() {
       y: moth.y,
       zoom: Math.max(project.camera.zoom, followZoom),
     }
-  }, [appMode, editScrubDirection, freeExploreCameraCenter, gameMode, playProgress, project, routeSampleData, zoomFromMothView])
+  }, [appMode, discoverDevZoomedOut, discoverMusicVisualCycle.zoomScale, editScrubDirection, freeExploreCameraCenter, freeExploreDebugFast, gameMode, playProgress, project, routeSampleData, zoomFromMothView])
 
   const canvasCamera = useMemo(
     () => cameraForCanvasView(renderCamera, project),
@@ -2381,55 +2607,64 @@ function App() {
     () => new Set(collectedLightItemIds),
     [collectedLightItemIds],
   )
+  const discoverFocusedShuffleItemId = freeExploreDebugFast && discoverGlowIsolated && discoverGlowIsolatedItemId
+    ? discoverGlowIsolatedItemId
+    : activeShuffleItemId
   const collectedRouteLightPoints = useMemo(
     () => {
       const itemById = new Map(project.items.map((item) => [item.id, item]))
       return freeExploreRouteLights
         .filter((light) => collectedLightIdSet.has(light.id))
+        .filter((light) => !freeExploreDebugFast || !discoverGlowIsolated || light.itemId === discoverFocusedShuffleItemId)
         .flatMap((light) => {
           const collectedAt = collectedLightCollectedAt[light.id] ?? 0
+          const lightItem = itemById.get(light.itemId)
           const pairedIds = discoverPairedAssetIdsByShuffleId[light.itemId] ?? []
           const pairedReveals = pairedIds
             .map((itemId) => itemById.get(itemId))
             .filter((item): item is EditorItem => Boolean(item?.visible))
-            .map((item) => ({
+            .map((item, index) => ({
               assetId: item.assetId,
-              bloomMs: freeExploreRevealBloomMs,
-              collectedAt: discoverPairSelectedAtByKey[`${light.itemId}:${item.id}`] ?? collectedAt,
+              bloomMs: freeExplorePairedRevealBloomMs,
+              collectedAt: (discoverPairSelectedAtByKey[`${light.itemId}:${item.id}`] ?? collectedAt) + (index * freeExplorePairedRevealStaggerMs),
               itemId: item.id,
               layerId: item.layerId,
               point: { x: item.x, y: item.y },
+              softStart: true,
             }))
           return [
             {
               assetId: light.assetId,
-              bloomMs: freeExploreRevealBloomMs,
+              bloomMs: freeExploreAssetRevealBloomMs,
               collectedAt,
               itemId: light.itemId,
               layerId: light.layerId,
               point: light.point,
+              softStart: lightItem ? isFreeExploreMoonRevealItem(lightItem) : false,
             },
             ...pairedReveals,
           ]
         })
     },
-    [collectedLightCollectedAt, collectedLightIdSet, discoverPairedAssetIdsByShuffleId, discoverPairSelectedAtByKey, freeExploreRouteLights, project.items],
+    [collectedLightCollectedAt, collectedLightIdSet, discoverFocusedShuffleItemId, discoverGlowIsolated, discoverPairedAssetIdsByShuffleId, discoverPairSelectedAtByKey, freeExploreDebugFast, freeExploreRouteLights, project.items],
   )
   const discoverActiveShuffleItem = useMemo(
-    () => activeShuffleItemId ? project.items.find((item) => item.id === activeShuffleItemId) ?? null : null,
-    [activeShuffleItemId, project.items],
+    () => discoverFocusedShuffleItemId ? project.items.find((item) => item.id === discoverFocusedShuffleItemId) ?? null : null,
+    [discoverFocusedShuffleItemId, project.items],
   )
   const discoverPairCandidates = useMemo(
-    () => freeExploreActive && discoverActiveShuffleItem
+    () => discoverPairPanelEnabled && freeExploreDebugFast && freeExploreActive && discoverActiveShuffleItem
       ? buildDiscoverPairCandidates(project, discoverActiveShuffleItem)
       : [],
-    [discoverActiveShuffleItem, freeExploreActive, project],
+    [discoverActiveShuffleItem, freeExploreActive, freeExploreDebugFast, project],
   )
   const discoverActivePairedAssetIds = discoverActiveShuffleItem
     ? discoverPairedAssetIdsByShuffleId[discoverActiveShuffleItem.id] ?? []
     : []
   const discoverPairPanelVisible = Boolean(
-    freeExploreActive
+    discoverPairPanelEnabled
+    && freeExploreDebugFast
+    && freeExploreActive
     && discoverActiveShuffleItem
     && collectedLightIdSet.has(`asset-light-${discoverActiveShuffleItem.id}`),
   )
@@ -2439,6 +2674,7 @@ function App() {
         activeShuffleItemIds: activeShuffleItemId ? [activeShuffleItemId] : [],
         collectedLightItemIds,
         discoveredShuffleItemIds,
+        fogAlpha: discoverFogAlpha,
         lightItemIds: [],
         revealRadius: freeExploreRevealRadius,
         revealPoints: collectedRouteLightPoints,
@@ -2624,6 +2860,10 @@ function App() {
   const routeQuickEditorStyle = canvasPopoverKind === 'compact' && activeCanvasPopoverPosition
     ? { left: activeCanvasPopoverPosition.x, top: activeCanvasPopoverPosition.y }
     : undefined
+  const discoverPairPanelStyle = {
+    left: clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport).x,
+    top: clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport).y,
+  }
   useEffect(() => {
     setCanvasPopoverPosition(canvasPopoverAnchor)
   }, [canvasPopoverKey])
@@ -2638,6 +2878,22 @@ function App() {
     const rect = shell.getBoundingClientRect()
     canvasPopoverDragRef.current = {
       kind,
+      offset: {
+        x: event.clientX - rect.left - position.x,
+        y: event.clientY - rect.top - position.y,
+      },
+    }
+  }
+  const startDiscoverPairPanelDrag = (event: PointerEvent<HTMLElement>) => {
+    const shell = shellRef.current
+    if (!shell) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const rect = shell.getBoundingClientRect()
+    const position = clampDiscoverPairPanelPosition(discoverPairPanelPosition, viewport)
+    discoverPairPanelDragRef.current = {
       offset: {
         x: event.clientX - rect.left - position.x,
         y: event.clientY - rect.top - position.y,
@@ -3657,6 +3913,9 @@ function App() {
       debugFast: false,
     }
     setFreeExploreDebugFast(false)
+    setDiscoverGlowIsolated(false)
+    setDiscoverGlowIsolatedItemId(null)
+    setDiscoverDevZoomedOut(false)
     freeExploreCameraCenterRef.current = start
     resetFreeExploreTrail(start)
     setFreeExplorePosition(start)
@@ -3687,6 +3946,7 @@ function App() {
       setAppMode('play')
       setPlayPaused(false)
       handleMusicRestart(false)
+      setDiscoverMusicZoomStartedAt(performance.now())
       revealShuffleDescriptionInitialButton()
       setMessage(message)
     }
@@ -4524,9 +4784,69 @@ function App() {
     setFreeExploreDebugFast((current) => {
       const next = !current
       freeExploreRef.current.debugFast = next
-      setMessage(next ? 'Discover debug speed on' : 'Discover debug speed off')
+      if (!next) {
+        setDiscoverGlowIsolated(false)
+        setDiscoverGlowIsolatedItemId(null)
+        setDiscoverDevZoomedOut(false)
+      }
+      setMessage(next ? 'Discover dev mode on' : 'Discover dev mode off')
       return next
     })
+  }
+
+  function toggleDiscoverGlowIsolation() {
+    setDiscoverGlowIsolated((current) => {
+      const next = !current
+      if (!next) {
+        setDiscoverGlowIsolatedItemId(null)
+        setMessage('Discover isolate glow off')
+        return next
+      }
+      const targetId = discoverIsolationTargetId()
+      if (!targetId) {
+        setDiscoverGlowIsolatedItemId(null)
+        setMessage('Collect a light before isolating glow')
+        return false
+      }
+      setDiscoverGlowIsolatedItemId(targetId)
+      const targetItem = projectRef.current.items.find((item) => item.id === targetId)
+      setMessage(`Discover isolate: ${targetItem?.shuffleInfo?.publicName?.trim() || targetItem?.name || 'asset'}`)
+      return next
+    })
+  }
+
+  function discoverIsolationTargetId() {
+    const collected = new Set(collectedLightItemIdsRef.current)
+    const activeId = activeShuffleItemIdRef.current
+    if (activeId && collected.has(`asset-light-${activeId}`)) {
+      return activeId
+    }
+    const nearestCollectedLight = buildFreeExploreRouteLights(projectRef.current)
+      .filter((light) => collected.has(light.id))
+      .map((light) => ({ light, distance: distance(freeExploreRef.current.position, light.point) }))
+      .sort((a, b) => a.distance - b.distance)[0]?.light
+    return nearestCollectedLight?.itemId ?? null
+  }
+
+  function toggleDiscoverDevZoom() {
+    if (!isFreeExploreStill()) {
+      setMessage('Discover dev zoom waits for the moth to settle')
+      return
+    }
+    setDiscoverDevZoomedOut((current) => {
+      const next = !current
+      setMessage(next ? 'Discover dev zoom out' : 'Discover dev zoom normal')
+      return next
+    })
+  }
+
+  function isFreeExploreStill() {
+    return !freeExploreRef.current.pointerDirection
+      && !freeExploreRef.current.input.up
+      && !freeExploreRef.current.input.down
+      && !freeExploreRef.current.input.left
+      && !freeExploreRef.current.input.right
+      && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold * 8
   }
 
   function resetFreeExploreTrail(position: Point) {
@@ -6286,8 +6606,8 @@ function App() {
               </div>
             )}
             {publicGameBootReady && discoverPairPanelVisible && discoverActiveShuffleItem && (
-              <div className="discover-pair-panel" aria-label="Discover glow group">
-                <div className="discover-pair-header">
+              <div className="discover-pair-panel" style={discoverPairPanelStyle} aria-label="Discover glow group">
+                <div className="discover-pair-header" onPointerDown={startDiscoverPairPanelDrag}>
                   <span>Glow Group</span>
                   <strong>{discoverActiveShuffleItem.shuffleInfo?.publicName?.trim() || discoverActiveShuffleItem.name}</strong>
                 </div>
@@ -7654,7 +7974,7 @@ function App() {
   }
 
   function shouldNativeLoopMusic(mode = gameModeRef.current) {
-    return mode === 'journey'
+    return mode === 'journey' || mode === 'discover'
   }
 
   function shouldManualLoopMusic() {
@@ -9371,6 +9691,21 @@ function collectFreeExploreShuffleItems(project: EditorProject) {
     item.shuffleInfo?.enabled === true
     || isShuffleInfoSeedCandidate(item)
   ))
+}
+
+function isFreeExploreMoonRevealItem(item: EditorItem) {
+  const publicName = item.shuffleInfo?.publicName?.trim().toLowerCase() ?? ''
+  const name = item.name.toLowerCase()
+  const assetId = item.assetId.toLowerCase()
+  return publicName === 'first moon'
+    || publicName === 'full moon'
+    || publicName === 'crescent moon'
+    || publicName === 'soft moon'
+    || assetId === 'moon-glow-1'
+    || assetId.includes('full-moon-soft-glow')
+    || assetId.includes('crescent-moon-soft-glow')
+    || assetId.includes('2d-moon-glow')
+    || /\b(full moon|crescent moon|soft moon)\b/.test(name)
 }
 
 function buildDiscoverPairCandidates(project: EditorProject, shuffleItem: EditorItem, limit = 7): DiscoverPairCandidate[] {

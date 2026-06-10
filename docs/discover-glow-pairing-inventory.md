@@ -1,12 +1,8 @@
 # Discover Glow Pairing Inventory
 
-Captured from `moonMothRouteEditor.discoverPairings.v1` on 2026-06-09.
+Captured from `moonMothRouteEditor.discoverPairings.v1`, adjusted for Great Moonstone, and baked into `moonMothRouteEditor.discoverPairings.v3` on 2026-06-09.
 
-Total: 14 shuffle assets, 56 paired nearby assets.
-
-## Vine Lanterns
-
-- Soft Moonlight Pool copy
+Total: 18 glowing assets, 61 paired nearby assets.
 
 ## Mooncup Blossom
 
@@ -27,35 +23,26 @@ Total: 14 shuffle assets, 56 paired nearby assets.
 ## Glow Flower
 
 - Soft Moonlight Pool
-- Pearl Fern Cluster copy
 - Pearl Fern Cluster
-- Crescent Vine With Glowing Leaves
-- Enchanted Pastel Leaf Vine
-- Hanging Vine Lanterns
 
 ## Crooked Saplings
 
+- Soft Moonlight Pool
 - Magical Thicket With Glowing Foliage
-- Enchanted Pastel Leaf Vine
-- Pearl Fern Cluster copy
-- Hanging Vine Lanterns
 
 ## Moonstone Fragments
 
-- Soft Moonlight Pool
 - Glowing Botanical Vine copy
-- Magical Mossy Rock Garden copy
-- Magical Moonlit Botanical Corner Element
 - Mini Mooncup Blossom
-- Soft Moonlight Pool copy
+- Soft Moonlight Pool
+- Magical Mossy Rock Garden copy
 
 ## Cocoon Bud
 
-- Soft Moonlight Pool copy
-- Magical Twisting Vine With Glowing Accents
 - Glowing Garden Of Starry Flowers
 - Soft Moonlight Pool copy
-- Glowing Botanical Vine
+- Magical Twisting Vine With Glowing Accents
+- Soft Moonlight Pool copy
 
 ## Bellflowers
 
@@ -67,37 +54,67 @@ Total: 14 shuffle assets, 56 paired nearby assets.
 
 ## Star Petals
 
+- Soft Moonlight Pool copy
+- Soft Moonlight Pool copy
 - Glowing Enchanted Forest Floor Vignette copy
 
 ## Moon Reeds
 
 - Soft Moonlight Pool copy
-- Soft Moonlight Pool copy
 - Glowing Enchanted Forest Floor Vignette copy
-- Pathside Orchid Spill Cameo
+- Soft Moonlight Pool copy
 
 ## Great Moonstone
 
-- Pearl Fern Cluster
 - Silver Grass Plumes
 - Enchanted Pastel Leaf Vine
 - Soft Moonlight Pool copy
 - Soft Moonlight Pool
+- 2d Near Foliage Cluster A
 - 2d Foreground Vine Cluster B
+- Soft Moonlight Pool copy
+- Pearl Fern Cluster
 
 ## Orchid Spill
 
-- Firefly Flower Patch
-- Soft Moonlight Pool copy
 - Hanging Vine Lanterns copy
 - Soft Moonlight Pool copy
-- Magical Mossy Rock Garden copy
+- Soft Moonlight Pool
+- Firefly Flower Patch
 
 ## Cocoon Shrine
 
-- Spiral Crystal Vine Accent
-- Glowing Botanical Vine copy
 - Opaline Vine Arch
 - Slender Moon Reed Cluster
 - Soft Moonlight Pool copy
 - Purple Path Grass Strip Right
+- Spiral Crystal Vine Accent
+- Pearl Fern Cluster
+
+## Vine Lanterns
+
+- Soft Moonlight Pool copy
+- Magical Thicket With Glowing Foliage
+
+## Fern Mound
+
+- Soft Moonlight Pool copy
+- Soft Moonlight Pool copy
+- Glowing Enchanted Forest Floor Vignette copy
+
+## Full Moon
+
+- Glowing Botanical Vine copy
+- Pale Lavender Sapling
+- Pearl Fern Cluster
+- Spiral Crystal Vine Accent
+- Opaline Vine Arch
+- Slender Moon Reed Cluster
+
+## Soft Moon
+
+- Mini Mooncup Blossom
+
+## First Moon
+
+- Soft Moonlight Pool copy

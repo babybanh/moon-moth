@@ -896,6 +896,13 @@ input[type="range"] {
   display: grid;
   gap: 2px;
   margin-bottom: 8px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.discover-pair-header:active {
+  cursor: grabbing;
 }
 
 .discover-pair-header span,

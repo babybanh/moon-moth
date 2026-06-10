@@ -42,9 +42,10 @@ export type RenderOptions = {
     activeShuffleItemIds: string[]
     collectedLightItemIds: string[]
     discoveredShuffleItemIds: string[]
+    fogAlpha?: number
     lightItemIds: string[]
     revealRadius: number
-    revealPoints?: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point }>
+    revealPoints?: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point; softStart?: boolean }>
     routeLights?: Array<{ id: string; layerId?: LayerId; point: Point; collected: boolean }>
   }
 }
@@ -742,7 +743,7 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
   const revealRadius = Math.max(220, discovery.revealRadius)
 
   const revealPoints = discovery.revealPoints ?? []
-  const overlay = drawExploreScreenFogOverlay(project, options, revealPoints, revealRadius)
+  const overlay = drawExploreScreenFogOverlay(project, options, revealPoints, revealRadius, discovery.fogAlpha)
   if (!overlay) {
     return
   }
@@ -811,8 +812,9 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
 function drawExploreScreenFogOverlay(
   project: EditorProject,
   options: RenderOptions,
-  revealPoints: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point }>,
+  revealPoints: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point; softStart?: boolean }>,
   revealRadius: number,
+  fogAlpha = 0.72,
 ) {
   const width = Math.max(1, Math.ceil(options.viewport.width))
   const height = Math.max(1, Math.ceil(options.viewport.height))
@@ -835,13 +837,14 @@ function drawExploreScreenFogOverlay(
   overlay.context.setTransform(1, 0, 0, 1, 0, 0)
   overlay.context.globalCompositeOperation = 'source-over'
   overlay.context.clearRect(0, 0, width, height)
-  overlay.context.fillStyle = 'rgba(1, 5, 16, 0.72)'
+  overlay.context.fillStyle = `rgba(1, 5, 16, ${clamp(fogAlpha, 0, 0.9)})`
   overlay.context.fillRect(0, 0, width, height)
   overlay.context.globalCompositeOperation = 'destination-out'
+  const itemById = new Map(project.items.map((item) => [item.id, item]))
   for (const reveal of revealPoints) {
-    const item = reveal.itemId ? project.items.find((candidate) => candidate.id === reveal.itemId) : undefined
+    const item = reveal.itemId ? itemById.get(reveal.itemId) : undefined
     const revealProgress = revealBloomProgress(reveal.collectedAt, reveal.bloomMs, options.animationTime)
-    if (item && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress)) {
+    if (item && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress, reveal.softStart === true)) {
       continue
     }
     drawCircularRevealCutout(overlay.context, reveal, project, options, revealRadius, revealProgress)
@@ -858,7 +861,11 @@ function drawAssetRevealCutout(
   project: EditorProject,
   options: RenderOptions,
   progress: number,
+  softStart: boolean,
 ) {
+  if (softStart && progress <= 0) {
+    return true
+  }
   const layer = project.layers[item.layerId]
   const parallax = layer.parallax
   const asset = assetById.get(item.assetId)
@@ -871,14 +878,19 @@ function drawAssetRevealCutout(
   const width = item.width * options.camera.zoom * parallax
   const height = item.height * options.camera.zoom * parallax
   const frontRevealBoost = isFrontOccluder(item) ? 1.22 : 1
-  const eased = easeInOutSine(progress)
-  const auraEased = easeOutCubic(progress)
+  const revealProgress = isGroundPoolRevealItem(item) ? progress ** 1.85 : progress
+  const eased = easeInOutSine(revealProgress)
+  const auraEased = easeOutCubic(revealProgress)
   const blur = Math.max(8, Math.min(52, Math.max(width, height) * 0.08 * frontRevealBoost * (0.58 + eased * 0.42)))
   const auraScale = 1.05 + eased * 0.13
   const auraRadiusX = Math.max(72, Math.min(390, (width * (0.3 + auraEased * 0.28) + 48) * frontRevealBoost))
   const auraRadiusY = Math.max(72, Math.min(390, (height * (0.3 + auraEased * 0.28) + 48) * frontRevealBoost))
   const auraCoreAlpha = (isFrontOccluder(item) ? 0.82 : 0.66) * eased
   const auraMidAlpha = (isFrontOccluder(item) ? 0.46 : 0.34) * eased
+  const cullRadius = Math.max(auraRadiusX, auraRadiusY, width * auraScale * 0.5, height * auraScale * 0.5) + (blur * 2) + 32
+  if (!screenCircleIntersectsViewport(center, cullRadius, options.viewport)) {
+    return true
+  }
 
   context.save()
   context.translate(center.x, center.y)
@@ -904,10 +916,16 @@ function drawAssetRevealCutout(
     height * auraScale,
   )
   context.filter = 'none'
-  context.globalAlpha = 0.96 * (0.34 + eased * 0.66)
+  const imageAlpha = softStart ? eased : 0.34 + eased * 0.66
+  context.globalAlpha = 0.96 * imageAlpha
   context.drawImage(image, -width / 2, -height / 2, width, height)
   context.restore()
   return true
+}
+
+function isGroundPoolRevealItem(item: EditorItem) {
+  const asset = assetById.get(item.assetId)
+  return item.role === 'Ground & Pools' || asset?.role === 'Ground & Pools'
 }
 
 function revealBloomProgress(collectedAt = 0, bloomMs = 1, animationTime: number) {
@@ -939,6 +957,9 @@ function drawCircularRevealCutout(
   const screen = parallaxWorldToScreen(reveal.point, options.camera, options.viewport, parallax)
   const eased = easeOutCubic(progress)
   const screenRadius = Math.max(60, Math.min(360, revealRadius * options.camera.zoom * parallax * (0.42 + eased * 0.58)))
+  if (!screenCircleIntersectsViewport(screen, screenRadius, options.viewport)) {
+    return
+  }
   const revealGradient = context.createRadialGradient(
     screen.x,
     screen.y,
@@ -954,6 +975,13 @@ function drawCircularRevealCutout(
   context.beginPath()
   context.arc(screen.x, screen.y, screenRadius, 0, Math.PI * 2)
   context.fill()
+}
+
+function screenCircleIntersectsViewport(center: Point, radius: number, viewport: { width: number; height: number }) {
+  return center.x + radius >= 0
+    && center.x - radius <= viewport.width
+    && center.y + radius >= 0
+    && center.y - radius <= viewport.height
 }
 
 function drawSelectedRoute(context: CanvasRenderingContext2D, project: EditorProject, options: RenderOptions) {
