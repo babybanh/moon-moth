@@ -1976,6 +1976,9 @@ const exploreRelocationDelayMs = 460
 const freeExploreDebugSpeedMultiplier = 2
 const freeExploreLightCollectRadius = 165
 const freeExploreShuffleDiscoverRadius = 235
+const freeExploreShuffleDiscoverRadiusMax = 760
+const freeExploreAssetScanMs = 140
+const freeExploreCompleteAssetScanMs = 260
 const freeExploreRevealBaseRadius = 360
 const freeExploreAssetRevealBloomMs = 2500
 const freeExplorePairedRevealBloomMs = freeExploreAssetRevealBloomMs + 2000
@@ -3082,6 +3085,21 @@ function distanceToSegment(point: Point, start: Point, end: Point) {
   })
 }
 
+function discoverShuffleAssetHit(position: Point, item: EditorItem) {
+  const radiusX = clamp(item.width * 0.42, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
+  const radiusY = clamp(item.height * 0.42, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
+  const normalizedX = (position.x - item.x) / radiusX
+  const normalizedY = (position.y - item.y) / radiusY
+  const score = (normalizedX * normalizedX) + (normalizedY * normalizedY)
+  if (score > 1) {
+    return null
+  }
+  return {
+    distance: distance(position, item),
+    score,
+  }
+}
+
 const maxOpenEditorPanels = 3
 
 function App() {
@@ -3187,6 +3205,7 @@ function App() {
   const [shuffleDescriptionSampledBoundaryIndex, setShuffleDescriptionSampledBoundaryIndex] = useState<number | null>(null)
   const [discoverDescriptionCollapsedToButton, setDiscoverDescriptionCollapsedToButton] = useState(false)
   const [discoverRouteCompleteCollapsedToButton, setDiscoverRouteCompleteCollapsedToButton] = useState(false)
+  const [discoverRouteCompletedAt, setDiscoverRouteCompletedAt] = useState(0)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -3256,6 +3275,11 @@ function App() {
   const collectedLightCollectedAtRef = useRef<Record<string, number>>({})
   const discoveredShuffleItemIdsRef = useRef<string[]>([])
   const activeShuffleItemIdRef = useRef<string | null>(null)
+  const discoverDescriptionCollapsedToButtonRef = useRef(false)
+  const discoverRouteCompleteCollapsedToButtonRef = useRef(false)
+  const discoverRouteLightsRef = useRef<FreeExploreRouteLight[]>([])
+  const discoverShuffleItemsRef = useRef<EditorItem[]>([])
+  const discoverLastAssetScanAtRef = useRef(0)
   const shuffleDescriptionOpenRef = useRef(shuffleDescriptionOpen)
   const shuffleDescriptionDismissingToLoopRef = useRef(shuffleDescriptionDismissingToLoop)
   const shuffleDescriptionRouteAssetIndexRef = useRef(shuffleDescriptionRouteAssetIndex)
@@ -3499,6 +3523,14 @@ function App() {
   useEffect(() => {
     activeShuffleItemIdRef.current = activeShuffleItemId
   }, [activeShuffleItemId])
+
+  useEffect(() => {
+    discoverDescriptionCollapsedToButtonRef.current = discoverDescriptionCollapsedToButton
+  }, [discoverDescriptionCollapsedToButton])
+
+  useEffect(() => {
+    discoverRouteCompleteCollapsedToButtonRef.current = discoverRouteCompleteCollapsedToButton
+  }, [discoverRouteCompleteCollapsedToButton])
 
   useEffect(() => {
     discoverCurveBoundaryPointsRef.current = discoverCurveBoundaryPoints
@@ -4979,6 +5011,12 @@ function App() {
     () => buildFreeExploreRouteLights(project, discoverLightRouteConfig),
     [discoverLightRouteConfig, project],
   )
+  const freeExploreShuffleItems = useMemo(
+    () => collectFreeExploreShuffleItems(project),
+    [project],
+  )
+  discoverRouteLightsRef.current = freeExploreRouteLights
+  discoverShuffleItemsRef.current = freeExploreShuffleItems
   useEffect(() => {
     const shell = shellRef.current
     if (!discoverDevToolsEnabled || !freeExploreActive || !freeExploreDebugFast || !shell) {
@@ -4998,7 +5036,7 @@ function App() {
         type: light.type,
       })),
       pairings: discoverPairedAssetIdsByShuffleId,
-      shuffleAssets: collectFreeExploreShuffleItems(project).map((item) => ({
+      shuffleAssets: freeExploreShuffleItems.map((item) => ({
         id: item.id,
         name: item.shuffleInfo?.publicName?.trim() || item.name,
         point: { x: item.x, y: item.y },
@@ -5011,6 +5049,7 @@ function App() {
     freeExploreActive,
     freeExploreDebugFast,
     freeExploreRouteLights,
+    freeExploreShuffleItems,
     project,
   ])
   const discoverPurpleRouteLights = useMemo(
@@ -5042,6 +5081,13 @@ function App() {
       && shuffleDescriptionPrototypeExamples[exampleIndex]?.id === discoverVineLanternShuffleItemId
   }
   useEffect(() => {
+    if (!discoverPurpleAssetRouteComplete) {
+      setDiscoverRouteCompletedAt(0)
+      return
+    }
+    setDiscoverRouteCompletedAt((current) => current > 0 ? current : performance.now())
+  }, [discoverPurpleAssetRouteComplete])
+  useEffect(() => {
     if (
       !discoverPurpleAssetRouteComplete
       || !shuffleDescriptionOpen
@@ -5051,8 +5097,8 @@ function App() {
       clearDiscoverRouteCompleteCollapse()
       return undefined
     }
-    const openedAt = shuffleDescriptionOpenedAt > 0 ? shuffleDescriptionOpenedAt : performance.now()
-    const delay = Math.max(0, openedAt + discoverRouteCompleteCollapseDelayMs - performance.now())
+    const completedAt = discoverRouteCompletedAt > 0 ? discoverRouteCompletedAt : performance.now()
+    const delay = Math.max(0, completedAt + discoverRouteCompleteCollapseDelayMs - performance.now())
     clearDiscoverRouteCompleteCollapse()
     discoverRouteCompleteCollapseTimeoutRef.current = window.setTimeout(() => {
       discoverRouteCompleteCollapseTimeoutRef.current = null
@@ -5069,11 +5115,11 @@ function App() {
     }, delay)
     return () => clearDiscoverRouteCompleteCollapse()
   }, [
+    discoverRouteCompletedAt,
     discoverPurpleAssetRouteComplete,
     discoverRouteCompleteCollapsedToButton,
     shuffleDescriptionDismissingToLoop,
     shuffleDescriptionOpen,
-    shuffleDescriptionOpenedAt,
   ])
   const discoverFocusedShuffleItemId = freeExploreDebugFast && discoverGlowIsolated && discoverGlowIsolatedItemId
     ? discoverGlowIsolatedItemId
@@ -6614,11 +6660,13 @@ function App() {
     setActiveShuffleItemId(null)
     setDiscoverDescriptionCollapsedToButton(false)
     setDiscoverRouteCompleteCollapsedToButton(false)
+    setDiscoverRouteCompletedAt(0)
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
     discoveredShuffleItemIdsRef.current = []
     activeShuffleItemIdRef.current = null
+    discoverLastAssetScanAtRef.current = 0
     const progress = nearestRouteProgress(projectRef.current.route, projectRef.current.routeRenderMode, start)
     playProgressRef.current = progress
     setPlayProgress(progress)
@@ -6829,11 +6877,13 @@ function App() {
     setActiveShuffleItemId(null)
     setDiscoverDescriptionCollapsedToButton(false)
     setDiscoverRouteCompleteCollapsedToButton(false)
+    setDiscoverRouteCompletedAt(0)
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
     discoveredShuffleItemIdsRef.current = []
     activeShuffleItemIdRef.current = null
+    discoverLastAssetScanAtRef.current = 0
     discoverLightSequenceStartedAtRef.current = 0
     setDiscoverMusicZoomStartedAt(0)
     resetShuffleDescriptionInitialReveal()
@@ -7134,8 +7184,7 @@ function App() {
       mothMotionRef.current.velocity = 0
       mothMotionRef.current.trailVelocity = 0
       setForwardPressed(false)
-      setLoopFocusVisible(true)
-      setLoopFocusActive(true)
+      showLoopRestFocus()
       setMessage('Loop resting')
       return
     }
@@ -7612,14 +7661,17 @@ function App() {
   }
 
   function syncFreeExploreDiscovery(position: Point) {
-    const project = projectRef.current
-    const routeLights = buildFreeExploreRouteLights(project, discoverLightRouteConfigRef.current)
-    const shuffleItems = collectFreeExploreShuffleItems(project)
+    const routeLights = discoverRouteLightsRef.current.length > 0
+      ? discoverRouteLightsRef.current
+      : buildFreeExploreRouteLights(projectRef.current, discoverLightRouteConfigRef.current)
+    const shuffleItems = discoverShuffleItemsRef.current.length > 0
+      ? discoverShuffleItemsRef.current
+      : collectFreeExploreShuffleItems(projectRef.current)
+    const assetRouteLights = routeLights.filter((light) => light.type === 'asset')
     const currentCollected = new Set(collectedLightItemIdsRef.current)
     const currentCollectedAt = { ...collectedLightCollectedAtRef.current }
     const currentDiscovered = new Set(discoveredShuffleItemIdsRef.current)
     let collectedChanged = false
-    let discoveredChanged = false
     const collectedAt = performance.now()
     const visibleRouteLights = buildFreeExploreVisibleRouteLights(
       routeLights,
@@ -7645,39 +7697,22 @@ function App() {
       }
     }
 
-    let nearestShuffle: { item: EditorItem; distance: number } | null = null
-    for (const item of shuffleItems) {
-      const itemDistance = distance(position, item)
-      if (itemDistance <= freeExploreShuffleDiscoverRadius) {
-        if (!currentDiscovered.has(item.id)) {
-          currentDiscovered.add(item.id)
-          discoveredChanged = true
-        }
-        if (!nearestShuffle || itemDistance < nearestShuffle.distance) {
-          nearestShuffle = { item, distance: itemDistance }
-        }
-      }
-    }
-
     if (collectedChanged) {
       const next = Array.from(currentCollected)
       collectedLightItemIdsRef.current = next
       collectedLightCollectedAtRef.current = currentCollectedAt
       setCollectedLightItemIds(next)
       setCollectedLightCollectedAt(currentCollectedAt)
-      const purpleLightCollectedCount = routeLights.filter((light) => light.type === 'asset' && currentCollected.has(light.id)).length
-      const purpleLightCount = routeLights.filter((light) => light.type === 'asset').length
+      const purpleLightCollectedCount = assetRouteLights.filter((light) => currentCollected.has(light.id)).length
+      const purpleLightCount = assetRouteLights.length
       setMessage(`Purple light path: ${purpleLightCollectedCount}/${purpleLightCount}`)
       const latestAssetLight = newlyCollectedAssetLights
         .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
         .at(-1)
       if (latestAssetLight) {
-        const firstAssetLight = routeLights
-          .filter((light) => light.type === 'asset')
+        const firstAssetLight = assetRouteLights
           .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0]
-        const allAssetLightsCollected = routeLights
-          .filter((light) => light.type === 'asset')
-          .every((light) => currentCollected.has(light.id))
+        const allAssetLightsCollected = assetRouteLights.every((light) => currentCollected.has(light.id))
         if (
           firstAssetLight?.id === latestAssetLight.id
           || (latestAssetLight.itemId === discoverVineLanternShuffleItemId && !allAssetLightsCollected)
@@ -7691,6 +7726,36 @@ function App() {
         }
       }
     }
+
+    const allAssetLightsCollectedNow = assetRouteLights.length > 0
+      && assetRouteLights.every((light) => currentCollected.has(light.id))
+    const scanInterval = allAssetLightsCollectedNow ? freeExploreCompleteAssetScanMs : freeExploreAssetScanMs
+    const shouldScanAssets = collectedChanged || collectedAt - discoverLastAssetScanAtRef.current >= scanInterval
+    if (!shouldScanAssets) {
+      return
+    }
+    discoverLastAssetScanAtRef.current = collectedAt
+
+    let discoveredChanged = false
+    let nearestShuffle: { item: EditorItem; distance: number; score: number } | null = null
+    for (const item of shuffleItems) {
+      const hit = discoverShuffleAssetHit(position, item)
+      if (!hit) {
+        continue
+      }
+      if (!currentDiscovered.has(item.id)) {
+        currentDiscovered.add(item.id)
+        discoveredChanged = true
+      }
+      if (
+        !nearestShuffle
+        || hit.score < nearestShuffle.score
+        || (Math.abs(hit.score - nearestShuffle.score) <= 0.01 && hit.distance < nearestShuffle.distance)
+      ) {
+        nearestShuffle = { item, distance: hit.distance, score: hit.score }
+      }
+    }
+
     if (discoveredChanged) {
       const next = Array.from(currentDiscovered)
       discoveredShuffleItemIdsRef.current = next
@@ -7700,22 +7765,32 @@ function App() {
       ? nearestShuffle
       : null
     const nextActiveId = nearestCollectedShuffle?.item.id ?? null
-    if (nextActiveId !== activeShuffleItemIdRef.current) {
+    const previousActiveId = activeShuffleItemIdRef.current
+    if (nextActiveId !== previousActiveId) {
       activeShuffleItemIdRef.current = nextActiveId
       setActiveShuffleItemId(nextActiveId)
-      if (nextActiveId) {
-        const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
-        if (exampleIndex >= 0 && currentCollected.has(discoverAssetLightId(nextActiveId))) {
-          scheduleDiscoverAssetSpaceDescriptionCard(exampleIndex)
-        }
-        setMessage('Asset discovered: info available')
-      } else {
+      if (!nextActiveId) {
         clearDiscoverAssetSpaceSwitch()
+      }
+    }
+    if (nextActiveId) {
+      const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
+      const shouldOpenFromRadius = nextActiveId !== previousActiveId
+        || (allAssetLightsCollectedNow && (
+          discoverDescriptionCollapsedToButtonRef.current
+          || discoverRouteCompleteCollapsedToButtonRef.current
+          || !shuffleDescriptionOpenRef.current
+        ))
+      if (exampleIndex >= 0 && shouldOpenFromRadius) {
+        scheduleDiscoverAssetSpaceDescriptionCard(exampleIndex)
+      }
+      if (nextActiveId !== previousActiveId) {
+        setMessage('Asset discovered: info available')
       }
     }
     if (
       (collectedChanged || discoveredChanged)
-      && routeLights.filter((light) => light.type === 'asset').every((light) => currentCollected.has(light.id))
+      && allAssetLightsCollectedNow
       && currentDiscovered.size >= shuffleItems.length
       && routeLights.length > 0
       && shuffleItems.length > 0
