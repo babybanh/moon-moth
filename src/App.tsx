@@ -3206,6 +3206,7 @@ function App() {
   const [discoverDescriptionCollapsedToButton, setDiscoverDescriptionCollapsedToButton] = useState(false)
   const [discoverRouteCompleteCollapsedToButton, setDiscoverRouteCompleteCollapsedToButton] = useState(false)
   const [discoverRouteCompletedAt, setDiscoverRouteCompletedAt] = useState(0)
+  const [discoverCollapsedButtonTargetId, setDiscoverCollapsedButtonTargetId] = useState<string | null>(null)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -3277,6 +3278,8 @@ function App() {
   const activeShuffleItemIdRef = useRef<string | null>(null)
   const discoverDescriptionCollapsedToButtonRef = useRef(false)
   const discoverRouteCompleteCollapsedToButtonRef = useRef(false)
+  const discoverCollapsedButtonTargetIdRef = useRef<string | null>(null)
+  const discoverRouteCompleteAutoCollapsedRef = useRef(false)
   const discoverRouteLightsRef = useRef<FreeExploreRouteLight[]>([])
   const discoverShuffleItemsRef = useRef<EditorItem[]>([])
   const discoverLastAssetScanAtRef = useRef(0)
@@ -3531,6 +3534,10 @@ function App() {
   useEffect(() => {
     discoverRouteCompleteCollapsedToButtonRef.current = discoverRouteCompleteCollapsedToButton
   }, [discoverRouteCompleteCollapsedToButton])
+
+  useEffect(() => {
+    discoverCollapsedButtonTargetIdRef.current = discoverCollapsedButtonTargetId
+  }, [discoverCollapsedButtonTargetId])
 
   useEffect(() => {
     discoverCurveBoundaryPointsRef.current = discoverCurveBoundaryPoints
@@ -5082,6 +5089,7 @@ function App() {
   }
   useEffect(() => {
     if (!discoverPurpleAssetRouteComplete) {
+      discoverRouteCompleteAutoCollapsedRef.current = false
       setDiscoverRouteCompletedAt(0)
       return
     }
@@ -5093,6 +5101,7 @@ function App() {
       || !shuffleDescriptionOpen
       || shuffleDescriptionDismissingToLoop
       || discoverRouteCompleteCollapsedToButton
+      || discoverRouteCompleteAutoCollapsedRef.current
     ) {
       clearDiscoverRouteCompleteCollapse()
       return undefined
@@ -5109,6 +5118,12 @@ function App() {
       ) {
         return
       }
+      discoverRouteCompleteAutoCollapsedRef.current = true
+      const targetId = activeShuffleItemIdRef.current
+        ?? shuffleDescriptionPrototypeExamples[shuffleDescriptionRouteAssetIndexRef.current]?.id
+        ?? null
+      setDiscoverCollapsedButtonTargetId(targetId)
+      discoverCollapsedButtonTargetIdRef.current = targetId
       resetShuffleDescriptionCard({ autoCollapse: true })
       setDiscoverDescriptionCollapsedToButton(true)
       setDiscoverRouteCompleteCollapsedToButton(true)
@@ -6661,6 +6676,9 @@ function App() {
     setDiscoverDescriptionCollapsedToButton(false)
     setDiscoverRouteCompleteCollapsedToButton(false)
     setDiscoverRouteCompletedAt(0)
+    setDiscoverCollapsedButtonTargetId(null)
+    discoverCollapsedButtonTargetIdRef.current = null
+    discoverRouteCompleteAutoCollapsedRef.current = false
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -6878,6 +6896,9 @@ function App() {
     setDiscoverDescriptionCollapsedToButton(false)
     setDiscoverRouteCompleteCollapsedToButton(false)
     setDiscoverRouteCompletedAt(0)
+    setDiscoverCollapsedButtonTargetId(null)
+    discoverCollapsedButtonTargetIdRef.current = null
+    discoverRouteCompleteAutoCollapsedRef.current = false
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -7774,6 +7795,10 @@ function App() {
       }
     }
     if (nextActiveId) {
+      if (allAssetLightsCollectedNow || discoverDescriptionCollapsedToButtonRef.current || discoverRouteCompleteCollapsedToButtonRef.current) {
+        discoverCollapsedButtonTargetIdRef.current = nextActiveId
+        setDiscoverCollapsedButtonTargetId(nextActiveId)
+      }
       const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
       const shouldOpenFromRadius = nextActiveId !== previousActiveId
         || (allAssetLightsCollectedNow && (
@@ -9672,7 +9697,7 @@ function App() {
 	                  shuffleDescriptionAttentionAllowed && !shuffleDescriptionOpen && !shuffleLoopActive ? 'attention' : '',
 	                  discoverDescriptionCollapsedToButton ? 'discover-description-collapsed' : '',
 	                  discoverRouteCompleteCollapsedToButton ? 'discover-route-complete-collapsed' : '',
-	                  (discoverDescriptionCollapsedToButton || discoverRouteCompleteCollapsedToButton) && activeShuffleItemId ? 'discover-radius-ready' : '',
+	                  (discoverDescriptionCollapsedToButton || discoverRouteCompleteCollapsedToButton) && (activeShuffleItemId || discoverCollapsedButtonTargetId) ? 'discover-radius-ready' : '',
 	                  shuffleDescriptionActiveExample?.quietZone ? 'quiet-zone' : '',
                 ].filter(Boolean).join(' ')}
                 style={shuffleDescriptionStyle}
@@ -9696,8 +9721,13 @@ function App() {
                         }
                         if (shuffleDescriptionOpen) {
                           if (gameMode === 'discover') {
+                            const targetId = activeShuffleItemIdRef.current
+                              ?? shuffleDescriptionPrototypeExamples[shuffleDescriptionRouteAssetIndexRef.current]?.id
+                              ?? null
                             resetShuffleDescriptionCard()
                             setDiscoverDescriptionCollapsedToButton(true)
+                            setDiscoverCollapsedButtonTargetId(targetId)
+                            discoverCollapsedButtonTargetIdRef.current = targetId
                             if (discoverPurpleAssetRouteComplete) {
                               setDiscoverRouteCompleteCollapsedToButton(true)
                             }
@@ -9707,7 +9737,10 @@ function App() {
                           return
                         }
                         if (gameMode === 'discover' && (discoverDescriptionCollapsedToButton || discoverRouteCompleteCollapsedToButton)) {
-                          const targetId = activeShuffleItemIdRef.current ?? activeShuffleItemId
+                          const targetId = activeShuffleItemIdRef.current
+                            ?? activeShuffleItemId
+                            ?? discoverCollapsedButtonTargetIdRef.current
+                            ?? discoverCollapsedButtonTargetId
                           const targetExampleIndex = targetId
                             ? shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === targetId)
                             : shuffleDescriptionActiveExampleIndex
@@ -9716,6 +9749,8 @@ function App() {
                           }
                           setDiscoverDescriptionCollapsedToButton(false)
                           setDiscoverRouteCompleteCollapsedToButton(false)
+                          setDiscoverCollapsedButtonTargetId(null)
+                          discoverCollapsedButtonTargetIdRef.current = null
                           openShuffleDescriptionAssetCard(targetExampleIndex >= 0 ? targetExampleIndex : shuffleDescriptionActiveExampleIndex)
                           return
                         }
