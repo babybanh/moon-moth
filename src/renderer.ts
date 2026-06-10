@@ -863,11 +863,10 @@ function drawExploreScreenFogOverlay(
   for (const reveal of revealPoints) {
     const item = reveal.itemId ? itemById.get(reveal.itemId) : undefined
     const revealProgress = revealBloomProgress(reveal.collectedAt, reveal.bloomMs, options.animationTime)
-    if (
-      item
-      && canUseAssetRevealCutout(item)
-      && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress, reveal.softStart === true)
-    ) {
+    if (item?.silhouette) {
+      continue
+    }
+    if (item && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress, reveal.softStart === true)) {
       continue
     }
     drawCircularRevealCutout(overlay.context, reveal, project, options, revealRadius, revealProgress)
@@ -876,10 +875,6 @@ function drawExploreScreenFogOverlay(
   overlay.context.globalAlpha = 1
   overlay.context.filter = 'none'
   return overlay.canvas
-}
-
-function canUseAssetRevealCutout(item: EditorItem) {
-  return !item.silhouette && !isFrontOccluder(item)
 }
 
 function drawAssetRevealCutout(
