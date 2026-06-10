@@ -13,6 +13,7 @@ let exploreScreenFogOverlayCache: {
   height: number
   width: number
 } | null = null
+const discoverRouteLightAppearMs = 2000
 
 export type RenderOptions = {
   camera: Camera
@@ -47,7 +48,7 @@ export type RenderOptions = {
     lightItemIds: string[]
     revealRadius: number
     revealPoints?: Array<{ assetId?: string; bloomMs?: number; collectedAt?: number; itemId?: string; layerId?: LayerId; point: Point; softStart?: boolean }>
-    routeLights?: Array<{ id: string; layerId?: LayerId; order?: number; point: Point; collected: boolean; type?: 'asset' | 'guide' | 'start' }>
+    routeLights?: Array<{ id: string; layerId?: LayerId; order?: number; point: Point; collected: boolean; type?: 'asset' | 'guide' | 'start'; visibleAt?: number }>
   }
 }
 
@@ -763,17 +764,26 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
     if (light.collected) {
       continue
     }
+    const appearProgress = typeof light.visibleAt === 'number'
+      ? clamp((options.animationTime - light.visibleAt) / discoverRouteLightAppearMs, 0, 1)
+      : 1
+    if (appearProgress <= 0) {
+      continue
+    }
+    const appear = easeInOutSine(appearProgress)
     const screen = worldToScreen(light.point, options.camera, options.viewport)
-    const pulse = 0.74 + 0.26 * Math.sin(time * Math.PI * 2 * 0.82 + seededUnit(light.id) * Math.PI * 2)
-    const radius = (18 + pulse * 7) * Math.max(0.72, options.camera.zoom ** 0.22)
+    const pulse = 0.84 + 0.16 * Math.sin(time * Math.PI * 2 * 0.62 + seededUnit(light.id) * Math.PI * 2)
+    const appearScale = 0.72 + appear * 0.28
+    const alphaScale = appear * (0.72 + appear * 0.28)
+    const radius = (17 + pulse * 5) * appearScale * Math.max(0.72, options.camera.zoom ** 0.22)
     const glow = context.createRadialGradient(screen.x, screen.y, 0, screen.x, screen.y, radius * 2.6)
     if (light.type !== 'guide') {
-      glow.addColorStop(0, `rgba(250, 218, 255, ${0.44 + pulse * 0.18})`)
-      glow.addColorStop(0.42, `rgba(172, 112, 255, ${0.24 + pulse * 0.12})`)
-      glow.addColorStop(1, 'rgba(172, 112, 255, 0)')
+      glow.addColorStop(0, `rgba(230, 218, 255, ${(0.38 + pulse * 0.13) * alphaScale})`)
+      glow.addColorStop(0.42, `rgba(137, 94, 255, ${(0.21 + pulse * 0.08) * alphaScale})`)
+      glow.addColorStop(1, 'rgba(137, 94, 255, 0)')
     } else {
-      glow.addColorStop(0, `rgba(255, 246, 178, ${0.42 + pulse * 0.18})`)
-      glow.addColorStop(0.42, `rgba(183, 255, 225, ${0.22 + pulse * 0.12})`)
+      glow.addColorStop(0, `rgba(255, 246, 178, ${(0.34 + pulse * 0.13) * alphaScale})`)
+      glow.addColorStop(0.42, `rgba(183, 255, 225, ${(0.17 + pulse * 0.08) * alphaScale})`)
       glow.addColorStop(1, 'rgba(183, 255, 225, 0)')
     }
     context.fillStyle = glow
@@ -781,8 +791,8 @@ function drawExploreDiscovery(context: CanvasRenderingContext2D, project: Editor
     context.arc(screen.x, screen.y, radius * 2.6, 0, Math.PI * 2)
     context.fill()
     context.strokeStyle = light.type !== 'guide'
-      ? `rgba(245, 210, 255, ${0.6 + pulse * 0.24})`
-      : `rgba(255, 246, 178, ${0.58 + pulse * 0.24})`
+      ? `rgba(210, 188, 255, ${(0.5 + pulse * 0.18) * alphaScale})`
+      : `rgba(255, 246, 178, ${(0.44 + pulse * 0.18) * alphaScale})`
     context.lineWidth = Math.max(1.6, 2.6 * options.camera.zoom)
     context.beginPath()
     context.arc(screen.x, screen.y, radius * 0.72, 0, Math.PI * 2)

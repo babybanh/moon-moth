@@ -439,6 +439,11 @@ input[type="range"] {
   text-align: left;
 }
 
+.drift-description-layer.align-center,
+.drift-description-layer.align-center .drift-description-text {
+  text-align: center;
+}
+
 .drift-description-layer.phase-hold {
   opacity: var(--drift-description-opacity, 1);
   filter: none;
@@ -1818,6 +1823,10 @@ input[type="range"] {
   transform: scale(1);
 }
 
+.canvas-shell.menu-focus-active.discover-menu-backdrop > canvas:not(.menu-moth-canvas) {
+  filter: blur(var(--menu-focus-blur, 5px));
+}
+
 .canvas-shell.menu-focus-active .menu-moth-canvas {
   opacity: 1;
 }
@@ -1852,6 +1861,10 @@ input[type="range"] {
   position: absolute;
   inset: 0;
   background: rgba(3, 10, 19, 0.08);
+}
+
+.game-menu-focus.discover-menu-backdrop .game-menu-focus-backdrop {
+  background: transparent;
 }
 
 .game-forward-button {
@@ -1906,10 +1919,14 @@ canvas {
   --camera-extension-dim-alpha: 0.22;
   --camera-extension-brightness: 0.86;
   --camera-extension-blur: 6px;
+  --camera-extension-dim-rgb: 4, 11, 20;
+  --camera-extension-bg-rgb: 4, 11, 20;
   position: absolute;
   inset: 0;
   z-index: 3;
+  opacity: 1;
   pointer-events: none;
+  transition: opacity var(--menu-focus-canvas-exit-ms, 1800ms) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .camera-extension-vignette {
@@ -1921,8 +1938,8 @@ canvas {
   --camera-extension-inner-radius-px: 0px;
   --camera-extension-mask-image: none;
   background:
-    linear-gradient(rgba(4, 11, 20, var(--camera-extension-dim-alpha)), rgba(4, 11, 20, var(--camera-extension-dim-alpha))),
-    rgba(4, 11, 20, var(--camera-extension-bg-alpha));
+    linear-gradient(rgba(var(--camera-extension-dim-rgb), var(--camera-extension-dim-alpha)), rgba(var(--camera-extension-dim-rgb), var(--camera-extension-dim-alpha))),
+    rgba(var(--camera-extension-bg-rgb), var(--camera-extension-bg-alpha));
   transition:
     background-color 180ms ease,
     backdrop-filter 180ms ease,

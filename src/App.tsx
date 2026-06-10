@@ -1,4 +1,4 @@
-import { Home, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Crosshair, Eye, EyeOff, Image, Leaf, Minus, Moon, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, Shuffle, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
+import { Home, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Crosshair, Eye, EyeOff, Image, Leaf, Minus, Moon, MousePointer2, Music, Pause, Play, Plus, Repeat2, RotateCcw, Save, SkipBack, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent, type ReactNode } from 'react'
 import { assetById, assetLibrary, artworkGroups, assetRoles, mothAsset, musicTracks, subLayers } from './assets'
 import {
@@ -232,88 +232,89 @@ const discoverBoundaryReferencePoints: Point[] = [
   { x: 455.9465987393803, y: 109.0556183362853 },
 ]
 const defaultDiscoverPairingsByShuffleId: Record<string, string[]> = {
-  'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m',
-  ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
-    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-  ],
-  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': [
-    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
-    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': [
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa',
-    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51',
-  ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
-  ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
-  ],
-  'artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': [
-    'artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w',
-    'artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
-    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s',
-    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo',
-  ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': [
-    'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
-    'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr',
-  ],
   'artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': [
     'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
     'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z',
     'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
     'artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s',
     'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo'
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4',
+  'artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': [
+    'artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w',
+    'artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58',
+    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s',
+    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2'
   ],
   'artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': [
     'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k',
     'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh'
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m'
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': [
+    'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
+    'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr'
+  ],
+  'artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh'
+  ],
+  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
+    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo'
+  ],
+  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': [
+    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': [
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': [
+    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
+    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa',
+    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': [
+    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7',
+    'artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
+    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m'
+  ],
+  'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': [
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
     'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
+    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2'
   ],
   'artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx': [
     'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi',
@@ -321,14 +322,8 @@ const defaultDiscoverPairingsByShuffleId: Record<string, string[]> = {
     'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo',
     'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
     'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
-    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z',
-  ],
-  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': [
-    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
-  ],
-  'moon-glow-1': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
-  ],
+    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z'
+  ]
 }
 const publicGameBuild = import.meta.env.VITE_MOON_MOTH_GAME_ONLY === 'true'
 const gameSurfaceSize = 628
@@ -463,6 +458,8 @@ type FreeExploreState = {
   idlePushUntil: number
   idlePushCount: number
   debugFast: boolean
+  boundaryBlockedInputDirection: Point
+  boundaryInputDisabledUntil: number
 }
 type FreeExploreRouteLight = {
   assetId: string
@@ -472,6 +469,9 @@ type FreeExploreRouteLight = {
   order: number
   point: Point
   type: 'asset' | 'guide' | 'start'
+}
+type FreeExploreVisibleRouteLight = FreeExploreRouteLight & {
+  visibleAt: number
 }
 type DiscoverDevCameraPreset = 'live' | 'original' | 'wide'
 type DiscoverLightEditKind = 'asset' | 'guide'
@@ -484,347 +484,862 @@ type DiscoverLightRouteEntry = {
 }
 const discoverStartLightId = 'purple-light-start'
 const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> = {
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': {
-    order: 1,
-    point: { x: 3201.902967684072, y: 2075.6145938369978 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': {
-    order: 2,
-    point: { x: 4586.041704026896, y: 1870.372757140503 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': {
-    order: 3,
-    point: { x: 5493.870665362923, y: 1791.668949146122 },
-    type: 'asset',
-  },
-  'asset-light-moon-glow-1': {
-    order: 4,
-    point: { x: 6129.912122412241, y: 509.3411516813064 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': {
-    order: 5,
-    point: { x: 7191.729368048618, y: 1083.8937326440484 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': {
-    order: 6,
-    point: { x: 8841.847381427975, y: 2888.011124199536 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': {
-    order: 7,
-    point: { x: 10729.685706340502, y: 2298.6050411369106 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': {
-    order: 8,
-    point: { x: 11961.92737617364, y: 672.3147773401764 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': {
-    order: 9,
-    point: { x: 12808.306972139068, y: 3143.086686378079 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': {
-    order: 10,
-    point: { x: 14777.681203745464, y: 3728.115466631437 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': {
-    order: 11,
-    point: { x: 16128.524820468045, y: 3360.798414482951 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': {
-    order: 12,
-    point: { x: 19053.19467601513, y: 2519.1973322749063 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu': {
-    order: 13,
-    point: { x: 19885.130847829387, y: 875.9128194796875 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': {
-    order: 14,
-    point: { x: 21755.44630858942, y: 1298.4212167539933 },
-    type: 'asset',
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': {
-    order: 15,
-    point: { x: 21973.285596023747, y: 2754.668755501499 },
-    type: 'asset',
+  'asset-light-artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': {
+    'order': 18,
+    'point': {
+      'x': 29039.78920229835,
+      'y': 519.9861937127657
+    },
+    'type': 'asset'
   },
   'asset-light-artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': {
-    order: 16,
-    point: { x: 24854.896837826866, y: 3373.3142268234114 },
-    type: 'asset',
+    'order': 16,
+    'point': {
+      'x': 24854.896837826866,
+      'y': 3373.3142268234114
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': {
+    'order': 12,
+    'point': {
+      'x': 19053.19467601513,
+      'y': 2519.1973322749063
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': {
+    'order': 3,
+    'point': {
+      'x': 5717.720744262183,
+      'y': 1824.1089887400342
+    },
+    'type': 'asset'
   },
   'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': {
-    order: 17,
-    point: { x: 28287.73637640781, y: 2173.1707640024897 },
-    type: 'asset',
+    'order': 17,
+    'point': {
+      'x': 28287.73637640781,
+      'y': 2173.1707640024897
+    },
+    'type': 'asset'
   },
-  'asset-light-artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': {
-    order: 18,
-    point: { x: 29164.756070656746, y: 471.33071953254347 },
-    type: 'asset',
+  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': {
+    'order': 14,
+    'point': {
+      'x': 21755.44630858942,
+      'y': 1298.4212167539933
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': {
+    'order': 6,
+    'point': {
+      'x': 8841.847381427975,
+      'y': 2888.011124199536
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': {
+    'order': 8,
+    'point': {
+      'x': 11961.92737617364,
+      'y': 672.3147773401764
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': {
+    'order': 1,
+    'point': {
+      'x': 3201.902967684072,
+      'y': 2075.6145938369978
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': {
+    'order': 9,
+    'point': {
+      'x': 12808.306972139068,
+      'y': 3143.086686378079
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': {
+    'order': 7,
+    'point': {
+      'x': 10729.685706340502,
+      'y': 2298.6050411369106
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': {
+    'order': 10,
+    'point': {
+      'x': 14777.681203745464,
+      'y': 3728.115466631437
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': {
+    'order': 5,
+    'point': {
+      'x': 7191.729368048618,
+      'y': 1083.8937326440484
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': {
+    'order': 11,
+    'point': {
+      'x': 16128.524820468045,
+      'y': 3360.798414482951
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': {
+    'order': 2,
+    'point': {
+      'x': 4586.041704026896,
+      'y': 1870.372757140503
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': {
+    'order': 15,
+    'point': {
+      'x': 21973.285596023747,
+      'y': 2754.668755501499
+    },
+    'type': 'asset'
+  },
+  'asset-light-artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu': {
+    'order': 13,
+    'point': {
+      'x': 19885.130847829387,
+      'y': 875.9128194796875
+    },
+    'type': 'asset'
   },
   'asset-light-artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx': {
-    order: 19,
-    point: { x: 29011.567921752267, y: 90.78706656929347 },
-    type: 'asset',
+    'order': 19,
+    'point': {
+      'x': 29718.826806411416,
+      'y': 0
+    },
+    'type': 'asset'
+  },
+  'asset-light-moon-glow-1': {
+    'order': 4,
+    'point': {
+      'x': 6129.912122412241,
+      'y': 509.3411516813064
+    },
+    'type': 'asset'
   },
   'guide-light-0-1': {
-    order: 0.1,
-    parentOrder: 0,
-    point: { x: 1210.2963502449923, y: 1968.3655945255184 },
-    type: 'guide',
+    'order': 0.1,
+    'parentOrder': 0,
+    'point': {
+      'x': 822.8355512839302,
+      'y': 1884.0115242372094
+    },
+    'type': 'guide'
   },
-  'guide-light-0-in5lqa': {
-    order: 0.2,
-    parentOrder: 0,
-    point: { x: 2017.683804931511, y: 1403.8642379158898 },
-    type: 'guide',
+  'guide-light-0-6g4jvi': {
+    'order': 0.2,
+    'parentOrder': 0,
+    'point': {
+      'x': 1400.44824355136,
+      'y': 1635.149515394871
+    },
+    'type': 'guide'
   },
   'guide-light-0-9ghj1c': {
-    order: 0.3,
-    parentOrder: 0,
-    point: { x: 2661.5420480607772, y: 1715.4092116941317 },
-    type: 'guide',
+    'order': 0.4,
+    'parentOrder': 0,
+    'point': {
+      'x': 2661.5420480607772,
+      'y': 1715.4092116941317
+    },
+    'type': 'guide'
+  },
+  'guide-light-0-in5lqa': {
+    'order': 0.3,
+    'parentOrder': 0,
+    'point': {
+      'x': 2048.1876471896403,
+      'y': 1546.8647253991508
+    },
+    'type': 'guide'
   },
   'guide-light-1-1': {
-    order: 1.1,
-    parentOrder: 1,
-    point: { x: 4123.298932094263, y: 2101.7816234622514 },
-    type: 'guide',
+    'order': 1.1,
+    'parentOrder': 1,
+    'point': {
+      'x': 3751.243961310759,
+      'y': 2250.9684820416305
+    },
+    'type': 'guide'
   },
-  'guide-light-2-1': {
-    order: 2.1,
-    parentOrder: 2,
-    point: { x: 4971.76485025701, y: 1626.3962288704677 },
-    type: 'guide',
-  },
-  'guide-light-3-1': {
-    order: 3.1,
-    parentOrder: 3,
-    point: { x: 5922.528451575136, y: 1276.7445417901695 },
-    type: 'guide',
-  },
-  'guide-light-3-ub7z9e': {
-    order: 3.2,
-    parentOrder: 3,
-    point: { x: 5890.929008284648, y: 793.3264346507258 },
-    type: 'guide',
-  },
-  'guide-light-4-1': {
-    order: 4.1,
-    parentOrder: 4,
-    point: { x: 6881.743983541959, y: 528.4212187428672 },
-    type: 'guide',
-  },
-  'guide-light-5-1': {
-    order: 5.1,
-    parentOrder: 5,
-    point: { x: 7504.776328934457, y: 1659.3708431179339 },
-    type: 'guide',
-  },
-  'guide-light-5-atpr6k': {
-    order: 5.2,
-    parentOrder: 5,
-    point: { x: 7759.368850759605, y: 2280.6426987442314 },
-    type: 'guide',
-  },
-  'guide-light-5-mm484y': {
-    order: 5.3,
-    parentOrder: 5,
-    point: { x: 8294.20488100987, y: 2808.5754872875127 },
-    type: 'guide',
-  },
-  'guide-light-6-1': {
-    order: 6.1,
-    parentOrder: 6,
-    point: { x: 9971.337992869207, y: 2717.1168905420304 },
-    type: 'guide',
-  },
-  'guide-light-7-1': {
-    order: 7.1,
-    parentOrder: 7,
-    point: { x: 10884.190001695833, y: 1656.8281078028042 },
-    type: 'guide',
-  },
-  'guide-light-7-5xdfde': {
-    order: 7.2,
-    parentOrder: 7,
-    point: { x: 10865.334091317047, y: 1027.9944831514683 },
-    type: 'guide',
-  },
-  'guide-light-7-3bsid0': {
-    order: 7.3,
-    parentOrder: 7,
-    point: { x: 11381.487495070525, y: 781.7002723686181 },
-    type: 'guide',
-  },
-  'guide-light-8-1': {
-    order: 8.1,
-    parentOrder: 8,
-    point: { x: 12891.735593358551, y: 869.3358563113798 },
-    type: 'guide',
-  },
-  'guide-light-8-g51ame': {
-    order: 8.2,
-    parentOrder: 8,
-    point: { x: 12878.346251395318, y: 1576.057509060479 },
-    type: 'guide',
-  },
-  'guide-light-8-fzz56t': {
-    order: 8.3,
-    parentOrder: 8,
-    point: { x: 12597.766393348444, y: 2385.8724882713977 },
-    type: 'guide',
-  },
-  'guide-light-9-1': {
-    order: 9.1,
-    parentOrder: 9,
-    point: { x: 13203.7292866617, y: 3708.736037985297 },
-    type: 'guide',
-  },
-  'guide-light-9-jgqh22': {
-    order: 9.2,
-    parentOrder: 9,
-    point: { x: 14291.873062737288, y: 3852.073760744525 },
-    type: 'guide',
+  'guide-light-1-9lzfcj': {
+    'order': 1.2,
+    'parentOrder': 1,
+    'point': {
+      'x': 4201.034854099051,
+      'y': 2152.70938325899
+    },
+    'type': 'guide'
   },
   'guide-light-10-1': {
-    order: 10.1,
-    parentOrder: 10,
-    point: { x: 15536.330177216007, y: 3421.952516887368 },
-    type: 'guide',
+    'order': 10.1,
+    'parentOrder': 10,
+    'point': {
+      'x': 15281.0289848396,
+      'y': 3823.8730644542547
+    },
+    'type': 'guide'
+  },
+  'guide-light-10-24inz8': {
+    'order': 10.2,
+    'parentOrder': 10,
+    'point': {
+      'x': 15517.79391266145,
+      'y': 3590.3912579826124
+    },
+    'type': 'guide'
+  },
+  'guide-light-10-u6w5bq': {
+    'order': 10.3,
+    'parentOrder': 10,
+    'point': {
+      'x': 15833.829117884561,
+      'y': 3402.3490144048205
+    },
+    'type': 'guide'
   },
   'guide-light-11-1': {
-    order: 11.1,
-    parentOrder: 11,
-    point: { x: 16906.892248932556, y: 2541.967729570711 },
-    type: 'guide',
+    'order': 11.1,
+    'parentOrder': 11,
+    'point': {
+      'x': 16245.130448731048,
+      'y': 2963.821301566494
+    },
+    'type': 'guide'
   },
   'guide-light-11-2vgtyu': {
-    order: 11.2,
-    parentOrder: 11,
-    point: { x: 17816.17512217251, y: 2309.9907557593338 },
-    type: 'guide',
+    'order': 11.5,
+    'parentOrder': 11,
+    'point': {
+      'x': 17840.13303233133,
+      'y': 2464.5809495230865
+    },
+    'type': 'guide'
+  },
+  'guide-light-11-3k6fap': {
+    'order': 11.3,
+    'parentOrder': 11,
+    'point': {
+      'x': 17029.361606221137,
+      'y': 2644.8792714219667
+    },
+    'type': 'guide'
+  },
+  'guide-light-11-dj1lra': {
+    'order': 11.6,
+    'parentOrder': 11,
+    'point': {
+      'x': 18245.254595982322,
+      'y': 2344.2902475475644
+    },
+    'type': 'guide'
   },
   'guide-light-11-fk427m': {
-    order: 11.3,
-    parentOrder: 11,
-    point: { x: 18517.16197121943, y: 2459.5860296191886 },
-    type: 'guide',
+    'order': 11.7,
+    'parentOrder': 11,
+    'point': {
+      'x': 18691.78805476291,
+      'y': 2508.2297581201915
+    },
+    'type': 'guide'
+  },
+  'guide-light-11-hwtres': {
+    'order': 11.2,
+    'parentOrder': 11,
+    'point': {
+      'x': 16705.180571280853,
+      'y': 2870.5019106861773
+    },
+    'type': 'guide'
+  },
+  'guide-light-11-vm63wd': {
+    'order': 11.4,
+    'parentOrder': 11,
+    'point': {
+      'x': 17353.542641161417,
+      'y': 2419.256632157756
+    },
+    'type': 'guide'
   },
   'guide-light-12-1': {
-    order: 12.1,
-    parentOrder: 12,
-    point: { x: 19435.955679043258, y: 2219.942661455959 },
-    type: 'guide',
+    'order': 12.1,
+    'parentOrder': 12,
+    'point': {
+      'x': 19420.012332822662,
+      'y': 2319.82638512404
+    },
+    'type': 'guide'
   },
-  'guide-light-12-vu0g1n': {
-    order: 12.2,
-    parentOrder: 12,
-    point: { x: 18953.040398007342, y: 1679.3831312045872 },
-    type: 'guide',
+  'guide-light-12-3lxdyd': {
+    'order': 12.2,
+    'parentOrder': 12,
+    'point': {
+      'x': 19186.526365415004,
+      'y': 1999.6047581643136
+    },
+    'type': 'guide'
   },
   'guide-light-12-4ed3tk': {
-    order: 12.3,
-    parentOrder: 12,
-    point: { x: 19164.811486707356, y: 1049.3278196064448 },
-    type: 'guide',
+    'order': 12.5,
+    'parentOrder': 12,
+    'point': {
+      'x': 19543.069460161812,
+      'y': 1119.1898536835524
+    },
+    'type': 'guide'
+  },
+  'guide-light-12-h883oy': {
+    'order': 12.4,
+    'parentOrder': 12,
+    'point': {
+      'x': 19292.641894009663,
+      'y': 1397.2413285818786
+    },
+    'type': 'guide'
+  },
+  'guide-light-12-vu0g1n': {
+    'order': 12.3,
+    'parentOrder': 12,
+    'point': {
+      'x': 18974.56234580363,
+      'y': 1667.6893590166221
+    },
+    'type': 'guide'
   },
   'guide-light-13-1': {
-    order: 13.1,
-    parentOrder: 13,
-    point: { x: 20631.472782130364, y: 781.3618382632262 },
-    type: 'guide',
+    'order': 13.1,
+    'parentOrder': 13,
+    'point': {
+      'x': 20303.715174577315,
+      'y': 808.2593987499939
+    },
+    'type': 'guide'
+  },
+  'guide-light-13-5ph6n2': {
+    'order': 13.2,
+    'parentOrder': 13,
+    'point': {
+      'x': 20456.038514035587,
+      'y': 1164.702414129393
+    },
+    'type': 'guide'
   },
   'guide-light-13-hovwrp': {
-    order: 13.2,
-    parentOrder: 13,
-    point: { x: 21261.20394598776, y: 864.2153706262542 },
-    type: 'guide',
+    'order': 13.4,
+    'parentOrder': 13,
+    'point': {
+      'x': 21393.25409662999,
+      'y': 1105.3438664865341
+    },
+    'type': 'guide'
+  },
+  'guide-light-13-orz9xb': {
+    'order': 13.3,
+    'parentOrder': 13,
+    'point': {
+      'x': 20947.745462193856,
+      'y': 1173.832111667602
+    },
+    'type': 'guide'
   },
   'guide-light-14-1': {
-    order: 14.1,
-    parentOrder: 14,
-    point: { x: 21493.17046266765, y: 1789.8943152349525 },
-    type: 'guide',
+    'order': 14.1,
+    'parentOrder': 14,
+    'point': {
+      'x': 21702.869448146797,
+      'y': 1758.7664157974302
+    },
+    'type': 'guide'
+  },
+  'guide-light-14-mojhq4': {
+    'order': 14.3,
+    'parentOrder': 14,
+    'point': {
+      'x': 21799.658015401797,
+      'y': 2423.4709399039266
+    },
+    'type': 'guide'
   },
   'guide-light-14-vynxcm': {
-    order: 14.2,
-    parentOrder: 14,
-    point: { x: 21477.15438371168, y: 2360.359568780332 },
-    type: 'guide',
+    'order': 14.2,
+    'parentOrder': 14,
+    'point': {
+      'x': 21636.90556175256,
+      'y': 2109.4283644061657
+    },
+    'type': 'guide'
   },
   'guide-light-15-1': {
-    order: 15.1,
-    parentOrder: 15,
-    point: { x: 22797.68470395542, y: 3187.520075250031 },
-    type: 'guide',
+    'order': 15.1,
+    'parentOrder': 15,
+    'point': {
+      'x': 22251.217656971614,
+      'y': 3073.000527784141
+    },
+    'type': 'guide'
   },
-  'guide-light-15-xmx5a5': {
-    order: 15.2,
-    parentOrder: 15,
-    point: { x: 23752.56668345756, y: 3011.518293878959 },
-    type: 'guide',
+  'guide-light-15-3ez1av': {
+    'order': 15.2,
+    'parentOrder': 15,
+    'point': {
+      'x': 22824.86858878404,
+      'y': 3203.8449147355873
+    },
+    'type': 'guide'
+  },
+  'guide-light-15-ksx70j': {
+    'order': 15.3,
+    'parentOrder': 15,
+    'point': {
+      'x': 23288.7176361208,
+      'y': 3107.681604307273
+    },
+    'type': 'guide'
   },
   'guide-light-15-qbxnp6': {
-    order: 15.3,
-    parentOrder: 15,
-    point: { x: 24324.47185071022, y: 3661.890573527697 },
-    type: 'guide',
+    'order': 15.6,
+    'parentOrder': 15,
+    'point': {
+      'x': 24503.916515649136,
+      'y': 3531.999961609832
+    },
+    'type': 'guide'
+  },
+  'guide-light-15-xmx5a5': {
+    'order': 15.4,
+    'parentOrder': 15,
+    'point': {
+      'x': 23809.62950834355,
+      'y': 3206.9225299065674
+    },
+    'type': 'guide'
+  },
+  'guide-light-15-zjzgh1': {
+    'order': 15.5,
+    'parentOrder': 15,
+    'point': {
+      'x': 24101.033303768465,
+      'y': 3458.4373734685137
+    },
+    'type': 'guide'
   },
   'guide-light-16-1': {
-    order: 16.1,
-    parentOrder: 16,
-    point: { x: 25449.372495629617, y: 2667.920899156052 },
-    type: 'guide',
+    'order': 16.1,
+    'parentOrder': 16,
+    'point': {
+      'x': 25392.272084791566,
+      'y': 3137.9667739677448
+    },
+    'type': 'guide'
   },
   'guide-light-16-14smlc': {
-    order: 16.2,
-    parentOrder: 16,
-    point: { x: 26192.627703148737, y: 2235.550336759699 },
-    type: 'guide',
+    'order': 16.4,
+    'parentOrder': 16,
+    'point': {
+      'x': 26430.24410622401,
+      'y': 2369.828536495686
+    },
+    'type': 'guide'
+  },
+  'guide-light-16-3asfdd': {
+    'order': 16.6,
+    'parentOrder': 16,
+    'point': {
+      'x': 27632.50115422121,
+      'y': 2318.8871613242845
+    },
+    'type': 'guide'
   },
   'guide-light-16-9che8m': {
-    order: 16.3,
-    parentOrder: 16,
-    point: { x: 27241.6518330707, y: 2290.7084304488444 },
-    type: 'guide',
+    'order': 16.5,
+    'parentOrder': 16,
+    'point': {
+      'x': 26977.265932034607,
+      'y': 2464.603558646079
+    },
+    'type': 'guide'
+  },
+  'guide-light-16-d4hiui': {
+    'order': 16.3,
+    'parentOrder': 16,
+    'point': {
+      'x': 26170.293118163143,
+      'y': 2730.0242515527116
+    },
+    'type': 'guide'
+  },
+  'guide-light-16-e995l4': {
+    'order': 16.2,
+    'parentOrder': 16,
+    'point': {
+      'x': 25655.804538467302,
+      'y': 2740.3483906725733
+    },
+    'type': 'guide'
   },
   'guide-light-17-1': {
-    order: 17.1,
-    parentOrder: 17,
-    point: { x: 28422.03437713426, y: 1323.5639067492293 },
-    type: 'guide',
+    'order': 17.1,
+    'parentOrder': 17,
+    'point': {
+      'x': 28390.734808602214,
+      'y': 1681.1662724006198
+    },
+    'type': 'guide'
+  },
+  'guide-light-17-9lyz9u': {
+    'order': 17.4,
+    'parentOrder': 17,
+    'point': {
+      'x': 28636.655344531948,
+      'y': 704.145643858004
+    },
+    'type': 'guide'
+  },
+  'guide-light-17-f39zlo': {
+    'order': 17.3,
+    'parentOrder': 17,
+    'point': {
+      'x': 28501.22703860926,
+      'y': 1112.075838082169
+    },
+    'type': 'guide'
   },
   'guide-light-17-l6hq2u': {
-    order: 17.2,
-    parentOrder: 17,
-    point: { x: 29388.7421248092, y: 1165.4606353637123 },
-    type: 'guide',
+    'order': 17.2,
+    'parentOrder': 17,
+    'point': {
+      'x': 28751.30525029953,
+      'y': 1503.0497355854554
+    },
+    'type': 'guide'
   },
   'guide-light-18-1': {
-    order: 18.1,
-    parentOrder: 18,
-    point: { x: 28549.377617190527, y: 321.07043109548783 },
-    type: 'guide',
+    'order': 18.1,
+    'parentOrder': 18,
+    'point': {
+      'x': 28965.253531389873,
+      'y': 153.79796663196126
+    },
+    'type': 'guide'
   },
+  'guide-light-18-t2pprh': {
+    'order': 18.2,
+    'parentOrder': 18,
+    'point': {
+      'x': 29309.977922901086,
+      'y': 113.02357340336437
+    },
+    'type': 'guide'
+  },
+  'guide-light-2-1': {
+    'order': 2.1,
+    'parentOrder': 2,
+    'point': {
+      'x': 4895.505851902291,
+      'y': 1597.6635224825793
+    },
+    'type': 'guide'
+  },
+  'guide-light-2-3y5o71': {
+    'order': 2.2,
+    'parentOrder': 2,
+    'point': {
+      'x': 5293.0162581780705,
+      'y': 1640.5013351600012
+    },
+    'type': 'guide'
+  },
+  'guide-light-3-1': {
+    'order': 3.1,
+    'parentOrder': 3,
+    'point': {
+      'x': 5921.316700503862,
+      'y': 1627.8874599265382
+    },
+    'type': 'guide'
+  },
+  'guide-light-3-fuxg78': {
+    'order': 3.3,
+    'parentOrder': 3,
+    'point': {
+      'x': 5761.302932483983,
+      'y': 1039.3592074099347
+    },
+    'type': 'guide'
+  },
+  'guide-light-3-qcx6xk': {
+    'order': 3.2,
+    'parentOrder': 3,
+    'point': {
+      'x': 5974.4654565441915,
+      'y': 1291.5712275822564
+    },
+    'type': 'guide'
+  },
+  'guide-light-3-ub7z9e': {
+    'order': 3.4,
+    'parentOrder': 3,
+    'point': {
+      'x': 5843.021536349573,
+      'y': 665.6146899448604
+    },
+    'type': 'guide'
+  },
+  'guide-light-4-1': {
+    'order': 4.1,
+    'parentOrder': 4,
+    'point': {
+      'x': 6603.41626810453,
+      'y': 563.5310229183139
+    },
+    'type': 'guide'
+  },
+  'guide-light-4-tvr6zy': {
+    'order': 4.2,
+    'parentOrder': 4,
+    'point': {
+      'x': 6897.572818076575,
+      'y': 823.7123777811812
+    },
+    'type': 'guide'
+  },
+  'guide-light-5-1': {
+    'order': 5.1,
+    'parentOrder': 5,
+    'point': {
+      'x': 7255.090480522945,
+      'y': 1589.5759939686209
+    },
+    'type': 'guide'
+  },
+  'guide-light-5-aa5mve': {
+    'order': 5.2,
+    'parentOrder': 5,
+    'point': {
+      'x': 7349.351619351468,
+      'y': 2040.1594314229465
+    },
+    'type': 'guide'
+  },
+  'guide-light-5-atpr6k': {
+    'order': 5.3,
+    'parentOrder': 5,
+    'point': {
+      'x': 7859.836898011759,
+      'y': 2341.826722151038
+    },
+    'type': 'guide'
+  },
+  'guide-light-5-mm484y': {
+    'order': 5.5,
+    'parentOrder': 5,
+    'point': {
+      'x': 8623.185408142375,
+      'y': 2661.284735084219
+    },
+    'type': 'guide'
+  },
+  'guide-light-5-xouomq': {
+    'order': 5.4,
+    'parentOrder': 5,
+    'point': {
+      'x': 8408.531281090343,
+      'y': 2141.533638422329
+    },
+    'type': 'guide'
+  },
+  'guide-light-6-1': {
+    'order': 6.1,
+    'parentOrder': 6,
+    'point': {
+      'x': 9059.55876899113,
+      'y': 3141.0210964571543
+    },
+    'type': 'guide'
+  },
+  'guide-light-6-502ogk': {
+    'order': 6.4,
+    'parentOrder': 6,
+    'point': {
+      'x': 10055.166802518243,
+      'y': 2372.1706330929924
+    },
+    'type': 'guide'
+  },
+  'guide-light-6-d1q3vo': {
+    'order': 6.3,
+    'parentOrder': 6,
+    'point': {
+      'x': 9816.033301272193,
+      'y': 2717.5402697036066
+    },
+    'type': 'guide'
+  },
+  'guide-light-6-lu2uxe': {
+    'order': 6.2,
+    'parentOrder': 6,
+    'point': {
+      'x': 9573.737995021856,
+      'y': 3380.9389866977203
+    },
+    'type': 'guide'
+  },
+  'guide-light-6-n3t96g': {
+    'order': 6.5,
+    'parentOrder': 6,
+    'point': {
+      'x': 10487.08455050796,
+      'y': 2429.70015246714
+    },
+    'type': 'guide'
+  },
+  'guide-light-7-1': {
+    'order': 7.1,
+    'parentOrder': 7,
+    'point': {
+      'x': 10840.265629695006,
+      'y': 1926.4614614656575
+    },
+    'type': 'guide'
+  },
+  'guide-light-7-5xdfde': {
+    'order': 7.4,
+    'parentOrder': 7,
+    'point': {
+      'x': 11483.307718256343,
+      'y': 908.9507510533749
+    },
+    'type': 'guide'
+  },
+  'guide-light-7-65n48a': {
+    'order': 7.3,
+    'parentOrder': 7,
+    'point': {
+      'x': 11158.984664756685,
+      'y': 1263.806275653748
+    },
+    'type': 'guide'
+  },
+  'guide-light-7-6zx7vb': {
+    'order': 7.2,
+    'parentOrder': 7,
+    'point': {
+      'x': 10968.474558494996,
+      'y': 1574.3550413476275
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-1': {
+    'order': 8.1,
+    'parentOrder': 8,
+    'point': {
+      'x': 12283.908637535953,
+      'y': 934.5531190998117
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-76x55z': {
+    'order': 8.5,
+    'parentOrder': 8,
+    'point': {
+      'x': 12347.601534932443,
+      'y': 2365.099846580718
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-cu63wr': {
+    'order': 8.3,
+    'parentOrder': 8,
+    'point': {
+      'x': 12511.16802852547,
+      'y': 1504.4811071118818
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-fzz56t': {
+    'order': 8.4,
+    'parentOrder': 8,
+    'point': {
+      'x': 12496.79027208728,
+      'y': 2061.819832257823
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-g51ame': {
+    'order': 8.2,
+    'parentOrder': 8,
+    'point': {
+      'x': 12118.870490068592,
+      'y': 1312.5323843876913
+    },
+    'type': 'guide'
+  },
+  'guide-light-8-k5330m': {
+    'order': 8.6,
+    'parentOrder': 8,
+    'point': {
+      'x': 12667.475303729543,
+      'y': 2868.131237657847
+    },
+    'type': 'guide'
+  },
+  'guide-light-9-1': {
+    'order': 9.1,
+    'parentOrder': 9,
+    'point': {
+      'x': 13039.922313396703,
+      'y': 3477.37043307223
+    },
+    'type': 'guide'
+  },
+  'guide-light-9-2hkevz': {
+    'order': 9.2,
+    'parentOrder': 9,
+    'point': {
+      'x': 13574.370282486334,
+      'y': 3593.4843067207994
+    },
+    'type': 'guide'
+  },
+  'guide-light-9-4gt3re': {
+    'order': 9.4,
+    'parentOrder': 9,
+    'point': {
+      'x': 14345.33047642376,
+      'y': 3810.8889213539783
+    },
+    'type': 'guide'
+  },
+  'guide-light-9-jgqh22': {
+    'order': 9.3,
+    'parentOrder': 9,
+    'point': {
+      'x': 13872.665872053765,
+      'y': 3828.626840259845
+    },
+    'type': 'guide'
+  }
 }
-type DiscoverPairCandidate = {
-  distance: number
-  item: EditorItem
-  role: string
-}
+
 type LoopControlState = {
   direction: -1 | 1
   endpointWaitUntil: number
@@ -895,6 +1410,11 @@ type ShuffleDescriptionExample = {
   quietZone: boolean
   silhouette: boolean
   text: string
+}
+type DiscoverPairCandidate = {
+  distance: number
+  item: EditorItem
+  role: string
 }
 
 const moonMothShuffleDescriptionId = '__moon-moth-info'
@@ -1048,7 +1568,7 @@ const musicFadeInMs = 1800
 const journeyDriftRampOptions = { mothSpeed: 0.16, rampMs: 2800, delayedRamp: true } as const
 const loopPulseWaitScheduleMs = [2000, 3000, 4000]
 const loopPulseDurationCounts = [8, 7, 6, 5, 4, 3, 2, 1, 0]
-const loopInitialPulseDelayMs = 2500
+const loopInitialPulseDelayMs = 1250
 const exploreRelocationDelayMs = 460
 const freeExploreDebugSpeedMultiplier = 2
 const freeExploreLightCollectRadius = 165
@@ -1063,6 +1583,14 @@ const freeExploreGlowTapRadiusMin = 76
 const freeExploreGlowTapRadiusMax = 154
 const freeExploreTrailMaxPoints = 120
 const freeExploreTrailMinDistance = 8
+const freeExploreReverseResponse = 2.55
+const freeExploreLightRevealStepMs = 750
+const freeExploreLightIdleAutoRevealMs = 10000
+const freeExploreBoundaryInputDisableMs = 1000
+const discoverAssetSpaceReadWindowMs = 2000
+const discoverPurpleDescriptionDelayMs = 500
+const discoverInstructionPromptText = 'Touch and hold to follow the light.'
+const discoverVioletInstructionPromptText = 'Violet light keeps the garden’s secrets.'
 const discoverMusicZoomDurationMs = 125900
 const discoverMusicZoomTargetScale = 0.9
 const discoverFogAlphaStart = 0.72
@@ -1160,6 +1688,7 @@ type HudSfxIntent = 'home' | 'mode' | 'hold' | 'turn' | 'release'
 type DriftDescriptionPhase = 'enter' | 'hold' | 'exit'
 type DriftDescriptionStyle = typeof driftDescriptionStyles[number]['style']
 type DriftDescriptionState = {
+  align?: 'left' | 'center'
   runId: number
   index: number
   phase: DriftDescriptionPhase
@@ -1397,7 +1926,13 @@ function stoppedFreeExplore(project: EditorProject): FreeExploreState {
     },
     keyboardPriority: [],
     debugFast: false,
+    boundaryBlockedInputDirection: { x: 0, y: 0 },
+    boundaryInputDisabledUntil: 0,
   }
+}
+
+function clearFreeExploreBoundaryRedirect(state: FreeExploreState) {
+  state.boundaryBlockedInputDirection = { x: 0, y: 0 }
 }
 
 function discoverAssetLightId(itemId: string) {
@@ -1498,6 +2033,77 @@ function buildFreeExploreRouteLights(project: EditorProject, lightRouteConfig: R
   })
   return [...purpleLights, ...configuredGuideLights, ...defaultGuideLights]
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+}
+
+function buildFreeExploreVisibleRouteLights(
+  routeLights: FreeExploreRouteLight[],
+  collectedLightIds: Set<string>,
+  collectedLightCollectedAt: Record<string, number>,
+  sequenceStartedAt = 0,
+  currentTime = 0,
+): FreeExploreVisibleRouteLight[] {
+  const sortedLights = [...routeLights].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+  const purpleLights = sortedLights.filter((light) => light.type !== 'guide')
+  const visibleAtById = new Map<string, number>()
+  const startLight = purpleLights[0]
+  if (startLight && startLight.type !== 'start') {
+    visibleAtById.set(startLight.id, 0)
+  }
+
+  purpleLights.forEach((purpleLight, index) => {
+    const isStartTrigger = purpleLight.type === 'start' && index === 0
+    const collectedAt = collectedLightCollectedAt[purpleLight.id] ?? 0
+    const triggerAt = isStartTrigger
+      ? sequenceStartedAt
+      : collectedLightIds.has(purpleLight.id)
+        ? collectedAt
+        : (() => {
+            const visibleAt = visibleAtById.get(purpleLight.id)
+            if (visibleAt === undefined) {
+              return 0
+            }
+            const autoRevealAt = visibleAt + freeExploreLightIdleAutoRevealMs
+            return currentTime >= autoRevealAt ? autoRevealAt : 0
+          })()
+    if (!isStartTrigger && triggerAt <= 0) {
+      return
+    }
+    const nextPurpleLight = purpleLights[index + 1]
+    if (!nextPurpleLight) {
+      return
+    }
+    const segmentLights = sortedLights
+      .filter((light) => (
+        light.id === nextPurpleLight.id
+        || (
+          light.type === 'guide'
+          && light.order > purpleLight.order
+          && light.order < nextPurpleLight.order
+        )
+      ))
+      .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+
+    segmentLights.forEach((light, segmentIndex) => {
+      const visibleAt = isStartTrigger
+        ? triggerAt + (
+            light.type === 'guide'
+              ? freeExploreLightRevealStepMs
+              : Math.max(2, segmentLights.filter((candidate) => candidate.type === 'guide').length + 1) * freeExploreLightRevealStepMs
+          )
+        : triggerAt + (segmentIndex * freeExploreLightRevealStepMs)
+      const currentVisibleAt = visibleAtById.get(light.id)
+      if (currentVisibleAt === undefined || visibleAt < currentVisibleAt) {
+        visibleAtById.set(light.id, visibleAt)
+      }
+    })
+  })
+
+  return sortedLights
+    .map((light) => {
+      const visibleAt = visibleAtById.get(light.id)
+      return visibleAt === undefined ? null : { ...light, visibleAt }
+    })
+    .filter((light): light is FreeExploreVisibleRouteLight => Boolean(light))
 }
 
 function freeExploreLightPointForItem(project: EditorProject, item: EditorItem): Point {
@@ -1985,7 +2591,7 @@ function drawDiscoverLightRouteDebug(
   context.lineCap = 'round'
   context.lineJoin = 'round'
   context.globalCompositeOperation = 'source-over'
-  context.strokeStyle = 'rgba(207, 161, 255, 0.32)'
+  context.strokeStyle = 'rgba(181, 142, 255, 0.36)'
   context.lineWidth = 2
   context.setLineDash([8, 9])
   context.beginPath()
@@ -2010,9 +2616,9 @@ function drawDiscoverLightRouteDebug(
       glow.addColorStop(0.52, 'rgba(167, 255, 218, 0.18)')
       glow.addColorStop(1, 'rgba(167, 255, 218, 0)')
     } else {
-      glow.addColorStop(0, selected ? 'rgba(255, 230, 255, 0.84)' : 'rgba(222, 175, 255, 0.56)')
-      glow.addColorStop(0.52, 'rgba(178, 111, 255, 0.2)')
-      glow.addColorStop(1, 'rgba(178, 111, 255, 0)')
+      glow.addColorStop(0, selected ? 'rgba(236, 222, 255, 0.86)' : 'rgba(198, 166, 255, 0.6)')
+      glow.addColorStop(0.52, 'rgba(135, 88, 255, 0.24)')
+      glow.addColorStop(1, 'rgba(135, 88, 255, 0)')
     }
     context.fillStyle = glow
     context.beginPath()
@@ -2022,9 +2628,9 @@ function drawDiscoverLightRouteDebug(
       ? 'rgba(255, 247, 255, 0.98)'
       : guide
         ? 'rgba(255, 235, 150, 0.92)'
-        : 'rgba(218, 178, 255, 0.9)'
+        : 'rgba(198, 168, 255, 0.92)'
     context.strokeStyle = selected
-      ? guide ? 'rgba(242, 205, 87, 0.98)' : 'rgba(128, 60, 220, 0.98)'
+      ? guide ? 'rgba(242, 205, 87, 0.98)' : 'rgba(112, 62, 232, 0.98)'
       : 'rgba(28, 13, 48, 0.9)'
     context.lineWidth = selected ? 3 : 2
     context.beginPath()
@@ -2178,6 +2784,7 @@ function App() {
   const [shuffleDescriptionInitialRevealReady, setShuffleDescriptionInitialRevealReady] = useState(false)
   const [shuffleDescriptionInitialAttentionReadyAt, setShuffleDescriptionInitialAttentionReadyAt] = useState(0)
   const [shuffleDescriptionSampledBoundaryIndex, setShuffleDescriptionSampledBoundaryIndex] = useState<number | null>(null)
+  const [discoverDescriptionCollapsedToButton, setDiscoverDescriptionCollapsedToButton] = useState(false)
   const [selectedHudButtonIds, setSelectedHudButtonIds] = useState<GameHudButtonId[]>(['home', 'shuffle', 'explore', 'loop'])
   const [editScrubDirection, setEditScrubDirection] = useState<0 | -1 | 1>(0)
   const [animationTime, setAnimationTime] = useState(0)
@@ -2198,6 +2805,10 @@ function App() {
   const driftDescriptionDelayedTriggerTimeoutRef = useRef<number | null>(null)
   const driftDescriptionLongHoldOverrideTimeoutRef = useRef<number | null>(null)
   const shuffleDescriptionBoundarySampleTimeoutRef = useRef<number | null>(null)
+  const discoverAssetSpaceSwitchTimeoutRef = useRef<number | null>(null)
+  const discoverAssetSpacePendingExampleIndexRef = useRef<number | null>(null)
+  const discoverPurpleDescriptionDelayTimeoutRef = useRef<number | null>(null)
+  const discoverDescriptionCardStreakRef = useRef(0)
   const shuffleDescriptionCardCursorRef = useRef<Map<string, number>>(new Map())
   const shuffleDescriptionEntryCardOffsetRef = useRef(1)
   const driftDescriptionSequenceActiveRef = useRef(false)
@@ -2213,6 +2824,8 @@ function App() {
   const discoverCurveBoundaryPointsRef = useRef(discoverCurveBoundaryPoints)
   const discoverCurveBoundarySelectedIndexRef = useRef<number | null>(discoverCurveBoundarySelectedIndex)
   const discoverCurveBoundaryHandleEditingRef = useRef(discoverCurveBoundaryHandleEditing)
+  const discoverLightSequenceStartedAtRef = useRef(discoverMusicZoomStartedAt)
+  const discoverPairedAssetIdsByShuffleIdRef = useRef(discoverPairedAssetIdsByShuffleId)
   const discoverCurveBoundaryDragRef = useRef<{ pointIndex: number; pointerId: number } | null>(null)
   const discoverCurveBoundarySevenHoldRef = useRef<{
     chorded: boolean
@@ -2240,6 +2853,9 @@ function App() {
   const collectedLightCollectedAtRef = useRef<Record<string, number>>({})
   const discoveredShuffleItemIdsRef = useRef<string[]>([])
   const activeShuffleItemIdRef = useRef<string | null>(null)
+  const shuffleDescriptionOpenRef = useRef(shuffleDescriptionOpen)
+  const shuffleDescriptionDismissingToLoopRef = useRef(shuffleDescriptionDismissingToLoop)
+  const shuffleDescriptionRouteAssetIndexRef = useRef(shuffleDescriptionRouteAssetIndex)
   const routeSampleDataRef = useRef<RouteSampleData>(buildRouteSampleData(project.route, project.routeRenderMode, 72))
   const forwardControlRef = useRef<ForwardControlState>(stoppedForwardControl())
   const exploreControlRef = useRef<ExploreControlState>(stoppedExploreControl())
@@ -2301,6 +2917,12 @@ function App() {
     playPausedRef.current = playPaused
   }, [appMode, gameMode, gameScreen, playPaused, workspaceMode])
 
+  useEffect(() => {
+    shuffleDescriptionOpenRef.current = shuffleDescriptionOpen
+    shuffleDescriptionDismissingToLoopRef.current = shuffleDescriptionDismissingToLoop
+    shuffleDescriptionRouteAssetIndexRef.current = shuffleDescriptionRouteAssetIndex
+  }, [shuffleDescriptionDismissingToLoop, shuffleDescriptionOpen, shuffleDescriptionRouteAssetIndex])
+
   useEffect(() => () => {
     if (menuFocusDissolveTimeoutRef.current !== null) {
       window.clearTimeout(menuFocusDissolveTimeoutRef.current)
@@ -2321,6 +2943,15 @@ function App() {
     if (shuffleDescriptionBoundarySampleTimeoutRef.current !== null) {
       window.clearTimeout(shuffleDescriptionBoundarySampleTimeoutRef.current)
       shuffleDescriptionBoundarySampleTimeoutRef.current = null
+    }
+    if (discoverAssetSpaceSwitchTimeoutRef.current !== null) {
+      window.clearTimeout(discoverAssetSpaceSwitchTimeoutRef.current)
+      discoverAssetSpaceSwitchTimeoutRef.current = null
+    }
+    discoverAssetSpacePendingExampleIndexRef.current = null
+    if (discoverPurpleDescriptionDelayTimeoutRef.current !== null) {
+      window.clearTimeout(discoverPurpleDescriptionDelayTimeoutRef.current)
+      discoverPurpleDescriptionDelayTimeoutRef.current = null
     }
     if (gameMenuReturnTimeoutRef.current !== null) {
       window.clearTimeout(gameMenuReturnTimeoutRef.current)
@@ -2478,9 +3109,18 @@ function App() {
     discoverLightRouteConfigRef.current = discoverLightRouteConfig
   }, [discoverLightRouteConfig])
 
+  useEffect(() => {
+    discoverPairedAssetIdsByShuffleIdRef.current = discoverPairedAssetIdsByShuffleId
+  }, [discoverPairedAssetIdsByShuffleId])
+
+  useEffect(() => {
+    discoverLightSequenceStartedAtRef.current = discoverMusicZoomStartedAt
+  }, [discoverMusicZoomStartedAt])
+
   function saveDiscoverDevProgress(showMessage = true) {
     saveDiscoverCurveBoundaryToStorage(discoverCurveBoundaryPointsRef.current)
     saveDiscoverLightRouteToStorage(discoverLightRouteConfigRef.current)
+    saveDiscoverPairingsToStorage(discoverPairedAssetIdsByShuffleIdRef.current)
     if (showMessage) {
       setMessage('Discover dev progress saved')
     }
@@ -3587,8 +4227,18 @@ function App() {
         const keyboardDirection = freeExploreKeyboardDirection(state.input, state.keyboardPriority)
         const keyboardActive = Math.hypot(keyboardDirection.x, keyboardDirection.y) > 0.001
         const pointerActive = Boolean(state.pointerDirection)
-        const requestedDirection = state.pointerDirection ?? keyboardDirection
-        const requestActive = Math.hypot(requestedDirection.x, requestedDirection.y) > 0.001
+        const rawRequestedDirection = state.pointerDirection ?? keyboardDirection
+        const rawRequestActive = Math.hypot(rawRequestedDirection.x, rawRequestedDirection.y) > 0.001
+        const boundaryInputLocked = state.boundaryInputDisabledUntil > time
+        const boundaryBlockedInputActive = Math.hypot(state.boundaryBlockedInputDirection.x, state.boundaryBlockedInputDirection.y) > 0.001
+        const boundaryInputStillBlocked = boundaryBlockedInputActive
+          && rawRequestActive
+          && vectorDot(rawRequestedDirection, state.boundaryBlockedInputDirection) > 0.82
+        if (boundaryBlockedInputActive && !boundaryInputStillBlocked) {
+          clearFreeExploreBoundaryRedirect(state)
+        }
+        const requestActive = rawRequestActive && !boundaryInputLocked && !boundaryInputStillBlocked
+        const requestedDirection = requestActive ? rawRequestedDirection : { x: 0, y: 0 }
         let releaseCarryActive = !requestActive
           && state.releaseCarryUntil > time
           && Math.hypot(state.releaseDirection.x, state.releaseDirection.y) > 0.001
@@ -3656,7 +4306,7 @@ function App() {
         targetVelocity = movementRequested
           ? Math.abs(exploreTargetVelocity(1, 0.5, heldMs, projectRef.current.gameplay))
               * pushScale
-              * (latestState.debugFast && keyboardActive && !pointerActive ? freeExploreDebugSpeedMultiplier : 1)
+              * (latestState.debugFast && requestActive && keyboardActive && !pointerActive ? freeExploreDebugSpeedMultiplier : 1)
           : 0
 
         const currentVelocityDirection = normalizeVector(latestState.velocity)
@@ -3668,7 +4318,7 @@ function App() {
         if (reversingDirection) {
           targetVelocity = 0
         }
-        const response = reversingDirection ? 1.45 : movementRequested && targetVelocity !== 0 ? 2.8 : 1.75
+        const response = reversingDirection ? freeExploreReverseResponse : movementRequested && targetVelocity !== 0 ? 2.8 : 1.75
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
         const travelDirection = movementRequested && !reversingDirection
           ? activeDirection
@@ -3684,13 +4334,38 @@ function App() {
           unclampedNextPosition,
           discoverCurveBoundaryPointsRef.current,
         )
-        if (
-          Math.abs(nextPosition.x - unclampedNextPosition.x) > 0.01
-          || Math.abs(nextPosition.y - unclampedNextPosition.y) > 0.01
-        ) {
+        const boundaryClampDelta = {
+          x: nextPosition.x - unclampedNextPosition.x,
+          y: nextPosition.y - unclampedNextPosition.y,
+        }
+        const boundaryHit = Math.hypot(boundaryClampDelta.x, boundaryClampDelta.y) > 0.01
+        let boundaryRedirected = false
+        if (boundaryHit) {
+          const boundaryRedirectDirection = normalizeVector(boundaryClampDelta)
+          const boundaryInputDirection = movementRequested
+            ? activeDirection
+            : travelDirection
+          if (Math.hypot(boundaryRedirectDirection.x, boundaryRedirectDirection.y) > 0.001) {
+            const releaseCarryMs = latestState.debugFast
+              ? 0
+              : projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
+            latestState.direction = boundaryRedirectDirection
+            latestState.releaseDirection = boundaryRedirectDirection
+            latestState.releaseStartedAt = time
+            latestState.releaseCarryUntil = releaseCarryMs > 0 ? time + releaseCarryMs : 0
+            latestState.idleSince = 0
+            latestState.idlePushStartedAt = 0
+            latestState.idlePushUntil = 0
+            latestState.idlePushCount = 0
+            latestState.boundaryBlockedInputDirection = boundaryInputDirection
+            latestState.boundaryInputDisabledUntil = time + freeExploreBoundaryInputDisableMs
+            boundaryRedirected = true
+          }
           mothMotionRef.current.velocity = 0
         }
-        if (!movementRequested && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold) {
+        if (boundaryRedirected) {
+          latestState.velocity = { x: 0, y: 0 }
+        } else if (!movementRequested && Math.abs(mothMotionRef.current.velocity) <= mothStoppedVelocityThreshold) {
           mothMotionRef.current.velocity = 0
           latestState.velocity = { x: 0, y: 0 }
         } else {
@@ -3699,7 +4374,7 @@ function App() {
             y: travelDirection.y * mothMotionRef.current.velocity * routeLength,
           }
         }
-        if (movementRequested && !reversingDirection) {
+        if (movementRequested && !reversingDirection && !boundaryRedirected) {
           latestState.direction = activeDirection
         }
         const cameraEase = 1 - Math.exp(-delta * 1.8)
@@ -4000,6 +4675,12 @@ function App() {
     : freeExploreDebugFast && discoverDevCameraPreset === 'wide'
       ? discoverMusicZoomTargetScale
       : discoverMusicVisualCycle.zoomScale
+  const discoverMenuBackdropActive = (
+    publicGameBuild
+    && workspaceMode === 'game'
+    && appMode === 'play'
+    && gameScreen === 'menu'
+  )
 
   const renderCamera = useMemo(() => {
     const activeGroup = getActiveRouteGroupAtProgress(project, playProgress)
@@ -4016,7 +4697,7 @@ function App() {
       }
       return project.camera
     }
-    if (gameMode === 'discover') {
+    if (gameMode === 'discover' || discoverMenuBackdropActive) {
       const zoom = Math.max(project.camera.zoom, followZoom) * discoverCameraZoomScale * (freeExploreDebugFast && discoverDevZoomedOut ? discoverDevZoomOutScale : 1)
       return {
         x: freeExploreCameraCenter.x,
@@ -4030,7 +4711,7 @@ function App() {
       y: moth.y,
       zoom: Math.max(project.camera.zoom, followZoom),
     }
-  }, [appMode, discoverCameraZoomScale, discoverDevZoomedOut, editScrubDirection, freeExploreCameraCenter, freeExploreDebugFast, gameMode, playProgress, project, routeSampleData, zoomFromMothView])
+  }, [appMode, discoverCameraZoomScale, discoverDevZoomedOut, discoverMenuBackdropActive, editScrubDirection, freeExploreCameraCenter, freeExploreDebugFast, gameMode, playProgress, project, routeSampleData, zoomFromMothView])
 
   const canvasCamera = useMemo(
     () => cameraForCanvasView(renderCamera, project),
@@ -4041,6 +4722,11 @@ function App() {
     [project],
   )
   const freeExploreActive = appMode === 'play' && gameMode === 'discover' && gameScreen === 'discover'
+  const discoverBackdropActive = (
+    appMode === 'play'
+    && gameMode === 'discover'
+    && gameScreen === 'discover'
+  ) || discoverMenuBackdropActive
   const freeExploreRouteLights = useMemo(
     () => buildFreeExploreRouteLights(project, discoverLightRouteConfig),
     [discoverLightRouteConfig, project],
@@ -4055,6 +4741,7 @@ function App() {
       boundary: {
         curve: discoverCurveBoundaryPoints,
       },
+      lightRouteConfig: discoverLightRouteConfig,
       lights: freeExploreRouteLights.map((light) => ({
         id: light.id,
         itemId: light.itemId,
@@ -4062,6 +4749,7 @@ function App() {
         point: light.point,
         type: light.type,
       })),
+      pairings: discoverPairedAssetIdsByShuffleId,
       shuffleAssets: collectFreeExploreShuffleItems(project).map((item) => ({
         id: item.id,
         name: item.shuffleInfo?.publicName?.trim() || item.name,
@@ -4070,6 +4758,8 @@ function App() {
     })
   }, [
     discoverCurveBoundaryPoints,
+    discoverLightRouteConfig,
+    discoverPairedAssetIdsByShuffleId,
     freeExploreActive,
     freeExploreDebugFast,
     freeExploreRouteLights,
@@ -4117,6 +4807,10 @@ function App() {
   const collectedLightIdSet = useMemo(
     () => new Set(collectedLightItemIds),
     [collectedLightItemIds],
+  )
+  const visibleFreeExploreRouteLights = useMemo(
+    () => buildFreeExploreVisibleRouteLights(freeExploreRouteLights, collectedLightIdSet, collectedLightCollectedAt, discoverMusicZoomStartedAt, animationTime),
+    [animationTime, collectedLightCollectedAt, collectedLightIdSet, discoverMusicZoomStartedAt, freeExploreRouteLights],
   )
   const discoverFocusedShuffleItemId = freeExploreDebugFast && discoverGlowIsolated && discoverGlowIsolatedItemId
     ? discoverGlowIsolatedItemId
@@ -4180,19 +4874,21 @@ function App() {
     && collectedLightIdSet.has(`asset-light-${discoverActiveShuffleItem.id}`),
   )
   const freeExploreRevealRadius = freeExploreRevealBaseRadius
-  const freeExploreDiscoveryRender = freeExploreActive
+  const freeExploreDiscoveryRender = discoverBackdropActive
     ? {
-        activeShuffleItemIds: activeShuffleItemId ? [activeShuffleItemId] : [],
-        collectedLightItemIds,
-        discoveredShuffleItemIds,
+        activeShuffleItemIds: freeExploreActive && activeShuffleItemId ? [activeShuffleItemId] : [],
+        collectedLightItemIds: freeExploreActive ? collectedLightItemIds : [],
+        discoveredShuffleItemIds: freeExploreActive ? discoveredShuffleItemIds : [],
         fogAlpha: discoverFogAlpha,
         lightItemIds: [],
         revealRadius: freeExploreRevealRadius,
-        revealPoints: collectedRouteLightPoints,
-        routeLights: freeExploreRouteLights.map((light) => ({
-          ...light,
-          collected: collectedLightIdSet.has(light.id),
-        })),
+        revealPoints: freeExploreActive ? collectedRouteLightPoints : [],
+        routeLights: freeExploreActive
+          ? visibleFreeExploreRouteLights.map((light) => ({
+              ...light,
+              collected: collectedLightIdSet.has(light.id),
+            }))
+          : [],
       }
     : undefined
   const publicGameMothLoadFailed = publicGameBuild && failedImageSourcesRef.current.has(mothAsset.src)
@@ -4222,7 +4918,7 @@ function App() {
       mothMotionVelocity: mothMotionRef.current.velocity,
       mothTrailVelocity: mothMotionRef.current.trailVelocity,
       mothForwardActive: forwardPressed || exploreDirection === 1,
-      mothWorldPoint: freeExploreActive ? freeExplorePosition : undefined,
+      mothWorldPoint: discoverBackdropActive ? freeExplorePosition : undefined,
       mothVelocityVector: freeExploreActive ? freeExploreRef.current.velocity : undefined,
       mothTrailPoints: freeExploreActive ? freeExploreTrailPointsRef.current : undefined,
       exploreDiscovery: freeExploreDiscoveryRender,
@@ -4266,7 +4962,7 @@ function App() {
           mothMotionVelocity: mothMotionRef.current.velocity,
           mothTrailVelocity: mothMotionRef.current.trailVelocity,
           mothForwardActive: forwardPressed || exploreDirection === 1,
-          mothWorldPoint: freeExploreActive ? freeExplorePosition : undefined,
+          mothWorldPoint: discoverBackdropActive ? freeExplorePosition : undefined,
           mothVelocityVector: freeExploreActive ? freeExploreRef.current.velocity : undefined,
           mothTrailPoints: freeExploreActive ? freeExploreTrailPointsRef.current : undefined,
           exploreDiscovery: freeExploreDiscoveryRender,
@@ -4285,7 +4981,7 @@ function App() {
         menuMothContext.clearRect(0, 0, viewport.width, viewport.height)
       }
     }
-  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, discoverCurveBoundaryHandleEditing, discoverCurveBoundaryPoints, discoverCurveBoundarySelectedIndex, discoverLightRouteEditing, discoverSelectedLightId, discoverCurveBoundaryVisible, exploreDirection, forwardPressed, freeExploreActive, freeExploreDebugFast, freeExploreDiscoveryRender, freeExplorePosition, freeExploreRouteLights, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothLoadFailed, publicGameMothReady, publicGameScale, renderItemBuckets, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
+  }, [animationTime, appMode, artworkMode, canvasCamera, canvasTargets, discoverBackdropActive, discoverCurveBoundaryHandleEditing, discoverCurveBoundaryPoints, discoverCurveBoundarySelectedIndex, discoverLightRouteEditing, discoverSelectedLightId, discoverCurveBoundaryVisible, exploreDirection, forwardPressed, freeExploreActive, freeExploreDebugFast, freeExploreDiscoveryRender, freeExplorePosition, freeExploreRouteLights, gameFocusVisible, images, playProgress, project, publicGameCriticalReady, publicGameMothLoadFailed, publicGameMothReady, publicGameScale, renderItemBuckets, routeSampleData, selectedItemIds, selection, viewport, workspaceMode])
 
   const selectedItem = selection?.type === 'item'
     ? project.items.find((item) => item.id === selection.id) ?? null
@@ -4454,8 +5150,9 @@ function App() {
   const cameraExtensionDensity = clamp(project.gameplay.cameraExtensionDensity ?? 1, 0, 4)
   const cameraExtensionBlurAmount = clamp(project.gameplay.cameraExtensionBlurAmount ?? 6, 0, 20)
   const cameraExtensionMotionActive = Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold || forwardPressed || exploreDirection !== 0 || editScrubDirection !== 0 || mothMotionRef.current.blurResumeAt > animationTime
-  const cameraExtensionVisible = project.gameplay.cameraExtensionEnabled !== false && !freeExploreActive
+  const cameraExtensionVisible = project.gameplay.cameraExtensionEnabled !== false && !freeExploreActive && !discoverMenuBackdropActive && gameMode !== 'loop'
   const cameraExtensionBlurPaused = cameraExtensionMotionActive && !gameFocusActive
+  const loopCameraExtensionMask = gameMode === 'loop' && gameScreen === 'loop'
   const journeyGlideHidden = gameMode === 'journey' && journeyEndpointWaiting
   const journeyGlideDisabled = gameMode !== 'journey'
     || journeyEndpointWaiting
@@ -4467,10 +5164,12 @@ function App() {
   const cameraExtensionOverlayStyle = {
     '--camera-extension-inner-size': `${Math.round(clamp(project.gameplay.cameraExtensionInnerScale ?? 0.9, 0.5, 0.96) * 10000) / 100}%`,
     '--camera-extension-radius': `${Math.round(clamp(project.gameplay.cameraExtensionRoundness ?? 0.65, 0, 1) * 50)}%`,
-    '--camera-extension-bg-alpha': `${clamp(cameraExtensionDensity * 0.05, 0, 0.26)}`,
-    '--camera-extension-dim-alpha': `${clamp(cameraExtensionDensity * 0.22, 0, 0.92)}`,
-    '--camera-extension-brightness': `${clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
+    '--camera-extension-bg-alpha': `${loopCameraExtensionMask ? 0 : clamp(cameraExtensionDensity * 0.05, 0, 0.26)}`,
+    '--camera-extension-dim-alpha': `${loopCameraExtensionMask ? discoverFogAlphaStart : clamp(cameraExtensionDensity * 0.22, 0, 0.92)}`,
+    '--camera-extension-brightness': `${loopCameraExtensionMask ? 1 : clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
     '--camera-extension-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
+    '--camera-extension-dim-rgb': loopCameraExtensionMask ? '1, 5, 16' : '4, 11, 20',
+    '--camera-extension-bg-rgb': loopCameraExtensionMask ? '1, 5, 16' : '4, 11, 20',
   } as CSSProperties
   const gameHudScale = clamp(project.gameplay.gameHudScale ?? 1, 0.68, 1.3)
   const gameHudSpread = clamp(project.gameplay.gameHudSpread ?? 0.75, 0.62, 1)
@@ -4565,12 +5264,105 @@ function App() {
     && gameScreenRef.current === 'journey'
     && !playPausedRef.current
   )
+  const discoverInstructionEligible = () => (
+    workspaceModeRef.current === 'game'
+    && appModeRef.current === 'play'
+    && gameModeRef.current === 'discover'
+    && gameScreenRef.current === 'discover'
+    && !playPausedRef.current
+  )
   const clearDriftDescriptionAutomation = () => {
     clearDriftDescriptionTimeouts()
     clearDriftDescriptionIdleTriggerTimer()
     clearDriftDescriptionDelayedTriggerTimer()
     clearDriftDescriptionLongHoldOverrideTimer()
     setDriftDescription(null)
+  }
+  const scheduleDiscoverInstructionPrompt = () => {
+    clearDriftDescriptionTimeouts()
+    clearDriftDescriptionIdleTriggerTimer()
+    clearDriftDescriptionDelayedTriggerTimer()
+    clearDriftDescriptionLongHoldOverrideTimer()
+    driftDescriptionSequenceActiveRef.current = true
+    const nextRunId = driftDescriptionRunIdRef.current + 1
+    driftDescriptionRunIdRef.current = nextRunId
+    setDriftDescriptionRunId(nextRunId)
+    const promptStyle = driftDescriptionStyles[0]
+    const enterAt = freeExploreLightRevealStepMs
+    const holdMs = driftDescriptionLongHoldMs
+    const promptState = (phase: DriftDescriptionPhase, text: string, index: number): DriftDescriptionState => ({
+      align: 'center',
+      runId: nextRunId,
+      index,
+      phase,
+      style: promptStyle.style,
+      opacity: 1,
+      text,
+    })
+    const firstHoldAt = enterAt + promptStyle.enterMs
+    const exitAt = firstHoldAt + holdMs
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      if (discoverInstructionEligible()) {
+        setDriftDescription(promptState('enter', discoverInstructionPromptText, 0))
+      }
+    }, enterAt))
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      if (discoverInstructionEligible()) {
+        setDriftDescription(promptState('hold', discoverInstructionPromptText, 0))
+      }
+    }, firstHoldAt))
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      if (discoverInstructionEligible()) {
+        setDriftDescription(promptState('exit', discoverInstructionPromptText, 0))
+      }
+    }, exitAt))
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      setDriftDescription(null)
+      driftDescriptionTimeoutRefs.current = []
+      driftDescriptionSequenceActiveRef.current = false
+    }, exitAt + promptStyle.exitMs))
+  }
+  const scheduleDiscoverVioletInstructionPrompt = (force = false) => {
+    if (!discoverInstructionEligible() || (!force && driftDescriptionSequenceActiveRef.current) || shuffleDescriptionOpenRef.current) {
+      return
+    }
+    clearDriftDescriptionTimeouts()
+    clearDriftDescriptionIdleTriggerTimer()
+    clearDriftDescriptionDelayedTriggerTimer()
+    clearDriftDescriptionLongHoldOverrideTimer()
+    driftDescriptionSequenceActiveRef.current = true
+    const nextRunId = driftDescriptionRunIdRef.current + 1
+    driftDescriptionRunIdRef.current = nextRunId
+    setDriftDescriptionRunId(nextRunId)
+    const promptStyle = driftDescriptionStyles[0]
+    const holdMs = driftDescriptionLongHoldMs
+    const promptState = (phase: DriftDescriptionPhase): DriftDescriptionState => ({
+      align: 'center',
+      runId: nextRunId,
+      index: 1,
+      phase,
+      style: promptStyle.style,
+      opacity: 1,
+      text: discoverVioletInstructionPromptText,
+    })
+    const enterPrompt = promptState('enter')
+    driftDescriptionRef.current = enterPrompt
+    setDriftDescription(enterPrompt)
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      if (discoverInstructionEligible()) {
+        setDriftDescription(promptState('hold'))
+      }
+    }, promptStyle.enterMs))
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      if (discoverInstructionEligible()) {
+        setDriftDescription(promptState('exit'))
+      }
+    }, promptStyle.enterMs + holdMs))
+    driftDescriptionTimeoutRefs.current.push(window.setTimeout(() => {
+      setDriftDescription(null)
+      driftDescriptionTimeoutRefs.current = []
+      driftDescriptionSequenceActiveRef.current = false
+    }, promptStyle.enterMs + holdMs + promptStyle.exitMs))
   }
   const scheduleDriftDescriptionSequence = () => {
     if (!driftDescriptionEligible() || driftDescriptionSequenceActiveRef.current) {
@@ -4880,7 +5672,11 @@ function App() {
         && (shuffleDescriptionInitialRevealReady || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop))
       || (gameMode === 'discover'
         && gameHudScreen === 'discover'
-        && (activeShuffleDescriptionExampleIndex >= 0 || shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop))
+        && (
+          shuffleDescriptionOpen
+          || shuffleDescriptionDismissingToLoop
+          || discoverDescriptionCollapsedToButton
+        ))
     )
     && (!shuffleLoopActive || shuffleDescriptionDismissingToLoop)
     && shuffleDescriptionPrototypeExamples.length > 0
@@ -4894,7 +5690,12 @@ function App() {
     ? clamp(shuffleDescriptionRouteAssetIndex, 0, shuffleDescriptionPrototypeExamples.length - 1)
     : 0
   const shuffleDescriptionBoundaryEntries = useMemo<ShuffleDescriptionBoundaryEntry[]>(() => {
-    if (!showShuffleDescriptionPrototype || !shuffleDescriptionBoundaryEnabled || shuffleDescriptionPrototypeExamples.length === 0) {
+    if (
+      !showShuffleDescriptionPrototype
+      || !shuffleDescriptionBoundaryEnabled
+      || gameMode === 'discover'
+      || shuffleDescriptionPrototypeExamples.length === 0
+    ) {
       return []
     }
     const exampleIndexByAssetId = new Map(shuffleDescriptionPrototypeExamples.map((example, index) => [example.id, index]))
@@ -4916,6 +5717,7 @@ function App() {
       })
       .sort((a, b) => a.point.routeProgress - b.point.routeProgress)
   }, [
+    gameMode,
     project.descriptionRoutePoints,
     showShuffleDescriptionPrototype,
     shuffleDescriptionBoundaryEnabled,
@@ -5065,6 +5867,7 @@ function App() {
   }
   const changeShuffleDescriptionAsset = (exampleIndex: number) => {
     const nextExample = shuffleDescriptionPrototypeExamples[exampleIndex]
+    shuffleDescriptionRouteAssetIndexRef.current = exampleIndex
     setShuffleDescriptionRouteAssetIndex(exampleIndex)
     setShuffleDescriptionCardIndex(nextShuffleDescriptionCardIndex(nextExample))
     setShuffleDescriptionAutoAdvanceCount(0)
@@ -5082,8 +5885,108 @@ function App() {
     setShuffleDescriptionOpenedAt(performance.now())
   }
   const syncClosedShuffleDescriptionAsset = (exampleIndex: number) => {
+    shuffleDescriptionRouteAssetIndexRef.current = exampleIndex
     setShuffleDescriptionRouteAssetIndex(exampleIndex)
     setShuffleDescriptionPendingAssetIndex(null)
+  }
+  const clearDiscoverAssetSpaceSwitch = () => {
+    if (discoverAssetSpaceSwitchTimeoutRef.current !== null) {
+      window.clearTimeout(discoverAssetSpaceSwitchTimeoutRef.current)
+      discoverAssetSpaceSwitchTimeoutRef.current = null
+    }
+    discoverAssetSpacePendingExampleIndexRef.current = null
+  }
+  const clearDiscoverPurpleDescriptionDelay = () => {
+    if (discoverPurpleDescriptionDelayTimeoutRef.current !== null) {
+      window.clearTimeout(discoverPurpleDescriptionDelayTimeoutRef.current)
+      discoverPurpleDescriptionDelayTimeoutRef.current = null
+    }
+  }
+  const openShuffleDescriptionAssetCard = (exampleIndex: number) => {
+    if (exampleIndex < 0 || exampleIndex >= shuffleDescriptionPrototypeExamples.length) {
+      return
+    }
+    changeShuffleDescriptionAsset(exampleIndex)
+    shuffleDescriptionOpenRef.current = true
+    shuffleDescriptionDismissingToLoopRef.current = false
+    setShuffleDescriptionDismissingToLoop(false)
+    setShuffleDescriptionOpen(true)
+  }
+  const openDiscoverShuffleDescriptionAssetCard = (exampleIndex: number) => {
+    clearDiscoverAssetSpaceSwitch()
+    clearDiscoverPurpleDescriptionDelay()
+    setDiscoverDescriptionCollapsedToButton(false)
+    openShuffleDescriptionAssetCard(exampleIndex)
+    discoverDescriptionCardStreakRef.current += 1
+  }
+  const scheduleDiscoverPurpleDescriptionCard = (exampleIndex: number) => {
+    clearDiscoverAssetSpaceSwitch()
+    clearDiscoverPurpleDescriptionDelay()
+    const activeDescription = driftDescriptionRef.current
+    const activeInstructionPrompt = driftDescriptionSequenceActiveRef.current && activeDescription && discoverInstructionEligible()
+    if (activeInstructionPrompt) {
+      const interruptedDescription: DriftDescriptionState = {
+        ...activeDescription,
+        phase: 'exit' as DriftDescriptionPhase,
+      }
+      clearDriftDescriptionTimeouts()
+      driftDescriptionSequenceActiveRef.current = true
+      driftDescriptionRef.current = interruptedDescription
+      setDriftDescription(interruptedDescription)
+      discoverPurpleDescriptionDelayTimeoutRef.current = window.setTimeout(() => {
+        discoverPurpleDescriptionDelayTimeoutRef.current = null
+        setDriftDescription(null)
+        driftDescriptionSequenceActiveRef.current = false
+        if (gameModeRef.current !== 'discover') {
+          return
+        }
+        openDiscoverShuffleDescriptionAssetCard(exampleIndex)
+      }, driftDescriptionStyles[0].exitMs)
+      return
+    }
+    discoverPurpleDescriptionDelayTimeoutRef.current = window.setTimeout(() => {
+      discoverPurpleDescriptionDelayTimeoutRef.current = null
+      if (gameModeRef.current !== 'discover') {
+        return
+      }
+      openDiscoverShuffleDescriptionAssetCard(exampleIndex)
+    }, discoverPurpleDescriptionDelayMs)
+  }
+  const scheduleDiscoverAssetSpaceDescriptionCard = (exampleIndex: number) => {
+    if (exampleIndex < 0 || exampleIndex >= shuffleDescriptionPrototypeExamples.length) {
+      clearDiscoverAssetSpaceSwitch()
+      return
+    }
+    if (discoverPurpleDescriptionDelayTimeoutRef.current !== null) {
+      return
+    }
+    setDiscoverDescriptionCollapsedToButton(false)
+    if (!shuffleDescriptionOpenRef.current || shuffleDescriptionDismissingToLoopRef.current) {
+      clearDiscoverAssetSpaceSwitch()
+      openShuffleDescriptionAssetCard(exampleIndex)
+      return
+    }
+    if (exampleIndex === shuffleDescriptionRouteAssetIndexRef.current) {
+      clearDiscoverAssetSpaceSwitch()
+      return
+    }
+    if (
+      discoverAssetSpacePendingExampleIndexRef.current === exampleIndex
+      && discoverAssetSpaceSwitchTimeoutRef.current !== null
+    ) {
+      return
+    }
+    clearDiscoverAssetSpaceSwitch()
+    discoverAssetSpacePendingExampleIndexRef.current = exampleIndex
+    discoverAssetSpaceSwitchTimeoutRef.current = window.setTimeout(() => {
+      discoverAssetSpaceSwitchTimeoutRef.current = null
+      const pendingExampleIndex = discoverAssetSpacePendingExampleIndexRef.current
+      discoverAssetSpacePendingExampleIndexRef.current = null
+      if (gameModeRef.current !== 'discover' || pendingExampleIndex === null) {
+        return
+      }
+      openShuffleDescriptionAssetCard(pendingExampleIndex)
+    }, discoverAssetSpaceReadWindowMs)
   }
   useEffect(() => {
     if (!showShuffleDescriptionPrototype) {
@@ -5142,6 +6045,11 @@ function App() {
     shuffleDescriptionOpenedAt,
   ])
   const resetShuffleDescriptionCard = (options: { autoCollapse?: boolean } = {}) => {
+    clearDiscoverAssetSpaceSwitch()
+    clearDiscoverPurpleDescriptionDelay()
+    discoverDescriptionCardStreakRef.current = 0
+    shuffleDescriptionOpenRef.current = false
+    shuffleDescriptionDismissingToLoopRef.current = false
     setShuffleDescriptionOpen(false)
     setShuffleDescriptionDismissingToLoop(false)
     setShuffleDescriptionPendingAssetIndex(null)
@@ -5188,6 +6096,7 @@ function App() {
   useEffect(() => {
     if (
       !showShuffleDescriptionPrototype
+      || gameMode === 'discover'
       || !shuffleDescriptionOpen
       || shuffleDescriptionDismissingToLoop
       || shuffleDescriptionPendingAssetIndex !== null
@@ -5203,6 +6112,7 @@ function App() {
     }, shuffleDescriptionReadWindowMs)
     return () => window.clearTimeout(timeout)
   }, [
+    gameMode,
     showShuffleDescriptionPrototype,
     shuffleDescriptionOpen,
     shuffleDescriptionDismissingToLoop,
@@ -5213,7 +6123,14 @@ function App() {
     shuffleDescriptionAutoAdvanceCount,
   ])
   useEffect(() => {
-    if (!showShuffleDescriptionPrototype || !shuffleDescriptionOpen || shuffleDescriptionDismissingToLoop || shuffleLoopActive || exploreDirection === 0) {
+    if (
+      !showShuffleDescriptionPrototype
+      || gameMode === 'discover'
+      || !shuffleDescriptionOpen
+      || shuffleDescriptionDismissingToLoop
+      || shuffleLoopActive
+      || exploreDirection === 0
+    ) {
       return undefined
     }
     const startedAt = exploreControlRef.current.startedAt
@@ -5232,6 +6149,7 @@ function App() {
     return () => window.clearTimeout(timeout)
   }, [
     exploreDirection,
+    gameMode,
     showShuffleDescriptionPrototype,
     shuffleDescriptionOpen,
     shuffleDescriptionDismissingToLoop,
@@ -5277,7 +6195,7 @@ function App() {
     : selectedHudButtonIds.reduce((sum, id) => sum + hudButtonScale(id), 0) / selectedHudButtonIds.length
   const menuFocusStyle = {
     '--menu-focus-blur': `${Math.round((cameraExtensionDensity <= 0 ? 0 : cameraExtensionBlurAmount) * 10) / 10}px`,
-    '--menu-focus-brightness': `${clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
+    '--menu-focus-brightness': `${discoverMenuBackdropActive ? 1 : clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
     '--menu-focus-canvas-exit-ms': '2800ms',
     '--menu-focus-moth-exit-ms': '2500ms',
     '--menu-focus-dim-exit-ms': '2300ms',
@@ -5492,27 +6410,37 @@ function App() {
     mothMotionRef.current.blurResumeAt = 0
     triggeredTourCueIdsRef.current.clear()
     tourHoldUntilRef.current = 0
+    resetShuffleDescriptionCard()
+    setDiscoverDescriptionCollapsedToButton(false)
     resetShuffleDescriptionInitialReveal()
     prepareShuffleDescriptionEntryCards()
-    const finishExploreEntry = () => {
-      startMenuFocusDissolve()
+    const finishExploreEntry = (dissolveMenuFocus = true) => {
+      if (dissolveMenuFocus) {
+        startMenuFocusDissolve()
+      }
       gameModeRef.current = 'discover'
       setGameMode('discover')
       setGameScreenWithHomeGrace('discover')
       setAppMode('play')
       setPlayPaused(false)
       handleMusicRestart(false)
-      setDiscoverMusicZoomStartedAt(performance.now())
+      const discoverStartedAt = performance.now()
+      discoverLightSequenceStartedAtRef.current = discoverStartedAt
+      setDiscoverMusicZoomStartedAt(discoverStartedAt)
+      scheduleDiscoverInstructionPrompt()
       revealShuffleDescriptionInitialButton()
       setMessage(message)
     }
     if (workspaceMode === 'game' && gameScreen === 'menu') {
       setGameHudScreenWithHomeGrace('discover')
       setMessage('Discover view shifting')
-      exploreRelocationTimeoutRef.current = window.setTimeout(() => {
-        exploreRelocationTimeoutRef.current = null
-        finishExploreEntry()
-      }, exploreRelocationDelayMs)
+      window.requestAnimationFrame(() => {
+        startMenuFocusDissolve()
+        exploreRelocationTimeoutRef.current = window.setTimeout(() => {
+          exploreRelocationTimeoutRef.current = null
+          finishExploreEntry(false)
+        }, exploreRelocationDelayMs)
+      })
       return
     }
     finishExploreEntry()
@@ -5656,6 +6584,36 @@ function App() {
     stopForwardControl(false)
     stopExploreControl(undefined, false)
     resetFreeExploreInput()
+    const discoverStart = initialFreeExplorePosition(projectRef.current)
+    freeExploreRef.current = {
+      ...stoppedFreeExplore(projectRef.current),
+      position: discoverStart,
+      debugFast: false,
+    }
+    freeExploreCameraCenterRef.current = discoverStart
+    resetFreeExploreTrail(discoverStart)
+    setFreeExplorePosition(discoverStart)
+    setFreeExploreCameraCenter(discoverStart)
+    setFreeExploreDebugFast(false)
+    setDiscoverGlowIsolated(false)
+    setDiscoverGlowIsolatedItemId(null)
+    setDiscoverDevZoomedOut(false)
+    setDiscoverDevCameraPreset('live')
+    setDiscoverCurveBoundaryVisible(false)
+    setDiscoverCurveBoundaryHandleEditing(false)
+    setDiscoverLightRouteEditing(false)
+    setDiscoverSelectedLightId(null)
+    setCollectedLightItemIds([])
+    setCollectedLightCollectedAt({})
+    setDiscoveredShuffleItemIds([])
+    setActiveShuffleItemId(null)
+    collectedLightItemIdsRef.current = []
+    collectedLightCollectedAtRef.current = {}
+    discoveredShuffleItemIdsRef.current = []
+    activeShuffleItemIdRef.current = null
+    discoverLightSequenceStartedAtRef.current = 0
+    setDiscoverMusicZoomStartedAt(0)
+    setDiscoverDescriptionCollapsedToButton(false)
     resetShuffleDescriptionInitialReveal()
     setGameScreenWithHomeGrace('menu')
     gameModeRef.current = 'journey'
@@ -5962,25 +6920,6 @@ function App() {
         : loopControl.direction
     setLoopFocusActive(false)
     setMessage(direction > 0 ? 'Loop waking toward the moon' : 'Loop waking back to the start')
-    if (loopFocusVisible) {
-      loopFocusResumeTimeoutRef.current = window.setTimeout(() => {
-        loopFocusResumeTimeoutRef.current = null
-        setLoopFocusVisible(false)
-        setPlayPaused(false)
-        triggerLoopPulse(direction, performance.now(), {
-          ...loopControl,
-          direction,
-          pulseStartedAt: 0,
-          pulseUntil: 0,
-          waitStartedAt: 0,
-          waitUntil: 0,
-          endpointWaitUntil: 0,
-        })
-        randomizeHudHoldPulse('loop')
-        setMessage(direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
-      }, gameFocusResumeDelayMs)
-      return
-    }
     setPlayPaused(false)
     triggerLoopPulse(direction, now, {
       ...loopControl,
@@ -5992,6 +6931,13 @@ function App() {
       endpointWaitUntil: 0,
     })
     randomizeHudHoldPulse('loop')
+    if (loopFocusVisible) {
+      loopFocusResumeTimeoutRef.current = window.setTimeout(() => {
+        loopFocusResumeTimeoutRef.current = null
+        setLoopFocusVisible(false)
+      }, gameFocusResumeDelayMs)
+    }
+    setMessage(direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
   }
 
   function resetRuntimeToJourney() {
@@ -6169,6 +7115,7 @@ function App() {
       freeExploreRef.current.idlePushStartedAt = 0
       freeExploreRef.current.idlePushUntil = 0
       freeExploreRef.current.idlePushCount = 0
+      clearFreeExploreBoundaryRedirect(freeExploreRef.current)
       exploreHasInteractedRef.current = true
       setMessage(freeExploreRef.current.debugFast ? 'Discover debug speed' : 'Discover moving')
     }
@@ -6198,6 +7145,7 @@ function App() {
     freeExploreRef.current.idlePushStartedAt = 0
     freeExploreRef.current.idlePushUntil = 0
     freeExploreRef.current.idlePushCount = 0
+    clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     exploreHasInteractedRef.current = true
     setMessage(freeExploreRef.current.debugFast ? 'Discover debug push' : 'Discover push')
   }
@@ -6209,6 +7157,7 @@ function App() {
     }
     freeExploreRef.current.pointerDirection = normalizedDirection
     freeExploreRef.current.direction = normalizedDirection
+    clearFreeExploreBoundaryRedirect(freeExploreRef.current)
   }
 
   function pulseFreeExploreToward(direction: Point, options: { carryMs: number; message: string }) {
@@ -6254,6 +7203,7 @@ function App() {
         freeExploreRef.current.idlePushStartedAt = 0
         freeExploreRef.current.idlePushUntil = 0
         freeExploreRef.current.idlePushCount = 0
+        clearFreeExploreBoundaryRedirect(freeExploreRef.current)
       } else if (!freeExploreRef.current.pointerDirection) {
         releaseFreeExploreMotion({
           carryMs: freeExploreRef.current.debugFast ? 0 : undefined,
@@ -6312,6 +7262,7 @@ function App() {
     freeExploreRef.current.idlePushStartedAt = 0
     freeExploreRef.current.idlePushUntil = 0
     freeExploreRef.current.idlePushCount = 0
+    clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     freeExploreRef.current.startedAt = 0
     setMessage(options.message ?? (releaseCarryMs > 0 ? 'Discover released: gentle push' : 'Discover drifting to a stop'))
   }
@@ -6334,6 +7285,8 @@ function App() {
     freeExploreRef.current.idlePushStartedAt = 0
     freeExploreRef.current.idlePushUntil = 0
     freeExploreRef.current.idlePushCount = 0
+    clearFreeExploreBoundaryRedirect(freeExploreRef.current)
+    freeExploreRef.current.boundaryInputDisabledUntil = 0
   }
 
   function toggleFreeExploreDebugFast() {
@@ -6435,11 +7388,20 @@ function App() {
     let collectedChanged = false
     let discoveredChanged = false
     const collectedAt = performance.now()
+    const visibleRouteLights = buildFreeExploreVisibleRouteLights(routeLights, currentCollected, currentCollectedAt, discoverLightSequenceStartedAtRef.current)
+    const newlyCollectedAssetLights: FreeExploreVisibleRouteLight[] = []
 
-    for (const light of routeLights) {
-      if (!currentCollected.has(light.id) && distance(position, light.point) <= freeExploreLightCollectRadius) {
+    for (const light of visibleRouteLights) {
+      if (
+        light.visibleAt <= collectedAt
+        && !currentCollected.has(light.id)
+        && distance(position, light.point) <= freeExploreLightCollectRadius
+      ) {
         currentCollected.add(light.id)
         currentCollectedAt[light.id] = collectedAt
+        if (light.type === 'asset') {
+          newlyCollectedAssetLights.push(light)
+        }
         collectedChanged = true
       }
     }
@@ -6464,29 +7426,51 @@ function App() {
       collectedLightCollectedAtRef.current = currentCollectedAt
       setCollectedLightItemIds(next)
       setCollectedLightCollectedAt(currentCollectedAt)
-      const routeLightCollectedCount = routeLights.filter((light) => currentCollected.has(light.id)).length
-      setMessage(`Light collected: ${routeLightCollectedCount}/${routeLights.length}`)
+      const purpleLightCollectedCount = routeLights.filter((light) => light.type === 'asset' && currentCollected.has(light.id)).length
+      const purpleLightCount = routeLights.filter((light) => light.type === 'asset').length
+      setMessage(`Purple light path: ${purpleLightCollectedCount}/${purpleLightCount}`)
+      const latestAssetLight = newlyCollectedAssetLights
+        .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+        .at(-1)
+      if (latestAssetLight) {
+        const firstAssetLight = routeLights
+          .filter((light) => light.type === 'asset')
+          .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0]
+        if (firstAssetLight?.id === latestAssetLight.id) {
+          scheduleDiscoverVioletInstructionPrompt(true)
+        } else {
+          const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === latestAssetLight.itemId)
+          if (exampleIndex >= 0) {
+            scheduleDiscoverPurpleDescriptionCard(exampleIndex)
+          }
+        }
+      }
     }
     if (discoveredChanged) {
       const next = Array.from(currentDiscovered)
       discoveredShuffleItemIdsRef.current = next
       setDiscoveredShuffleItemIds(next)
     }
-    const nextActiveId = nearestShuffle?.item.id ?? null
+    const nearestCollectedShuffle = nearestShuffle && currentCollected.has(discoverAssetLightId(nearestShuffle.item.id))
+      ? nearestShuffle
+      : null
+    const nextActiveId = nearestCollectedShuffle?.item.id ?? null
     if (nextActiveId !== activeShuffleItemIdRef.current) {
       activeShuffleItemIdRef.current = nextActiveId
       setActiveShuffleItemId(nextActiveId)
       if (nextActiveId) {
         const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
-        if (exampleIndex >= 0 && !shuffleDescriptionOpen) {
-          syncClosedShuffleDescriptionAsset(exampleIndex)
+        if (exampleIndex >= 0 && currentCollected.has(discoverAssetLightId(nextActiveId))) {
+          scheduleDiscoverAssetSpaceDescriptionCard(exampleIndex)
         }
         setMessage('Asset discovered: info available')
+      } else {
+        clearDiscoverAssetSpaceSwitch()
       }
     }
     if (
       (collectedChanged || discoveredChanged)
-      && routeLights.every((light) => currentCollected.has(light.id))
+      && routeLights.filter((light) => light.type === 'asset').every((light) => currentCollected.has(light.id))
       && currentDiscovered.size >= shuffleItems.length
       && routeLights.length > 0
       && shuffleItems.length > 0
@@ -8266,7 +9250,7 @@ function App() {
       return (
         <div key="game-hud-menu" className={gameHudLayerClass(menuModeQuiet ? 'first-menu-glow' : undefined)} style={gameHudStyle} aria-label="Game menu controls">
           <button
-            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('loop')}`}
+            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' visual-disabled' : ` enhanced-glow ambient-pulse${hudTapGlowClass('loop')}`}`}
             type="button"
             aria-label="Loop"
             style={hudButtonStyle('loop')}
@@ -8283,15 +9267,7 @@ function App() {
           >
             Discover
           </button>
-          <button
-            className={`game-hud-button icon-only menu-entry-choice${menuModeQuiet ? ' first-entry-glow ambient-pulse' : hudTapGlowClass('shuffle')}`}
-            type="button"
-            aria-label="Shuffle"
-            style={hudButtonStyle('shuffle')}
-            onClick={() => enterShuffleMode()}
-          >
-            <Shuffle size={iconSize} strokeWidth={iconStrokeWidth} />
-          </button>
+          <div className="game-hud-placeholder" aria-hidden="true" />
         </div>
       )
     }
@@ -8528,7 +9504,7 @@ function App() {
   const publicGameWaitingForScene = publicGameBuild && publicGameMothReady && (!publicGameHudReady || !publicGameLayoutReady)
 
   return (
-    <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}${publicGameBuild ? ' public-game' : ''}`}>
+    <main className={`app-shell ${workspaceMode === 'game' ? 'game-workspace' : 'editor-workspace'} ${editorView === 'classic' ? 'classic-editor' : 'compact-editor'}${publicGameBuild ? ' public-game' : ''}${discoverMenuBackdropActive ? ' discover-opening' : ''}`}>
       <section className="stage-panel">
         {workspaceMode === 'game' && !publicGameBuild && (
           <div className="game-topbar">
@@ -8548,6 +9524,7 @@ function App() {
                   'drift-description-layer',
                   `style-${driftDescription.style}`,
                   `phase-${driftDescription.phase}`,
+                  driftDescription.align === 'center' ? 'align-center' : '',
                 ].join(' ')}
                 style={{
                   ...gameHudStyle,
@@ -8590,7 +9567,15 @@ function App() {
                           return
                         }
                         if (shuffleDescriptionOpen) {
+                          if (gameMode === 'discover') {
+                            setDiscoverDescriptionCollapsedToButton(true)
+                          }
                           resetShuffleDescriptionCard()
+                          return
+                        }
+                        if (gameMode === 'discover' && discoverDescriptionCollapsedToButton) {
+                          setDiscoverDescriptionCollapsedToButton(false)
+                          openShuffleDescriptionAssetCard(shuffleDescriptionActiveExampleIndex)
                           return
                         }
                         const targetEntry = shuffleDescriptionInfoTarget()
@@ -8793,6 +9778,7 @@ function App() {
                 publicGameWaitingForScene ? 'public-game-waiting-scene' : '',
                 !publicGameWaitingForMoth && !publicGameWaitingForScene ? 'public-game-scene-visible' : '',
                 workspaceMode === 'game' && gameFocusActive ? 'menu-focus-active' : '',
+                discoverMenuBackdropActive ? 'discover-menu-backdrop' : '',
                 shuffleRestFocusActive ? 'shuffle-rest-focus-active' : '',
               ].filter(Boolean).join(' ')}
               style={menuFocusStyle}
@@ -8822,7 +9808,7 @@ function App() {
                 </div>
               )}
               {workspaceMode === 'game' && (
-                <div className={`game-menu-focus${gameFocusActive ? ' active' : ''}`} aria-hidden="true">
+                <div className={`game-menu-focus${gameFocusActive ? ' active' : ''}${discoverMenuBackdropActive ? ' discover-menu-backdrop' : ''}`} aria-hidden="true">
                   <div className="game-menu-focus-backdrop" />
                 </div>
               )}
