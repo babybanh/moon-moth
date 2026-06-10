@@ -13,6 +13,7 @@ let exploreScreenFogOverlayCache: {
   height: number
   width: number
 } | null = null
+let canvasFilterBlurSupported: boolean | null = null
 const discoverRouteLightAppearMs = 2000
 
 export type RenderOptions = {
@@ -863,9 +864,6 @@ function drawExploreScreenFogOverlay(
   for (const reveal of revealPoints) {
     const item = reveal.itemId ? itemById.get(reveal.itemId) : undefined
     const revealProgress = revealBloomProgress(reveal.collectedAt, reveal.bloomMs, options.animationTime)
-    if (item?.silhouette) {
-      continue
-    }
     if (item && drawAssetRevealCutout(overlay.context, item, project, options, revealProgress, reveal.softStart === true)) {
       continue
     }
@@ -928,21 +926,49 @@ function drawAssetRevealCutout(
   context.arc(0, 0, 1, 0, Math.PI * 2)
   context.fill()
   context.restore()
-  context.globalAlpha = 0.88 * eased
-  context.filter = `blur(${blur}px)`
-  context.drawImage(
-    image,
-    -(width * auraScale) / 2,
-    -(height * auraScale) / 2,
-    width * auraScale,
-    height * auraScale,
-  )
-  context.filter = 'none'
+  if (supportsCanvasFilterBlur()) {
+    context.globalAlpha = 0.88 * eased
+    context.filter = `blur(${blur}px)`
+    context.drawImage(
+      image,
+      -(width * auraScale) / 2,
+      -(height * auraScale) / 2,
+      width * auraScale,
+      height * auraScale,
+    )
+    context.filter = 'none'
+  }
   const imageAlpha = softStart ? eased : 0.34 + eased * 0.66
   context.globalAlpha = 0.96 * imageAlpha
   context.drawImage(image, -width / 2, -height / 2, width, height)
   context.restore()
   return true
+}
+
+function supportsCanvasFilterBlur() {
+  if (canvasFilterBlurSupported !== null) {
+    return canvasFilterBlurSupported
+  }
+  if (typeof document === 'undefined') {
+    canvasFilterBlurSupported = false
+    return canvasFilterBlurSupported
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = 9
+  canvas.height = 9
+  const context = canvas.getContext('2d')
+  if (!context) {
+    canvasFilterBlurSupported = false
+    return canvasFilterBlurSupported
+  }
+  context.clearRect(0, 0, 9, 9)
+  context.filter = 'blur(2px)'
+  context.fillStyle = '#000'
+  context.fillRect(4, 4, 1, 1)
+  context.filter = 'none'
+  const blurredNeighborAlpha = context.getImageData(3, 4, 1, 1).data[3]
+  canvasFilterBlurSupported = blurredNeighborAlpha > 0
+  return canvasFilterBlurSupported
 }
 
 function isGroundPoolRevealItem(item: EditorItem) {
