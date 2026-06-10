@@ -1558,6 +1558,14 @@ input[type="range"] {
   opacity: 1;
 }
 
+.canvas-shell.loop-focus-visible .menu-moth-canvas {
+  transition: opacity var(--loop-focus-moth-exit-ms, var(--menu-focus-moth-exit-ms, 2500ms)) cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+.canvas-shell.menu-focus-active.loop-focus-active .menu-moth-canvas {
+  transition: opacity var(--loop-focus-moth-enter-ms, 900ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .canvas-shell.menu-focus-active.shuffle-rest-focus-active .menu-moth-canvas {
   transition:
     opacity var(--shuffle-rest-moth-enter-ms, 3200ms) cubic-bezier(0.22, 1, 0.36, 1) var(--shuffle-rest-moth-delay-ms, 260ms);

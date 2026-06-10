@@ -1600,7 +1600,8 @@ const discoverFogAlphaStart = 0.72
 const discoverFogAlphaTarget = 0.6
 const discoverFogAlphaFinal = 0.5
 const discoverDevZoomOutScale = 1 / 3
-const gameFocusResumeDelayMs = 2100
+const loopFocusMothExitMs = 2900
+const gameFocusResumeDelayMs = loopFocusMothExitMs + 120
 const gameMenuReturnDelayMs = 1050
 const gameHudHomeGraceMs = 5000
 const driftReleaseGlowMs = 3400
@@ -5913,6 +5914,8 @@ function App() {
     '--menu-focus-brightness': `${discoverMenuBackdropActive ? 1 : clamp(1 - (cameraExtensionDensity * 0.14), 0.36, 1)}`,
     '--menu-focus-canvas-exit-ms': '2800ms',
     '--menu-focus-moth-exit-ms': '2500ms',
+    '--loop-focus-moth-enter-ms': '900ms',
+    '--loop-focus-moth-exit-ms': `${loopFocusMothExitMs}ms`,
     '--menu-focus-dim-exit-ms': '2300ms',
     '--shuffle-rest-moth-enter-ms': '3200ms',
     '--shuffle-rest-moth-delay-ms': '260ms',
@@ -6358,13 +6361,21 @@ function App() {
     clearMusicLoopGap()
   }
 
-  function clearLoopFocus() {
+  function clearLoopFocus({ fade = false }: { fade?: boolean } = {}) {
     if (loopFocusResumeTimeoutRef.current !== null) {
       window.clearTimeout(loopFocusResumeTimeoutRef.current)
       loopFocusResumeTimeoutRef.current = null
     }
     setLoopFocusActive(false)
-    setLoopFocusVisible(false)
+    if (!fade) {
+      setLoopFocusVisible(false)
+      return
+    }
+    setLoopFocusVisible(true)
+    loopFocusResumeTimeoutRef.current = window.setTimeout(() => {
+      loopFocusResumeTimeoutRef.current = null
+      setLoopFocusVisible(false)
+    }, gameFocusResumeDelayMs)
   }
 
   function showLoopRestFocus() {
@@ -6454,8 +6465,13 @@ function App() {
     setMessage(direction > 0 ? 'Shuffle loop push toward the moon' : 'Shuffle loop push toward the start')
   }
 
-  function triggerLoopPulse(direction: -1 | 1, time: number, previousControl = loopControlRef.current) {
-    clearLoopFocus()
+  function triggerLoopPulse(
+    direction: -1 | 1,
+    time: number,
+    previousControl = loopControlRef.current,
+    options: { focusFade?: boolean } = {},
+  ) {
+    clearLoopFocus({ fade: options.focusFade ?? false })
     const releaseCarryMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
     const pushCount = loopPulseDurationCounts[previousControl.pushIndex % loopPulseDurationCounts.length]
     const durationMs = idleForwardPushDurationMs(releaseCarryMs, pushCount)
@@ -6648,7 +6664,6 @@ function App() {
       : current <= 0
         ? 1
         : loopControl.direction
-    setLoopFocusActive(false)
     setMessage(direction > 0 ? 'Loop waking toward the moon' : 'Loop waking back to the start')
     setPlayPaused(false)
     triggerLoopPulse(direction, now, {
@@ -6659,14 +6674,8 @@ function App() {
       waitStartedAt: 0,
       waitUntil: 0,
       endpointWaitUntil: 0,
-    })
+    }, { focusFade: true })
     randomizeHudHoldPulse('loop')
-    if (loopFocusVisible) {
-      loopFocusResumeTimeoutRef.current = window.setTimeout(() => {
-        loopFocusResumeTimeoutRef.current = null
-        setLoopFocusVisible(false)
-      }, gameFocusResumeDelayMs)
-    }
     setMessage(direction > 0 ? 'Loop pushing toward the moon' : 'Loop drifting back to the start')
   }
 
@@ -9204,6 +9213,8 @@ function App() {
                 publicGameWaitingForScene ? 'public-game-waiting-scene' : '',
                 !publicGameWaitingForMoth && !publicGameWaitingForScene ? 'public-game-scene-visible' : '',
                 workspaceMode === 'game' && gameFocusActive ? 'menu-focus-active' : '',
+                loopFocusVisible ? 'loop-focus-visible' : '',
+                loopFocusActive ? 'loop-focus-active' : '',
                 discoverMenuBackdropActive ? 'discover-menu-backdrop' : '',
                 shuffleRestFocusActive ? 'shuffle-rest-focus-active' : '',
               ].filter(Boolean).join(' ')}
