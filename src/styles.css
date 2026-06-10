@@ -298,6 +298,12 @@ input[type="range"] {
   max-height: 100dvh;
   justify-self: center;
   align-self: center;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  touch-action: none;
 }
 
 .app-shell.public-game .game-surface {
@@ -312,6 +318,7 @@ input[type="range"] {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
+  -webkit-user-drag: none;
   user-select: none;
   touch-action: none;
 }
@@ -323,6 +330,7 @@ input[type="range"] {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
+  -webkit-user-drag: none;
   user-select: none;
   touch-action: none;
 }
@@ -354,6 +362,7 @@ input[type="range"] {
   overflow: hidden;
   touch-action: none;
   -webkit-user-select: none;
+  -webkit-user-drag: none;
   user-select: none;
 }
 

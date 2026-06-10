@@ -78,251 +78,555 @@ const discoverLightRouteStorageKey = 'moonMothRouteEditor.discoverLightRoute.v2'
 type DiscoverCurveBoundaryHistoryEntry = Point[]
 
 const discoverBoundaryReferencePoints: Point[] = [
-  { x: 766.2528590750102, y: 86.86207268438261 },
-  { x: 1300.0673528228945, y: 59.451439134788416 },
-  { x: 1656.5735227839239, y: 28.413050662444448 },
-  { x: 1991.2737102819979, y: 21.02191423620502 },
-  { x: 2495.6368551409987, y: 10.51095711810251 },
-  { x: 3000, y: 0 },
-  { x: 3404.804486777764, y: -60.704957618343315 },
-  { x: 3851.97783097014, y: -225.1859776618263 },
-  { x: 4309.312139865679, y: -461.68531980732257 },
-  { x: 4848.430032206867, y: -686.5279815744902 },
-  { x: 5469.027237876215, y: -736.2205426293883 },
-  { x: 6174.135320863373, y: -754.1345236837351 },
-  { x: 6729.589319239841, y: -798.5768351861227 },
-  { x: 7285.043317616309, y: -843.0191466885103 },
-  { x: 7874.945663000155, y: -443.18655459109675 },
-  { x: 8000, y: 0 },
-  { x: 8987.458865643343, y: -2.9615326915641162 },
-  { x: 9970, y: 0 },
-  { x: 10699.829235215544, y: 18.914247926715177 },
-  { x: 11246.673388793939, y: -71.44122750402812 },
-  { x: 11407.23175070367, y: -565.5617959351719 },
-  { x: 11976.308333627305, y: -374.8765539168868 },
-  { x: 12661.228042209654, y: 145.8950952624374 },
-  { x: 12693.181528920839, y: -382.5097597960322 },
-  { x: 12725.135015632026, y: -910.9146148545017 },
-  { x: 13343.10701023117, y: -742.023302947833 },
-  { x: 13405.277438573734, y: -198.70244127726733 },
-  { x: 13467.447866916298, y: 344.6184203932984 },
-  { x: 14249.01706094406, y: 756.4185228906769 },
-  { x: 14355.617426883251, y: 1012.7542600530641 },
-  { x: 14644.596411552779, y: 1346.5333083562532 },
-  { x: 15172.023873948143, y: 1386.8321813488606 },
-  { x: 15675.46578844283, y: 1373.4598721657871 },
-  { x: 16117.834093992802, y: 1440.498607629904 },
-  { x: 16329.21276718861, y: 1092.9552959650484 },
-  { x: 16639.657875725563, y: 1054.73065435254 },
-  { x: 16854.917218192968, y: 852.793775813409 },
-  { x: 16928.244748755427, y: 425.33546814815884 },
-  { x: 17681.272607120747, y: -45.30352582958244 },
-  { x: 18463.369863118387, y: -351.7506448401059 },
-  { x: 18961.14955976451, y: -438.04686810201883 },
-  { x: 19423.716585530925, y: -442.7405271261057 },
-  { x: 19871.871291939005, y: -432.60158675823834 },
-  { x: 20386.056368633584, y: -424.10408498270783 },
-  { x: 20910.130110544513, y: -483.1538337758027 },
-  { x: 21664.89551025021, y: -369.7095393839776 },
-  { x: 22238.989232669286, y: -812.1878443019211 },
-  { x: 22813.08295508836, y: -1254.6661492198646 },
-  { x: 23328.922623656308, y: -1637.2687495369457 },
-  { x: 23559.045066961244, y: -1894.6790061537163 },
-  { x: 23882.9619862478, y: -2214.8480767843766 },
-  { x: 24412.300223751783, y: -2312.0787794909384 },
-  { x: 24998.099691783395, y: -2508.8920954149544 },
-  { x: 25685.530947807572, y: -2608.5702727582357 },
-  { x: 26531.875746898815, y: -2617.368149648771 },
-  { x: 27167.00298603458, y: -2605.5514639257835 },
-  { x: 27989.244955093774, y: -2751.7594151608723 },
-  { x: 28811.486924152967, y: -2897.967366395961 },
-  { x: 29654.588995542254, y: -2815.5945034595043 },
-  { x: 30489.497855422527, y: -2507.6942841000205 },
-  { x: 30901.45001935013, y: -1624.7647418600725 },
-  { x: 30388.71518935801, y: -1006.1999697803502 },
-  { x: 30511.168341554312, y: -739.105360639843 },
-  { x: 30871.3852148451, y: -174.3611599453519 },
-  { x: 30811.590970363603, y: 390.39114701351593 },
-  { x: 30491.516749046586, y: 876.2603917346512 },
-  { x: 30389.062126372886, y: 1195.4076924741125 },
-  { x: 30135.777697409107, y: 1355.1460591993502 },
-  { x: 29977.073593230893, y: 1624.7051339781826 },
-  { x: 29967.58554052203, y: 2015.3634827443518 },
-  { x: 29940.63302498273, y: 2630.716862984794 },
-  { x: 29815.700074634304, y: 3125.3191515741696 },
-  { x: 29467.093461569377, y: 3641.7869262011636 },
-  { x: 28956.95670712794, y: 3562.6678560089595 },
-  { x: 28623.96578851456, y: 3711.036684035288 },
-  { x: 28660.513112953122, y: 4137.263213140853 },
-  { x: 28325.57392145916, y: 4427.532675576563 },
-  { x: 27766.626416182207, y: 4663.492368647711 },
-  { x: 26865.204383541568, y: 4529.329386401704 },
-  { x: 25907.095965212007, y: 4584.269997280486 },
-  { x: 25381.740513899742, y: 4536.709388884593 },
-  { x: 24856.385062587477, y: 4489.1487804887 },
-  { x: 24113.170595420466, y: 4310.319026015878 },
-  { x: 23711.869377822866, y: 4241.20277429751 },
-  { x: 23495.667195120983, y: 4197.904220825838 },
-  { x: 23268.031145468256, y: 4272.635814398397 },
-  { x: 22856.529552965196, y: 4326.703661375679 },
-  { x: 22482.275213651872, y: 4362.811092831794 },
-  { x: 21849.30702094119, y: 4458.628128522792 },
-  { x: 21131.566239723634, y: 4387.09528760992 },
-  { x: 20615.358320721432, y: 4348.192397302169 },
-  { x: 20099.15040171923, y: 4309.289506994418 },
-  { x: 19396.680635441142, y: 4306.505215021992 },
-  { x: 19034.20646570596, y: 4197.753186440867 },
-  { x: 18823.240035160565, y: 4081.992114564074 },
-  { x: 18645.518541003366, y: 3721.475799954548 },
-  { x: 18556.85028094674, y: 4000.866720580048 },
-  { x: 18304.926590971736, y: 4171.333598426046 },
-  { x: 18012.273987470362, y: 4190.827164616121 },
-  { x: 17461.069644363055, y: 4207.954270228573 },
-  { x: 16954.892713909594, y: 4184.173688063909 },
-  { x: 16190.93079588374, y: 4207.640954979457 },
-  { x: 15366.033681185205, y: 4142.829221453347 },
-  { x: 14823.05586875593, y: 4445.6238925873995 },
-  { x: 14445.42159356863, y: 4354.758674520017 },
-  { x: 14209.41726060595, y: 4298.225721821385 },
-  { x: 13984.54816021123, y: 4214.433982016912 },
-  { x: 13649.344415312955, y: 3995.6111577429233 },
-  { x: 13359.156799968607, y: 4135.289749691175 },
-  { x: 13131.916580180765, y: 4270.160020452227 },
-  { x: 12909.546786850464, y: 4181.347543161415 },
-  { x: 12481.949674139047, y: 4195.262581780856 },
-  { x: 12416.07948249086, y: 3697.112160574807 },
-  { x: 12127.037981168349, y: 3923.155025137021 },
-  { x: 11901.005064366, y: 3583.9230703991784 },
-  { x: 11693.909817570004, y: 3909.2533741614275 },
-  { x: 11318.422137818065, y: 3860.033382889745 },
-  { x: 10924.60550745258, y: 3875.3390492985277 },
-  { x: 10664.540996375226, y: 3634.7663398315526 },
-  { x: 10347.895084821826, y: 3459.513623560174 },
-  { x: 10011.640110173576, y: 3626.543790368603 },
-  { x: 10086.38518280806, y: 3920.754382838991 },
-  { x: 9546.036081981432, y: 4357.248039955423 },
-  { x: 9377.80801795446, y: 4063.600733728053 },
-  { x: 9170.710269906487, y: 4127.445164061443 },
-  { x: 8933.422994221091, y: 3882.937248125035 },
-  { x: 8801.700354473121, y: 4252.630385956237 },
-  { x: 7942.23208733726, y: 4057.7872923614996 },
-  { x: 7283.347069753036, y: 3990.872968009895 },
-  { x: 6534.471806470759, y: 4154.295601034148 },
-  { x: 5773.143673395991, y: 4232.949373692514 },
-  { x: 5875.580050838619, y: 3747.4976183151534 },
-  { x: 5542.023849041239, y: 3513.609025210266 },
-  { x: 5092.629827074419, y: 3380.758554831067 },
-  { x: 5055.5047281899115, y: 3924.100783366258 },
-  { x: 4383.752999066232, y: 3825.4624958755503 },
-  { x: 3631.4436172798933, y: 3640.0007645049272 },
-  { x: 3039.3359540644396, y: 3475.4549145637307 },
-  { x: 2691.687142515519, y: 3292.698590364522 },
-  { x: 2180.818354589482, y: 3197.4912923076195 },
-  { x: 1822.9888204982171, y: 3217.0636152857796 },
-  { x: 1474.7880569545887, y: 3262.074148570766 },
-  { x: 1161.745105583838, y: 3396.8974235212645 },
-  { x: 329.0756394499506, y: 3787.0689431374594 },
-  { x: 588.7859230044992, y: 2995.362970655633 },
-  { x: 244.01080850042058, y: 1997.5654898478485 },
-  { x: -447.03752430593795, y: 1935.45239768597 },
-  { x: -15.635647988147866, y: 1795.8002238592896 },
-  { x: 63.12306393066115, y: 895.6322152409018 },
-  { x: -335.1840444760819, y: 717.0683196703108 },
-  { x: 362.15508600846783, y: 661.2830676996641 },
-  { x: 455.9465987393803, y: 109.0556183362853 },
+  {
+    x: 1395.2136428624938,
+    y: 1018.4518403811503
+  },
+  {
+    x: 1417.231853760091,
+    y: 996.7481790070104
+  },
+  {
+    x: 1428.2409592088898,
+    y: 985.8963483199404
+  },
+  {
+    x: 1433.745511933289,
+    y: 980.4704329764055
+  },
+  {
+    x: 1436.4977882954886,
+    y: 977.7574753046381
+  },
+  {
+    x: 1437.8739264765886,
+    y: 976.4009964687543
+  },
+  {
+    x: 1439.2500646576884,
+    y: 975.0445176328706
+  },
+  {
+    x: 1483.286486452883,
+    y: 931.6371948845907
+  },
+  {
+    x: 1571.3593300432724,
+    y: 844.8225493880311
+  },
+  {
+    x: 1659.4321736336617,
+    y: 758.0079038914715
+  },
+  {
+    x: 1747.505017224051,
+    y: 671.1932583949119
+  },
+  {
+    x: 2388.4958454089633,
+    y: 760.4002269699968
+  },
+  {
+    x: 3787.9446247954675,
+    y: 253.3527849203141
+  },
+  {
+    x: 4309.312139865679,
+    y: 0
+  },
+  {
+    x: 6178.366421028161,
+    y: -1296.5497175869225
+  },
+  {
+    x: 7372.214030004878,
+    y: -1179.2162384551993
+  },
+  {
+    x: 8638.350312390958,
+    y: -455.07848465868926
+  },
+  {
+    x: 8805.174600864142,
+    y: 7.80418814136155
+  },
+  {
+    x: 8971.998889337325,
+    y: 470.68686094141236
+  },
+  {
+    x: 9708.332588257173,
+    y: 619.5027854652693
+  },
+  {
+    x: 10454.915896012244,
+    y: -537.276989027975
+  },
+  {
+    x: 11157.870380095555,
+    y: -573.5166393883749
+  },
+  {
+    x: 12475.335069175522,
+    y: -316.98786781876964
+  },
+  {
+    x: 13405.277438573734,
+    y: 0
+  },
+  {
+    x: 13977.155892933233,
+    y: 826.4014554834285
+  },
+  {
+    x: 14374.568348271861,
+    y: 1574.8624385795033
+  },
+  {
+    x: 15010.548393702195,
+    y: 2034.6371765309689
+  },
+  {
+    x: 15698.385846482211,
+    y: 2301.784124322173
+  },
+  {
+    x: 16813.06457000487,
+    y: 1825.628993460443
+  },
+  {
+    x: 16917.232623241645,
+    y: 1051.0147010558983
+  },
+  {
+    x: 17193.100022655566,
+    y: 930.0342625433522
+  },
+  {
+    x: 18884.66387450043,
+    y: 358.04430961794463
+  },
+  {
+    x: 20288.265360956033,
+    y: -33.36967658489546
+  },
+  {
+    x: 20734.962826786224,
+    y: -337.64662530614703
+  },
+  {
+    x: 21417.711249156335,
+    y: -1022.5251856530051
+  },
+  {
+    x: 21345.189908961725,
+    y: -1505.2164077673963
+  },
+  {
+    x: 21785.40840145281,
+    y: -1676.243290157547
+  },
+  {
+    x: 21947.586281100044,
+    y: -1848.3624719192305
+  },
+  {
+    x: 23234.944128513223,
+    y: -2628.071787627686
+  },
+  {
+    x: 24505.55181845744,
+    y: -2685.298186573345
+  },
+  {
+    x: 27026.21972978345,
+    y: -1391.3694168484049
+  },
+  {
+    x: 27331.89037046677,
+    y: -1883.9458780985365
+  },
+  {
+    x: 28488.317478173012,
+    y: -2171.87813788152
+  },
+  {
+    x: 29776.104575143756,
+    y: -2269.034149483887
+  },
+  {
+    x: 30812.864028275835,
+    y: -1157.11038365943
+  },
+  {
+    x: 30811.590970363603,
+    y: 390.39114701351593
+  },
+  {
+    x: 30292.38608513657,
+    y: 1299.4369602952056
+  },
+  {
+    x: 30018.363359573512,
+    y: 2255.9613509271335
+  },
+  {
+    x: 29458.433761608783,
+    y: 2617.675604571847
+  },
+  {
+    x: 29076.67355806244,
+    y: 2926.8631561940965
+  },
+  {
+    x: 28350.53453476769,
+    y: 3552.0951342769013
+  },
+  {
+    x: 28083.403083195044,
+    y: 4222.015469069219
+  },
+  {
+    x: 27874.547102794633,
+    y: 4358.717378070529
+  },
+  {
+    x: 27557.685344695314,
+    y: 4435.724728632486
+  },
+  {
+    x: 26865.204383541568,
+    y: 4529.329386401704
+  },
+  {
+    x: 26011.58620341328,
+    y: 4305.884742779793
+  },
+  {
+    x: 25580.609460102904,
+    y: 4217.026145597894
+  },
+  {
+    x: 24933.57867514895,
+    y: 4207.602234796874
+  },
+  {
+    x: 24267.97198642208,
+    y: 4330.212928683931
+  },
+  {
+    x: 23521.809958115446,
+    y: 4099.766186801426
+  },
+  {
+    x: 22828.417556947425,
+    y: 4076.622127917281
+  },
+  {
+    x: 21849.30702094119,
+    y: 4458.628128522792
+  },
+  {
+    x: 20433.22627038869,
+    y: 4210.028268345498
+  },
+  {
+    x: 20055.854092942496,
+    y: 3941.8460917226757
+  },
+  {
+    x: 19297.513991957254,
+    y: 3825.549566514324
+  },
+  {
+    x: 18823.240035160565,
+    y: 4081.992114564074
+  },
+  {
+    x: 18645.518541003366,
+    y: 3721.475799954548
+  },
+  {
+    x: 18556.85028094674,
+    y: 4000.866720580048
+  },
+  {
+    x: 18304.926590971736,
+    y: 4171.333598426046
+  },
+  {
+    x: 18012.273987470362,
+    y: 4190.827164616121
+  },
+  {
+    x: 17461.069644363055,
+    y: 4207.954270228573
+  },
+  {
+    x: 16954.892713909594,
+    y: 4184.173688063909
+  },
+  {
+    x: 16190.93079588374,
+    y: 4207.640954979457
+  },
+  {
+    x: 14981.148890259321,
+    y: 4259.944178603209
+  },
+  {
+    x: 14368.290588294003,
+    y: 4231.596228123804
+  },
+  {
+    x: 14052.404697108163,
+    y: 4085.5944520192547
+  },
+  {
+    x: 13649.344415312955,
+    y: 3995.6111577429233
+  },
+  {
+    x: 13393.572308716415,
+    y: 4095.5985949982723
+  },
+  {
+    x: 13203.39064230782,
+    y: 3971.3919170537665
+  },
+  {
+    x: 12914.92927014514,
+    y: 3857.182308911663
+  },
+  {
+    x: 12723.87475557434,
+    y: 3827.7035502831545
+  },
+  {
+    x: 11901.005064366,
+    y: 3583.9230703991784
+  },
+  {
+    x: 11472.12866206767,
+    y: 3666.5053625474843
+  },
+  {
+    x: 11018.033299971667,
+    y: 3682.8195488957576
+  },
+  {
+    x: 10664.540996375226,
+    y: 3634.7663398315526
+  },
+  {
+    x: 10410.707819421455,
+    y: 3657.702682632865
+  },
+  {
+    x: 10119.0174793885,
+    y: 3642.5322311183522
+  },
+  {
+    x: 9775.288514013211,
+    y: 3518.9167666097496
+  },
+  {
+    x: 9262.758675178486,
+    y: 3371.3649253584217
+  },
+  {
+    x: 8576.791554019728,
+    y: 3159.8889083804397
+  },
+  {
+    x: 7868.610206676876,
+    y: 3313.9414194219044
+  },
+  {
+    x: 7330.422471459239,
+    y: 3461.316096334221
+  },
+  {
+    x: 6863.079674095249,
+    y: 3612.219171618716
+  },
+  {
+    x: 6523.706636066987,
+    y: 3639.814415978896
+  },
+  {
+    x: 6148.661830306826,
+    y: 3658.2476807707717
+  },
+  {
+    x: 5697.290577279483,
+    y: 3537.2066616918382
+  },
+  {
+    x: 5542.023849041239,
+    y: 3513.609025210266
+  },
+  {
+    x: 5092.629827074419,
+    y: 3380.758554831067
+  },
+  {
+    x: 5055.5047281899115,
+    y: 3924.100783366258
+  },
+  {
+    x: 4383.752999066232,
+    y: 3825.4624958755503
+  },
+  {
+    x: 3631.4436172798933,
+    y: 3640.0007645049272
+  },
+  {
+    x: 3039.3359540644396,
+    y: 3475.4549145637307
+  },
+  {
+    x: 2751.633681032561,
+    y: 3213.57840662807
+  },
+  {
+    x: 2536.6132724551208,
+    y: 3047.3073598113497
+  },
+  {
+    x: 2321.59286387768,
+    y: 2881.036312994629
+  },
+  {
+    x: 1929.798043225308,
+    y: 2823.699116881117
+  },
+  {
+    x: 588.7859230044992,
+    y: 2995.362970655633
+  },
+  {
+    x: 430.5896801341638,
+    y: 2892.0085235874776
+  },
+  {
+    x: 272.39343726382845,
+    y: 2788.6540765193226
+  },
+  {
+    x: 0,
+    y: 2309.8336215814943
+  },
+  {
+    x: 0,
+    y: 1724.6169011083603
+  },
+  {
+    x: 0,
+    y: 1325.6191762869578
+  },
+  {
+    x: 345.9845159462393,
+    y: 806.3552132878859
+  },
+  {
+    x: 1050.099497683136,
+    y: 727.0197590572106
+  }
 ]
 const defaultDiscoverPairingsByShuffleId: Record<string, string[]> = {
-  'artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': [
-    'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
-    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
-    'artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s',
-    'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo'
+  "artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z",
+    "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m"
   ],
-  'artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': [
-    'artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w',
-    'artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58',
-    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s',
-    'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2'
+  "artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z",
+    "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m"
   ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh'
+  "artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z"
   ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m'
+  "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr",
+    "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo"
   ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': [
-    'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk',
-    'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr'
+  "artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr",
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u"
   ],
-  'artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2',
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh'
+  "artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv": [
+    "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z",
+    "artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf",
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q"
   ],
-  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-foahfo'
+  "artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl": [
+    "artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7",
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k"
   ],
-  'artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': [
-    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1'
+  "artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa",
+    "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z",
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q",
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': [
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4'
+  "artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2",
+    "artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': [
-    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
-    'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-s2bpbf',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q'
+  "artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu",
+    "artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-feq2zr',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-cj0z7u'
+  "artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr": [
+    "artwork-moon-moth-new-assets-3-3d-batch6-silver-grass-plumes-png-w3a55w",
+    "artwork-moon-moth-new-assets-3-3d-batch6-enchanted-pastel-leaf-vine-png-rrumul",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-z4kj58",
+    "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-near-foliage-cluster-a-png-5wsd1s",
+    "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-foreground-vine-cluster-b-png-dm29pz",
+    "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-ofynyo",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-vtwrs2"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-crh7n9',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-px6hoa',
-    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-zj7u4z',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-mossy-rock-garden-png-stamp-m2wc9q',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-moonlit-botanical-corner-element-png-g9pm51'
+  "artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e": [
+    "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-paste-3l7tgg",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-fbarwk",
+    "artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-kfchcr"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-xz01c1',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z'
+  "artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf": [
+    "artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b",
+    "artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-zq427x",
+    "artwork-moon-moth-new-assets-3-3d-batch3-purple-path-grass-strip-right-png-dvhk2s",
+    "artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx",
+    "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': [
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-garden-of-starry-flowers-png-j91xfh',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-d9urg7',
-    'artwork-moon-moth-new-assets-3-3d-batch1-magical-twisting-vine-with-glowing-accents-png-5zbwqt',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k'
+  "artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb": [
+    "artwork-moon-moth-new-assets-3-3d-batch1-magical-thicket-with-glowing-foliage-png-wbg2s4"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-0c3i2z',
-    'artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-mlgr8m'
+  "artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp": [
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-paste-gus60k",
+    "artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2",
+    "artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': [
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-sypamu',
-    'artwork-moon-moth-new-assets-3-3d-batch1-glowing-enchanted-forest-floor-vignette-png-paste-axy4sh',
-    'artwork-moon-moth-new-assets-3-3d-batch7-soft-moonlight-pool-png-stamp-1tx7r2'
+  "artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx": [
+    "artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi",
+    "artwork-moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling-png-juo6sf",
+    "artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo",
+    "artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx",
+    "artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b",
+    "artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z"
   ],
-  'artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx': [
-    'artwork-moon-moth-new-assets-3-3d-batch2-glowing-botanical-vine-png-stamp-np1oxi',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pale-lavender-sapling-png-juo6sf',
-    'artwork-moon-moth-new-assets-3-3d-batch6-pearl-fern-cluster-png-2uesbo',
-    'artwork-moon-moth-new-assets-3-3d-batch5-spiral-crystal-vine-accent-png-wichhx',
-    'artwork-moon-moth-new-assets-3-3d-batch6-opaline-vine-arch-png-bvi24b',
-    'artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-od2j3z'
+  "artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx": [
+    "artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-wuiwt1"
   ]
 }
 const publicGameBuild = import.meta.env.VITE_MOON_MOTH_GAME_ONLY === 'true'
@@ -484,862 +788,960 @@ type DiscoverLightRouteEntry = {
 }
 const discoverStartLightId = 'purple-light-start'
 const defaultDiscoverLightRouteConfig: Record<string, DiscoverLightRouteEntry> = {
-  'asset-light-artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf': {
-    'order': 18,
-    'point': {
-      'x': 29039.78920229835,
-      'y': 519.9861937127657
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr': {
-    'order': 16,
-    'point': {
-      'x': 24854.896837826866,
-      'y': 3373.3142268234114
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp': {
-    'order': 12,
-    'point': {
-      'x': 19053.19467601513,
-      'y': 2519.1973322749063
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn': {
-    'order': 3,
-    'point': {
-      'x': 5717.720744262183,
-      'y': 1824.1089887400342
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e': {
-    'order': 17,
-    'point': {
-      'x': 28287.73637640781,
-      'y': 2173.1707640024897
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy': {
-    'order': 14,
-    'point': {
-      'x': 21755.44630858942,
-      'y': 1298.4212167539933
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha': {
-    'order': 6,
-    'point': {
-      'x': 8841.847381427975,
-      'y': 2888.011124199536
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx': {
-    'order': 8,
-    'point': {
-      'x': 11961.92737617364,
-      'y': 672.3147773401764
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb': {
-    'order': 1,
-    'point': {
-      'x': 3201.902967684072,
-      'y': 2075.6145938369978
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv': {
-    'order': 9,
-    'point': {
-      'x': 12808.306972139068,
-      'y': 3143.086686378079
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f': {
-    'order': 7,
-    'point': {
-      'x': 10729.685706340502,
-      'y': 2298.6050411369106
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm': {
-    'order': 10,
-    'point': {
-      'x': 14777.681203745464,
-      'y': 3728.115466631437
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc': {
-    'order': 5,
-    'point': {
-      'x': 7191.729368048618,
-      'y': 1083.8937326440484
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl': {
-    'order': 11,
-    'point': {
-      'x': 16128.524820468045,
-      'y': 3360.798414482951
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk': {
-    'order': 2,
-    'point': {
-      'x': 4586.041704026896,
-      'y': 1870.372757140503
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0': {
-    'order': 15,
-    'point': {
-      'x': 21973.285596023747,
-      'y': 2754.668755501499
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu': {
-    'order': 13,
-    'point': {
-      'x': 19885.130847829387,
-      'y': 875.9128194796875
-    },
-    'type': 'asset'
-  },
-  'asset-light-artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx': {
-    'order': 19,
-    'point': {
-      'x': 29718.826806411416,
-      'y': 0
-    },
-    'type': 'asset'
-  },
-  'asset-light-moon-glow-1': {
-    'order': 4,
-    'point': {
-      'x': 6129.912122412241,
-      'y': 509.3411516813064
-    },
-    'type': 'asset'
-  },
-  'guide-light-0-1': {
-    'order': 0.1,
-    'parentOrder': 0,
-    'point': {
-      'x': 822.8355512839302,
-      'y': 1884.0115242372094
-    },
-    'type': 'guide'
-  },
-  'guide-light-0-6g4jvi': {
-    'order': 0.2,
-    'parentOrder': 0,
-    'point': {
-      'x': 1400.44824355136,
-      'y': 1635.149515394871
-    },
-    'type': 'guide'
-  },
-  'guide-light-0-9ghj1c': {
-    'order': 0.4,
-    'parentOrder': 0,
-    'point': {
-      'x': 2661.5420480607772,
-      'y': 1715.4092116941317
-    },
-    'type': 'guide'
-  },
-  'guide-light-0-in5lqa': {
-    'order': 0.3,
-    'parentOrder': 0,
-    'point': {
-      'x': 2048.1876471896403,
-      'y': 1546.8647253991508
-    },
-    'type': 'guide'
-  },
-  'guide-light-1-1': {
-    'order': 1.1,
-    'parentOrder': 1,
-    'point': {
-      'x': 3682.823462,
-      'y': 2229.12813
-    },
-    'type': 'guide'
-  },
-  'guide-light-1-9lzfcj': {
-    'order': 1.2,
-    'parentOrder': 1,
-    'point': {
-      'x': 4174.273422,
-      'y': 2158.555554
-    },
-    'type': 'guide'
-  },
-  'guide-light-10-1': {
-    'order': 10.1,
-    'parentOrder': 10,
-    'point': {
-      'x': 15148.592877,
-      'y': 3798.678231
-    },
-    'type': 'guide'
-  },
-  'guide-light-10-24inz8': {
-    'order': 10.2,
-    'parentOrder': 10,
-    'point': {
-      'x': 15453.875234,
-      'y': 3653.423603
-    },
-    'type': 'guide'
-  },
-  'guide-light-10-u6w5bq': {
-    'order': 10.3,
-    'parentOrder': 10,
-    'point': {
-      'x': 15765.118579,
-      'y': 3443.232067
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-1': {
-    'order': 11.1,
-    'parentOrder': 11,
-    'point': {
-      'x': 16258.809904,
-      'y': 2961.046477
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-2vgtyu': {
-    'order': 11.5,
-    'parentOrder': 11,
-    'point': {
-      'x': 17816.966816,
-      'y': 2462.423092
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-3k6fap': {
-    'order': 11.3,
-    'parentOrder': 11,
-    'point': {
-      'x': 17033.452717,
-      'y': 2642.031951
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-dj1lra': {
-    'order': 11.6,
-    'parentOrder': 11,
-    'point': {
-      'x': 18227.842796,
-      'y': 2349.460245
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-fk427m': {
-    'order': 11.7,
-    'parentOrder': 11,
-    'point': {
-      'x': 18629.706435,
-      'y': 2485.437221
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-hwtres': {
-    'order': 11.2,
-    'parentOrder': 11,
-    'point': {
-      'x': 16677.979543,
-      'y': 2876.019534
-    },
-    'type': 'guide'
-  },
-  'guide-light-11-vm63wd': {
-    'order': 11.4,
-    'parentOrder': 11,
-    'point': {
-      'x': 17391.103884,
-      'y': 2422.75534
-    },
-    'type': 'guide'
-  },
-  'guide-light-12-1': {
-    'order': 12.1,
-    'parentOrder': 12,
-    'point': {
-      'x': 19407.434287,
-      'y': 2326.662743
-    },
-    'type': 'guide'
-  },
-  'guide-light-12-3lxdyd': {
-    'order': 12.2,
-    'parentOrder': 12,
-    'point': {
-      'x': 19190.909291,
-      'y': 2005.615858
-    },
-    'type': 'guide'
-  },
-  'guide-light-12-4ed3tk': {
-    'order': 12.5,
-    'parentOrder': 12,
-    'point': {
-      'x': 19556.571133,
-      'y': 1109.587346
-    },
-    'type': 'guide'
-  },
-  'guide-light-12-h883oy': {
-    'order': 12.4,
-    'parentOrder': 12,
-    'point': {
-      'x': 19283.185863,
-      'y': 1405.281346
-    },
-    'type': 'guide'
-  },
-  'guide-light-12-vu0g1n': {
-    'order': 12.3,
-    'parentOrder': 12,
-    'point': {
-      'x': 18976.024398,
-      'y': 1666.446245
-    },
-    'type': 'guide'
-  },
-  'guide-light-13-1': {
-    'order': 13.1,
-    'parentOrder': 13,
-    'point': {
-      'x': 20307.215403,
-      'y': 816.450081
-    },
-    'type': 'guide'
-  },
-  'guide-light-13-5ph6n2': {
-    'order': 13.2,
-    'parentOrder': 13,
-    'point': {
-      'x': 20510.233812,
-      'y': 1165.708677
-    },
-    'type': 'guide'
-  },
-  'guide-light-13-hovwrp': {
-    'order': 13.4,
-    'parentOrder': 13,
-    'point': {
-      'x': 21371.032902,
-      'y': 1108.759941
-    },
-    'type': 'guide'
-  },
-  'guide-light-13-orz9xb': {
-    'order': 13.3,
-    'parentOrder': 13,
-    'point': {
-      'x': 20943.082746,
-      'y': 1173.745537
-    },
-    'type': 'guide'
-  },
-  'guide-light-14-1': {
-    'order': 14.1,
-    'parentOrder': 14,
-    'point': {
-      'x': 21711.537198,
-      'y': 1682.874528
-    },
-    'type': 'guide'
-  },
-  'guide-light-14-mojhq4': {
-    'order': 14.3,
-    'parentOrder': 14,
-    'point': {
-      'x': 21793.675071,
-      'y': 2411.926418
-    },
-    'type': 'guide'
-  },
-  'guide-light-14-vynxcm': {
-    'order': 14.2,
-    'parentOrder': 14,
-    'point': {
-      'x': 21645.454862,
-      'y': 2063.980554
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-1': {
-    'order': 15.1,
-    'parentOrder': 15,
-    'point': {
-      'x': 22284.158836,
-      'y': 3080.514101
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-3ez1av': {
-    'order': 15.2,
-    'parentOrder': 15,
-    'point': {
-      'x': 22729.107353,
-      'y': 3182.002677
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-ksx70j': {
-    'order': 15.3,
-    'parentOrder': 15,
-    'point': {
-      'x': 23175.566793,
-      'y': 3131.13958
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-qbxnp6': {
-    'order': 15.6,
-    'parentOrder': 15,
-    'point': {
-      'x': 24433.884409,
-      'y': 3519.212775
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-xmx5a5': {
-    'order': 15.4,
-    'parentOrder': 15,
-    'point': {
-      'x': 23623.515161,
-      'y': 3171.465169
-    },
-    'type': 'guide'
-  },
-  'guide-light-15-zjzgh1': {
-    'order': 15.5,
-    'parentOrder': 15,
-    'point': {
-      'x': 24011.688516,
-      'y': 3381.322591
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-1': {
-    'order': 16.1,
-    'parentOrder': 16,
-    'point': {
-      'x': 25367.875009,
-      'y': 3148.651653
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-14smlc': {
-    'order': 16.4,
-    'parentOrder': 16,
-    'point': {
-      'x': 26644.652891,
-      'y': 2406.976227
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-3asfdd': {
-    'order': 16.6,
-    'parentOrder': 16,
-    'point': {
-      'x': 27741.073488,
-      'y': 2294.741986
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-9che8m': {
-    'order': 16.5,
-    'parentOrder': 16,
-    'point': {
-      'x': 27194.410599,
-      'y': 2416.313208
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-d4hiui': {
-    'order': 16.3,
-    'parentOrder': 16,
-    'point': {
-      'x': 26229.859974,
-      'y': 2647.486669
-    },
-    'type': 'guide'
-  },
-  'guide-light-16-e995l4': {
-    'order': 16.2,
-    'parentOrder': 16,
-    'point': {
-      'x': 25712.154945,
-      'y': 2739.217618
-    },
-    'type': 'guide'
-  },
-  'guide-light-17-1': {
-    'order': 17.1,
-    'parentOrder': 17,
-    'point': {
-      'x': 28379.613748,
-      'y': 1734.289526
-    },
-    'type': 'guide'
-  },
-  'guide-light-17-9lyz9u': {
-    'order': 17.4,
-    'parentOrder': 17,
-    'point': {
-      'x': 28635.020376,
-      'y': 709.070412
-    },
-    'type': 'guide'
-  },
-  'guide-light-17-f39zlo': {
-    'order': 17.3,
-    'parentOrder': 17,
-    'point': {
-      'x': 28514.030296,
-      'y': 1132.092533
-    },
-    'type': 'guide'
-  },
-  'guide-light-17-l6hq2u': {
-    'order': 17.2,
-    'parentOrder': 17,
-    'point': {
-      'x': 28744.092735,
-      'y': 1506.612613
-    },
-    'type': 'guide'
-  },
-  'guide-light-18-1': {
-    'order': 18.1,
-    'parentOrder': 18,
-    'point': {
-      'x': 28973.170748,
-      'y': 152.861509
-    },
-    'type': 'guide'
-  },
-  'guide-light-18-t2pprh': {
-    'order': 18.2,
-    'parentOrder': 18,
-    'point': {
-      'x': 29350.955274,
-      'y': 101.695655
-    },
-    'type': 'guide'
-  },
-  'guide-light-2-1': {
-    'order': 2.1,
-    'parentOrder': 2,
-    'point': {
-      'x': 4907.950198,
-      'y': 1599.004591
-    },
-    'type': 'guide'
-  },
-  'guide-light-2-3y5o71': {
-    'order': 2.2,
-    'parentOrder': 2,
-    'point': {
-      'x': 5327.620154,
-      'y': 1655.461244
-    },
-    'type': 'guide'
-  },
-  'guide-light-3-1': {
-    'order': 3.1,
-    'parentOrder': 3,
-    'point': {
-      'x': 5929.088196,
-      'y': 1578.710768
-    },
-    'type': 'guide'
-  },
-  'guide-light-3-fuxg78': {
-    'order': 3.3,
-    'parentOrder': 3,
-    'point': {
-      'x': 5770.737425,
-      'y': 996.210038
-    },
-    'type': 'guide'
-  },
-  'guide-light-3-qcx6xk': {
-    'order': 3.2,
-    'parentOrder': 3,
-    'point': {
-      'x': 5947.453806,
-      'y': 1259.611281
-    },
-    'type': 'guide'
-  },
-  'guide-light-3-ub7z9e': {
-    'order': 3.4,
-    'parentOrder': 3,
-    'point': {
-      'x': 5841.770518,
-      'y': 671.336293
-    },
-    'type': 'guide'
-  },
-  'guide-light-4-1': {
-    'order': 4.1,
-    'parentOrder': 4,
-    'point': {
-      'x': 6547.856727,
-      'y': 557.172548
-    },
-    'type': 'guide'
-  },
-  'guide-light-4-tvr6zy': {
-    'order': 4.2,
-    'parentOrder': 4,
-    'point': {
-      'x': 6876.628846,
-      'y': 805.187443
-    },
-    'type': 'guide'
-  },
-  'guide-light-5-1': {
-    'order': 5.1,
-    'parentOrder': 5,
-    'point': {
-      'x': 7254.397213,
-      'y': 1584.04306
-    },
-    'type': 'guide'
-  },
-  'guide-light-5-aa5mve': {
-    'order': 5.2,
-    'parentOrder': 5,
-    'point': {
-      'x': 7382.192429,
-      'y': 2059.566452
-    },
-    'type': 'guide'
-  },
-  'guide-light-5-atpr6k': {
-    'order': 5.3,
-    'parentOrder': 5,
-    'point': {
-      'x': 7816.144869,
-      'y': 2316.007259
-    },
-    'type': 'guide'
-  },
-  'guide-light-5-mm484y': {
-    'order': 5.5,
-    'parentOrder': 5,
-    'point': {
-      'x': 8551.012867,
-      'y': 2486.530314
-    },
-    'type': 'guide'
-  },
-  'guide-light-5-xouomq': {
-    'order': 5.4,
-    'parentOrder': 5,
-    'point': {
-      'x': 8285.66236,
-      'y': 2186.385191
-    },
-    'type': 'guide'
-  },
-  'guide-light-6-1': {
-    'order': 6.1,
-    'parentOrder': 6,
-    'point': {
-      'x': 9170.76537,
-      'y': 3192.9105
-    },
-    'type': 'guide'
-  },
-  'guide-light-6-502ogk': {
-    'order': 6.4,
-    'parentOrder': 6,
-    'point': {
-      'x': 9940.452127,
-      'y': 2537.847821
-    },
-    'type': 'guide'
-  },
-  'guide-light-6-d1q3vo': {
-    'order': 6.3,
-    'parentOrder': 6,
-    'point': {
-      'x': 9734.403991,
-      'y': 2941.039356
-    },
-    'type': 'guide'
-  },
-  'guide-light-6-lu2uxe': {
-    'order': 6.2,
-    'parentOrder': 6,
-    'point': {
-      'x': 9577.793092,
-      'y': 3369.83623
-    },
-    'type': 'guide'
-  },
-  'guide-light-6-n3t96g': {
-    'order': 6.5,
-    'parentOrder': 6,
-    'point': {
-      'x': 10307.920992,
-      'y': 2405.836365
-    },
-    'type': 'guide'
-  },
-  'guide-light-7-1': {
-    'order': 7.1,
-    'parentOrder': 7,
-    'point': {
-      'x': 10854.006714,
-      'y': 1888.723652
-    },
-    'type': 'guide'
-  },
-  'guide-light-7-5xdfde': {
-    'order': 7.4,
-    'parentOrder': 7,
-    'point': {
-      'x': 11577.91227,
-      'y': 862.176993
-    },
-    'type': 'guide'
-  },
-  'guide-light-7-65n48a': {
-    'order': 7.3,
-    'parentOrder': 7,
-    'point': {
-      'x': 11265.500339,
-      'y': 1147.262986
-    },
-    'type': 'guide'
-  },
-  'guide-light-7-6zx7vb': {
-    'order': 7.2,
-    'parentOrder': 7,
-    'point': {
-      'x': 11017.537327,
-      'y': 1494.378276
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-1': {
-    'order': 8.1,
-    'parentOrder': 8,
-    'point': {
-      'x': 12274.866596,
-      'y': 955.261691
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-76x55z': {
-    'order': 8.5,
-    'parentOrder': 8,
-    'point': {
-      'x': 12363.340626,
-      'y': 2389.851037
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-cu63wr': {
-    'order': 8.3,
-    'parentOrder': 8,
-    'point': {
-      'x': 12509.901014,
-      'y': 1553.595604
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-fzz56t': {
-    'order': 8.4,
-    'parentOrder': 8,
-    'point': {
-      'x': 12498.609315,
-      'y': 1991.306534
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-g51ame': {
-    'order': 8.2,
-    'parentOrder': 8,
-    'point': {
-      'x': 12161.99872,
-      'y': 1333.634756
-    },
-    'type': 'guide'
-  },
-  'guide-light-8-k5330m': {
-    'order': 8.6,
-    'parentOrder': 8,
-    'point': {
-      'x': 12598.2911,
-      'y': 2759.332613
-    },
-    'type': 'guide'
-  },
-  'guide-light-9-1': {
-    'order': 9.1,
-    'parentOrder': 9,
-    'point': {
-      'x': 13081.593177,
-      'y': 3486.423822
-    },
-    'type': 'guide'
-  },
-  'guide-light-9-2hkevz': {
-    'order': 9.2,
-    'parentOrder': 9,
-    'point': {
-      'x': 13520.676202,
-      'y': 3581.81876
-    },
-    'type': 'guide'
-  },
-  'guide-light-9-4gt3re': {
-    'order': 9.4,
-    'parentOrder': 9,
-    'point': {
-      'x': 14336.213527,
-      'y': 3811.231058
-    },
-    'type': 'guide'
-  },
-  'guide-light-9-jgqh22': {
-    'order': 9.3,
-    'parentOrder': 9,
-    'point': {
-      'x': 13887.203318,
-      'y': 3828.081286
-    },
-    'type': 'guide'
+  "asset-light-artwork-moon-moth-moon-moth-landmark-cocoon-shrine-png-p7hyaf": {
+    order: 18,
+    point: {
+      x: 29027.646041788197,
+      y: 252.9438497993595
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-moon-moth-landmark-moon-stone-png-vawutr": {
+    order: 16,
+    point: {
+      x: 24854.896837826866,
+      y: 3373.3142268234114
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-fern-mound-cameo-png-6sw8dp": {
+    order: 12,
+    point: {
+      x: 19053.19467601513,
+      y: 2519.1973322749063
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-moss-rock-cameo-png-asxtmn": {
+    order: 3,
+    point: {
+      x: 5717.720744262183,
+      y: 1824.1089887400342
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-orchid-spill-cameo-png-e2vi9e": {
+    order: 17,
+    point: {
+      x: 28287.73637640781,
+      y: 2173.1707640024897
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-1-moon-moth-pathside-star-petal-bed-png-e4t8hy": {
+    order: 14,
+    point: {
+      x: 21755.44630858942,
+      y: 1298.4212167539933
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-landmark-glow-flower-png-3dhnha": {
+    order: 6,
+    point: {
+      x: 8841.847381427975,
+      y: 2888.011124199536
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-2-5d-moon-moth-2d-moon-glow-png-hlrjpx": {
+    order: 8,
+    point: {
+      x: 11961.92737617364,
+      y: 672.3147773401764
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch2-hanging-vine-lanterns-png-2ducvb": {
+    order: 1,
+    point: {
+      x: 3201.902967684072,
+      y: 2075.6145938369978
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch3-broken-moonstone-fragments-png-h1j8rv": {
+    order: 9,
+    point: {
+      x: 12808.306972139068,
+      y: 3143.086686378079
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch4-crooked-sapling-pair-png-usvm3f": {
+    order: 7,
+    point: {
+      x: 10729.685706340502,
+      y: 2298.6050411369106
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch5-drooping-bellflower-cluster-png-7u3bnm": {
+    order: 10,
+    point: {
+      x: 14777.681203745464,
+      y: 3728.115466631437
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch5-firefly-flower-patch-png-66vlhc": {
+    order: 5,
+    point: {
+      x: 7191.729368048618,
+      y: 1083.8937326440484
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch5-low-cocoon-bud-png-vzc4yl": {
+    order: 11,
+    point: {
+      x: 16128.524820468045,
+      y: 3360.798414482951
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch5-mini-mooncup-blossom-png-snhemk": {
+    order: 2,
+    point: {
+      x: 4586.041704026896,
+      y: 1870.372757140503
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch5-slender-moon-reed-cluster-png-nk1hs0": {
+    order: 15,
+    point: {
+      x: 21973.285596023747,
+      y: 2754.668755501499
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch7-crescent-moon-soft-glow-png-4h9dwu": {
+    order: 13,
+    point: {
+      x: 19885.130847829387,
+      y: 875.9128194796875
+    },
+    type: "asset"
+  },
+  "asset-light-artwork-moon-moth-new-assets-3-3d-batch7-full-moon-soft-glow-png-lod8rx": {
+    order: 19,
+    point: {
+      x: 29395.137680498803,
+      y: -706.2460103410277
+    },
+    type: "asset"
+  },
+  "asset-light-moon-glow-1": {
+    order: 4,
+    point: {
+      x: 6118.664771700169,
+      y: 366.42511456401155
+    },
+    type: "asset"
+  },
+  "guide-light-0-1": {
+    order: 0.1,
+    parentOrder: 0,
+    point: {
+      x: 822.8355512839302,
+      y: 1884.0115242372094
+    },
+    type: "guide"
+  },
+  "guide-light-0-6g4jvi": {
+    order: 0.2,
+    parentOrder: 0,
+    point: {
+      x: 1400.44824355136,
+      y: 1635.149515394871
+    },
+    type: "guide"
+  },
+  "guide-light-0-9ghj1c": {
+    order: 0.4,
+    parentOrder: 0,
+    point: {
+      x: 2661.5420480607772,
+      y: 1715.4092116941317
+    },
+    type: "guide"
+  },
+  "guide-light-0-in5lqa": {
+    order: 0.3,
+    parentOrder: 0,
+    point: {
+      x: 2048.1876471896403,
+      y: 1546.8647253991508
+    },
+    type: "guide"
+  },
+  "guide-light-1-1": {
+    order: 1.1,
+    parentOrder: 1,
+    point: {
+      x: 3682.823462,
+      y: 2229.12813
+    },
+    type: "guide"
+  },
+  "guide-light-1-9lzfcj": {
+    order: 1.2,
+    parentOrder: 1,
+    point: {
+      x: 4174.273422,
+      y: 2158.555554
+    },
+    type: "guide"
+  },
+  "guide-light-12-1": {
+    order: 12.1,
+    parentOrder: 12,
+    point: {
+      x: 19407.434287,
+      y: 2326.662743
+    },
+    type: "guide"
+  },
+  "guide-light-12-3lxdyd": {
+    order: 12.2,
+    parentOrder: 12,
+    point: {
+      x: 19025.43452177409,
+      y: 2101.108390906978
+    },
+    type: "guide"
+  },
+  "guide-light-12-4ed3tk": {
+    order: 12.5,
+    parentOrder: 12,
+    point: {
+      x: 19655.07214621587,
+      y: 1268.4011924376518
+    },
+    type: "guide"
+  },
+  "guide-light-12-h883oy": {
+    order: 12.4,
+    parentOrder: 12,
+    point: {
+      x: 19297.365373071196,
+      y: 1534.7689097664947
+    },
+    type: "guide"
+  },
+  "guide-light-12-vu0g1n": {
+    order: 12.3,
+    parentOrder: 12,
+    point: {
+      x: 19523.464080788326,
+      y: 1782.5475098757197
+    },
+    type: "guide"
+  },
+  "guide-light-13-1": {
+    order: 13.1,
+    parentOrder: 13,
+    point: {
+      x: 20301.709285743913,
+      y: 809.2902177248526
+    },
+    type: "guide"
+  },
+  "guide-light-13-5ph6n2": {
+    order: 13.2,
+    parentOrder: 13,
+    point: {
+      x: 20514.440107316907,
+      y: 1205.6318671937893
+    },
+    type: "guide"
+  },
+  "guide-light-13-hovwrp": {
+    order: 13.4,
+    parentOrder: 13,
+    point: {
+      x: 21257.748942848368,
+      y: 1225.8784666490892
+    },
+    type: "guide"
+  },
+  "guide-light-13-orz9xb": {
+    order: 13.3,
+    parentOrder: 13,
+    point: {
+      x: 20893.86849398662,
+      y: 1046.492268107479
+    },
+    type: "guide"
+  },
+  "guide-light-2-1": {
+    order: 2.1,
+    parentOrder: 2,
+    point: {
+      x: 4907.950198,
+      y: 1599.004591
+    },
+    type: "guide"
+  },
+  "guide-light-2-3y5o71": {
+    order: 2.2,
+    parentOrder: 2,
+    point: {
+      x: 5327.620154,
+      y: 1655.461244
+    },
+    type: "guide"
+  },
+  "guide-light-3-1": {
+    order: 3.1,
+    parentOrder: 3,
+    point: {
+      x: 5929.088196,
+      y: 1578.710768
+    },
+    type: "guide"
+  },
+  "guide-light-3-fuxg78": {
+    order: 3.3,
+    parentOrder: 3,
+    point: {
+      x: 5770.737425,
+      y: 996.210038
+    },
+    type: "guide"
+  },
+  "guide-light-3-qcx6xk": {
+    order: 3.2,
+    parentOrder: 3,
+    point: {
+      x: 5947.453806,
+      y: 1259.611281
+    },
+    type: "guide"
+  },
+  "guide-light-3-ub7z9e": {
+    order: 3.4,
+    parentOrder: 3,
+    point: {
+      x: 5841.770518,
+      y: 671.336293
+    },
+    type: "guide"
+  },
+  "guide-light-4-1": {
+    order: 4.1,
+    parentOrder: 4,
+    point: {
+      x: 6547.856727,
+      y: 557.172548
+    },
+    type: "guide"
+  },
+  "guide-light-4-tvr6zy": {
+    order: 4.2,
+    parentOrder: 4,
+    point: {
+      x: 6876.628846,
+      y: 805.187443
+    },
+    type: "guide"
+  },
+  "guide-light-6-1": {
+    order: 6.1,
+    parentOrder: 6,
+    point: {
+      x: 9170.76537,
+      y: 3192.9105
+    },
+    type: "guide"
+  },
+  "guide-light-6-502ogk": {
+    order: 6.4,
+    parentOrder: 6,
+    point: {
+      x: 10182.33745205224,
+      y: 2863.538795373785
+    },
+    type: "guide"
+  },
+  "guide-light-6-d1q3vo": {
+    order: 6.3,
+    parentOrder: 6,
+    point: {
+      x: 9734.403991,
+      y: 2941.039356
+    },
+    type: "guide"
+  },
+  "guide-light-6-lu2uxe": {
+    order: 6.2,
+    parentOrder: 6,
+    point: {
+      x: 9577.793092,
+      y: 3369.83623
+    },
+    type: "guide"
+  },
+  "guide-light-6-n3t96g": {
+    order: 6.5,
+    parentOrder: 6,
+    point: {
+      x: 10327.036843218644,
+      y: 2545.4395765963036
+    },
+    type: "guide"
+  },
+  "guide-light-7-1": {
+    order: 7.1,
+    parentOrder: 7,
+    point: {
+      x: 10854.006714,
+      y: 1888.723652
+    },
+    type: "guide"
+  },
+  "guide-light-7-5xdfde": {
+    order: 7.4,
+    parentOrder: 7,
+    point: {
+      x: 11577.91227,
+      y: 862.176993
+    },
+    type: "guide"
+  },
+  "guide-light-7-65n48a": {
+    order: 7.3,
+    parentOrder: 7,
+    point: {
+      x: 11265.500339,
+      y: 1147.262986
+    },
+    type: "guide"
+  },
+  "guide-light-7-6zx7vb": {
+    order: 7.2,
+    parentOrder: 7,
+    point: {
+      x: 11017.537327,
+      y: 1494.378276
+    },
+    type: "guide"
+  },
+  "guide-light-8-1": {
+    order: 8.1,
+    parentOrder: 8,
+    point: {
+      x: 12274.866596,
+      y: 955.261691
+    },
+    type: "guide"
+  },
+  "guide-light-8-76x55z": {
+    order: 8.5,
+    parentOrder: 8,
+    point: {
+      x: 12751.406852877422,
+      y: 2239.635471662388
+    },
+    type: "guide"
+  },
+  "guide-light-8-cu63wr": {
+    order: 8.3,
+    parentOrder: 8,
+    point: {
+      x: 12509.901014,
+      y: 1553.595604
+    },
+    type: "guide"
+  },
+  "guide-light-8-fzz56t": {
+    order: 8.4,
+    parentOrder: 8,
+    point: {
+      x: 12260.61846360228,
+      y: 2007.8850661465613
+    },
+    type: "guide"
+  },
+  "guide-light-8-g51ame": {
+    order: 8.2,
+    parentOrder: 8,
+    point: {
+      x: 12161.99872,
+      y: 1333.634756
+    },
+    type: "guide"
+  },
+  "guide-light-8-k5330m": {
+    order: 8.6,
+    parentOrder: 8,
+    point: {
+      x: 12598.2911,
+      y: 2759.332613
+    },
+    type: "guide"
+  },
+  "guide-light-5-1": {
+    order: 5.1,
+    parentOrder: 5,
+    point: {
+      x: 7266.122510941224,
+      y: 1492.5141969875629
+    },
+    type: "guide"
+  },
+  "guide-light-5-aa5mve": {
+    order: 5.2,
+    parentOrder: 5,
+    point: {
+      x: 7381.834758052755,
+      y: 1940.46392629098
+    },
+    type: "guide"
+  },
+  "guide-light-5-atpr6k": {
+    order: 5.3,
+    parentOrder: 5,
+    point: {
+      x: 7820.791765862458,
+      y: 1964.336998982614
+    },
+    type: "guide"
+  },
+  "guide-light-5-xouomq": {
+    order: 5.4,
+    parentOrder: 5,
+    point: {
+      x: 7875.335980026801,
+      y: 2413.744525795617
+    },
+    type: "guide"
+  },
+  "guide-light-5-mm484y": {
+    order: 5.5,
+    parentOrder: 5,
+    point: {
+      x: 8411.937517687264,
+      y: 2407.6277287785506
+    },
+    type: "guide"
+  },
+  "guide-light-5-zvvege": {
+    order: 5.6,
+    parentOrder: 5,
+    point: {
+      x: 8415.914409500316,
+      y: 2827.220636319806
+    },
+    type: "guide"
+  },
+  "guide-light-9-1": {
+    order: 9.1,
+    parentOrder: 9,
+    point: {
+      x: 12825.279524422725,
+      y: 3519.1360145627523
+    },
+    type: "guide"
+  },
+  "guide-light-9-2hkevz": {
+    order: 9.2,
+    parentOrder: 9,
+    point: {
+      x: 13265.106380783482,
+      y: 3370.8258631059293
+    },
+    type: "guide"
+  },
+  "guide-light-9-jgqh22": {
+    order: 9.3,
+    parentOrder: 9,
+    point: {
+      x: 13440.719415893429,
+      y: 3820.7110523402316
+    },
+    type: "guide"
+  },
+  "guide-light-9-4gt3re": {
+    order: 9.4,
+    parentOrder: 9,
+    point: {
+      x: 13820.288719462043,
+      y: 3706.605603720447
+    },
+    type: "guide"
+  },
+  "guide-light-9-y5yzao": {
+    order: 9.5,
+    parentOrder: 9,
+    point: {
+      x: 14252.851310677977,
+      y: 3672.3469507822037
+    },
+    type: "guide"
+  },
+  "guide-light-10-1": {
+    order: 10.1,
+    parentOrder: 10,
+    point: {
+      x: 14947.476867708294,
+      y: 3485.9696600206726
+    },
+    type: "guide"
+  },
+  "guide-light-10-24inz8": {
+    order: 10.2,
+    parentOrder: 10,
+    point: {
+      x: 15134.266651603699,
+      y: 3271.74906076731
+    },
+    type: "guide"
+  },
+  "guide-light-10-u6w5bq": {
+    order: 10.3,
+    parentOrder: 10,
+    point: {
+      x: 15466.135631019371,
+      y: 3187.951559802377
+    },
+    type: "guide"
+  },
+  "guide-light-10-76122v": {
+    order: 10.4,
+    parentOrder: 10,
+    point: {
+      x: 15861.3616841359,
+      y: 3233.952725121408
+    },
+    type: "guide"
+  },
+  "guide-light-11-1": {
+    order: 11.1,
+    parentOrder: 11,
+    point: {
+      x: 16245.768987311167,
+      y: 2945.532902978826
+    },
+    type: "guide"
+  },
+  "guide-light-11-hwtres": {
+    order: 11.2,
+    parentOrder: 11,
+    point: {
+      x: 16654.910005689035,
+      y: 2781.510451174463
+    },
+    type: "guide"
+  },
+  "guide-light-11-3k6fap": {
+    order: 11.3,
+    parentOrder: 11,
+    point: {
+      x: 16296.159928749876,
+      y: 2491.589950118625
+    },
+    type: "guide"
+  },
+  "guide-light-11-vm63wd": {
+    order: 11.4,
+    parentOrder: 11,
+    point: {
+      x: 16785.09522069075,
+      y: 2436.929233091229
+    },
+    type: "guide"
+  },
+  "guide-light-11-klo51o": {
+    order: 11.5,
+    parentOrder: 11,
+    point: {
+      x: 17212.801205938245,
+      y: 2316.76824761631
+    },
+    type: "guide"
+  },
+  "guide-light-11-adi413": {
+    order: 11.6,
+    parentOrder: 11,
+    point: {
+      x: 17548.47724186896,
+      y: 2102.4973624762165
+    },
+    type: "guide"
+  },
+  "guide-light-11-2vgtyu": {
+    order: 11.7,
+    parentOrder: 11,
+    point: {
+      x: 17928.172939873988,
+      y: 2400.487294028674
+    },
+    type: "guide"
+  },
+  "guide-light-11-dj1lra": {
+    order: 11.8,
+    parentOrder: 11,
+    point: {
+      x: 18321.634381043423,
+      y: 2169.3774868280093
+    },
+    type: "guide"
+  },
+  "guide-light-11-fk427m": {
+    order: 11.9,
+    parentOrder: 11,
+    point: {
+      x: 18622.908079969784,
+      y: 2469.799010490828
+    },
+    type: "guide"
+  },
+  "guide-light-14-1": {
+    order: 14.1,
+    parentOrder: 14,
+    point: {
+      x: 21608.320975430375,
+      y: 1496.155293771589
+    },
+    type: "guide"
+  },
+  "guide-light-14-qnucry": {
+    order: 14.2,
+    parentOrder: 14,
+    point: {
+      x: 21494.04411948525,
+      y: 1807.8973299511886
+    },
+    type: "guide"
+  },
+  "guide-light-14-vynxcm": {
+    order: 14.3,
+    parentOrder: 14,
+    point: {
+      x: 21458.44717298094,
+      y: 2178.188579631555
+    },
+    type: "guide"
+  },
+  "guide-light-14-mojhq4": {
+    order: 14.4,
+    parentOrder: 14,
+    point: {
+      x: 21564.285018577928,
+      y: 2543.3069297364887
+    },
+    type: "guide"
+  },
+  "guide-light-15-1": {
+    order: 15.1,
+    parentOrder: 15,
+    point: {
+      x: 22140.96548860196,
+      y: 3033.0776458536616
+    },
+    type: "guide"
+  },
+  "guide-light-15-3ez1av": {
+    order: 15.2,
+    parentOrder: 15,
+    point: {
+      x: 22558.887256808648,
+      y: 3078.5176349441494
+    },
+    type: "guide"
+  },
+  "guide-light-15-ksx70j": {
+    order: 15.3,
+    parentOrder: 15,
+    point: {
+      x: 22754.355597260757,
+      y: 3400.984254561553
+    },
+    type: "guide"
+  },
+  "guide-light-15-xmx5a5": {
+    order: 15.4,
+    parentOrder: 15,
+    point: {
+      x: 23265.12005939096,
+      y: 3444.9276726067533
+    },
+    type: "guide"
+  },
+  "guide-light-15-zjzgh1": {
+    order: 15.5,
+    parentOrder: 15,
+    point: {
+      x: 23678.199524312247,
+      y: 3302.2103731471057
+    },
+    type: "guide"
+  },
+  "guide-light-15-qbxnp6": {
+    order: 15.6,
+    parentOrder: 15,
+    point: {
+      x: 24057.01496469093,
+      y: 3465.7401997586744
+    },
+    type: "guide"
+  },
+  "guide-light-15-hozswi": {
+    order: 15.7,
+    parentOrder: 15,
+    point: {
+      x: 24399.163794859433,
+      y: 3299.2234040444237
+    },
+    type: "guide"
+  },
+  "guide-light-16-1": {
+    order: 16.1,
+    parentOrder: 16,
+    point: {
+      x: 25027.541777790273,
+      y: 3090.4815804487666
+    },
+    type: "guide"
+  },
+  "guide-light-16-xmp2tb": {
+    order: 16.2,
+    parentOrder: 16,
+    point: {
+      x: 25417.511823158424,
+      y: 3038.721518210482
+    },
+    type: "guide"
+  },
+  "guide-light-16-e995l4": {
+    order: 16.3,
+    parentOrder: 16,
+    point: {
+      x: 25401.101804480626,
+      y: 2701.7096358905956
+    },
+    type: "guide"
+  },
+  "guide-light-16-d4hiui": {
+    order: 16.4,
+    parentOrder: 16,
+    point: {
+      x: 25941.815770390418,
+      y: 2687.9098336139973
+    },
+    type: "guide"
+  },
+  "guide-light-16-s7uk3b": {
+    order: 16.5,
+    parentOrder: 16,
+    point: {
+      x: 26266.49415162078,
+      y: 2374.180624768642
+    },
+    type: "guide"
+  },
+  "guide-light-16-14smlc": {
+    order: 16.6,
+    parentOrder: 16,
+    point: {
+      x: 26773.431493459055,
+      y: 2185.1982588515793
+    },
+    type: "guide"
+  },
+  "guide-light-16-9che8m": {
+    order: 16.7,
+    parentOrder: 16,
+    point: {
+      x: 27290.805537495806,
+      y: 2118.9923164052016
+    },
+    type: "guide"
+  },
+  "guide-light-16-3asfdd": {
+    order: 16.8,
+    parentOrder: 16,
+    point: {
+      x: 27821.12018351058,
+      y: 2141.5282491799026
+    },
+    type: "guide"
+  },
+  "guide-light-17-1": {
+    order: 17.1,
+    parentOrder: 17,
+    point: {
+      x: 28379.613748,
+      y: 1734.289526
+    },
+    type: "guide"
+  },
+  "guide-light-17-l6hq2u": {
+    order: 17.2,
+    parentOrder: 17,
+    point: {
+      x: 28744.092735,
+      y: 1506.612613
+    },
+    type: "guide"
+  },
+  "guide-light-17-f39zlo": {
+    order: 17.3,
+    parentOrder: 17,
+    point: {
+      x: 28422.238930405605,
+      y: 1138.6886618353215
+    },
+    type: "guide"
+  },
+  "guide-light-17-9lyz9u": {
+    order: 17.4,
+    parentOrder: 17,
+    point: {
+      x: 28403.06976576242,
+      y: 695.2159225383982
+    },
+    type: "guide"
+  },
+  "guide-light-17-oe61qp": {
+    order: 17.5,
+    parentOrder: 17,
+    point: {
+      x: 28702.87483353467,
+      y: 407.31982493723126
+    },
+    type: "guide"
+  },
+  "guide-light-18-1": {
+    order: 18.1,
+    parentOrder: 18,
+    point: {
+      x: 29006.61374985231,
+      y: -85.09558118270999
+    },
+    type: "guide"
+  },
+  "guide-light-18-dju7c9": {
+    order: 18.2,
+    parentOrder: 18,
+    point: {
+      x: 29363.47816433868,
+      y: -178.4511780042515
+    },
+    type: "guide"
+  },
+  "guide-light-18-t2pprh": {
+    order: 18.3,
+    parentOrder: 18,
+    point: {
+      x: 29166.297218368287,
+      y: -367.1834686983352
+    },
+    type: "guide"
   }
 }
-
 type LoopControlState = {
   direction: -1 | 1
   endpointWaitUntil: number
@@ -1600,6 +2002,8 @@ const discoverFogAlphaStart = 0.72
 const discoverFogAlphaTarget = 0.6
 const discoverFogAlphaFinal = 0.5
 const discoverDevZoomOutScale = 1 / 3
+const discoverStartupInstructionDelayMs = 450
+const discoverStartupLightDelayMs = 950
 const gameFocusResumeDelayMs = 2100
 const gameMenuReturnDelayMs = 1050
 const gameHudHomeGraceMs = 5000
@@ -3286,6 +3690,101 @@ function App() {
           ;(target as HTMLElement).blur()
         }
         return
+      }
+      const discoverDevKeyActive = (
+        discoverDevToolsEnabled
+        && appMode === 'play'
+        && gameMode === 'discover'
+        && gameScreen !== 'menu'
+      )
+      if (discoverDevKeyActive && event.key === 'Tab') {
+        event.preventDefault()
+        if (!event.repeat) {
+          toggleFreeExploreDebugFast()
+        }
+        return
+      }
+      if (discoverDevKeyActive && freeExploreDebugFast) {
+        if (event.key === 's' || event.key === 'S') {
+          event.preventDefault()
+          saveDiscoverDevProgress()
+          return
+        }
+        if (event.key === '`' || event.code === 'Backquote') {
+          event.preventDefault()
+          if (!event.repeat) {
+            toggleDiscoverDevZoom()
+          }
+          return
+        }
+        if (event.key === '1' || event.code === 'Digit1') {
+          event.preventDefault()
+          if (!event.repeat) {
+            toggleDiscoverGlowIsolation()
+          }
+          return
+        }
+        if (event.key === '2' || event.code === 'Digit2') {
+          event.preventDefault()
+          if (!event.repeat) {
+            setDiscoverDevCameraPreset('original')
+            setMessage('Discover dev camera: original')
+          }
+          return
+        }
+        if (event.key === '3' || event.code === 'Digit3') {
+          event.preventDefault()
+          if (!event.repeat) {
+            setDiscoverDevCameraPreset('wide')
+            setMessage('Discover dev camera: wide')
+          }
+          return
+        }
+        if (event.key === '4' || event.code === 'Digit4') {
+          event.preventDefault()
+          if (!event.repeat) {
+            toggleDiscoverCurveBoundaryHandleEditing()
+          }
+          return
+        }
+        if (event.key === '5' || event.code === 'Digit5') {
+          event.preventDefault()
+          if (!event.repeat) {
+            addDiscoverCurveBoundaryPoint()
+          }
+          return
+        }
+        if (event.key === '6' || event.code === 'Digit6') {
+          event.preventDefault()
+          if (!event.repeat) {
+            const nextEditing = !discoverLightRouteEditing
+            setDiscoverLightRouteEditing(nextEditing)
+            setDiscoverSelectedLightId(null)
+            setDiscoverCurveBoundaryVisible(false)
+            setDiscoverCurveBoundaryHandleEditing(false)
+            setMessage(nextEditing ? 'Light route editor on' : 'Light route editor off')
+          }
+          return
+        }
+        if (event.key === '7' || event.code === 'Digit7') {
+          event.preventDefault()
+          if (!event.repeat) {
+            discoverCurveBoundarySevenHoldRef.current = {
+              chorded: false,
+              down: true,
+              startedWhileEditing: discoverCurveBoundaryVisible,
+            }
+            openDiscoverCurveBoundaryEditor()
+          }
+          return
+        }
+        if (event.key === '-' || event.code === 'Minus') {
+          event.preventDefault()
+          if (!event.repeat && discoverCurveBoundaryVisible) {
+            deleteSelectedDiscoverCurveBoundaryPoint()
+          }
+          return
+        }
       }
       if (
         appMode === 'play'
@@ -6142,9 +6641,13 @@ function App() {
       setPlayPaused(false)
       handleMusicRestart(false)
       const discoverStartedAt = performance.now()
-      discoverLightSequenceStartedAtRef.current = discoverStartedAt
+      discoverLightSequenceStartedAtRef.current = discoverStartedAt + discoverStartupLightDelayMs
       setDiscoverMusicZoomStartedAt(discoverStartedAt)
-      scheduleDiscoverInstructionPrompt()
+      window.setTimeout(() => {
+        if (discoverInstructionEligible()) {
+          scheduleDiscoverInstructionPrompt()
+        }
+      }, discoverStartupInstructionDelayMs)
       revealShuffleDescriptionInitialButton()
       setMessage(message)
     }
@@ -9218,6 +9721,10 @@ function App() {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
+                onTouchStart={(event) => event.preventDefault()}
+                onTouchMove={(event) => event.preventDefault()}
+                onTouchEnd={(event) => event.preventDefault()}
+                onTouchCancel={(event) => event.preventDefault()}
                 onContextMenu={(event) => {
                   if (publicGameBuild || workspaceMode === 'game') {
                     event.preventDefault()
