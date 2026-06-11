@@ -1979,7 +1979,7 @@ const freeExploreShuffleDiscoverRadius = 235
 const freeExploreShuffleDiscoverRadiusMax = 760
 const freeExploreAssetScanMs = 140
 const freeExploreCompleteAssetScanMs = 260
-const discoverAssetRadiusExitGraceMs = 450
+const discoverAssetRadiusExitGraceMs = 140
 const freeExploreRevealBaseRadius = 360
 const freeExploreAssetRevealBloomMs = 2500
 const freeExplorePairedRevealBloomMs = freeExploreAssetRevealBloomMs + 2000
@@ -3296,6 +3296,7 @@ function App() {
   const discoverShuffleItemsRef = useRef<EditorItem[]>([])
   const discoverLastAssetScanAtRef = useRef(0)
   const discoverAssetRadiusExitStartedAtRef = useRef(0)
+  const discoverRadiusReopenSuppressedItemIdRef = useRef<string | null>(null)
   const shuffleDescriptionOpenRef = useRef(shuffleDescriptionOpen)
   const shuffleDescriptionDismissingToLoopRef = useRef(shuffleDescriptionDismissingToLoop)
   const shuffleDescriptionRouteAssetIndexRef = useRef(shuffleDescriptionRouteAssetIndex)
@@ -6693,6 +6694,7 @@ function App() {
     discoverCollapsedButtonTargetIdRef.current = null
     discoverRouteCompleteAutoCollapsedRef.current = false
     discoverAssetRadiusExitStartedAtRef.current = 0
+    discoverRadiusReopenSuppressedItemIdRef.current = null
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -6914,6 +6916,7 @@ function App() {
     discoverCollapsedButtonTargetIdRef.current = null
     discoverRouteCompleteAutoCollapsedRef.current = false
     discoverAssetRadiusExitStartedAtRef.current = 0
+    discoverRadiusReopenSuppressedItemIdRef.current = null
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -7819,19 +7822,23 @@ function App() {
         clearDiscoverAssetSpaceSwitch()
       }
     }
+    if (discoverRadiusReopenSuppressedItemIdRef.current && nextActiveId !== discoverRadiusReopenSuppressedItemIdRef.current) {
+      discoverRadiusReopenSuppressedItemIdRef.current = null
+    }
     if (nextActiveId) {
       if (allAssetLightsCollectedNow || discoverDescriptionCollapsedToButtonRef.current || discoverRouteCompleteCollapsedToButtonRef.current) {
         discoverCollapsedButtonTargetIdRef.current = nextActiveId
         setDiscoverCollapsedButtonTargetId(nextActiveId)
       }
       const exampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === nextActiveId)
+      const radiusReopenSuppressed = discoverRadiusReopenSuppressedItemIdRef.current === nextActiveId
       const shouldOpenFromRadius = nextActiveId !== previousActiveId
         || (allAssetLightsCollectedNow && (
           discoverDescriptionCollapsedToButtonRef.current
           || discoverRouteCompleteCollapsedToButtonRef.current
           || !shuffleDescriptionOpenRef.current
         ))
-      if (exampleIndex >= 0 && shouldOpenFromRadius) {
+      if (exampleIndex >= 0 && shouldOpenFromRadius && !radiusReopenSuppressed) {
         scheduleDiscoverAssetSpaceDescriptionCard(exampleIndex)
       }
       if (nextActiveId !== previousActiveId) {
@@ -9753,6 +9760,7 @@ function App() {
                             setDiscoverDescriptionCollapsedToButton(true)
                             setDiscoverCollapsedButtonTargetId(targetId)
                             discoverCollapsedButtonTargetIdRef.current = targetId
+                            discoverRadiusReopenSuppressedItemIdRef.current = targetId
                             if (discoverPurpleAssetRouteComplete) {
                               setDiscoverRouteCompleteCollapsedToButton(true)
                             }
@@ -9776,6 +9784,7 @@ function App() {
                           setDiscoverRouteCompleteCollapsedToButton(false)
                           setDiscoverCollapsedButtonTargetId(null)
                           discoverCollapsedButtonTargetIdRef.current = null
+                          discoverRadiusReopenSuppressedItemIdRef.current = null
                           openShuffleDescriptionAssetCard(targetExampleIndex >= 0 ? targetExampleIndex : shuffleDescriptionActiveExampleIndex)
                           return
                         }
