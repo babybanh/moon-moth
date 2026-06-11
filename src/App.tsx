@@ -1979,6 +1979,7 @@ const freeExploreShuffleDiscoverRadius = 235
 const freeExploreShuffleDiscoverRadiusMax = 760
 const freeExploreAssetScanMs = 140
 const freeExploreCompleteAssetScanMs = 260
+const discoverAssetRadiusExitGraceMs = 450
 const freeExploreRevealBaseRadius = 360
 const freeExploreAssetRevealBloomMs = 2500
 const freeExplorePairedRevealBloomMs = freeExploreAssetRevealBloomMs + 2000
@@ -3086,17 +3087,28 @@ function distanceToSegment(point: Point, start: Point, end: Point) {
 }
 
 function discoverShuffleAssetHit(position: Point, item: EditorItem) {
-  const radiusX = clamp(item.width * 0.42, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
-  const radiusY = clamp(item.height * 0.42, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
+  const halfWidth = item.width / 2
+  const halfHeight = item.height / 2
+  const marginX = clamp(item.width * 0.16, 120, 260)
+  const marginY = clamp(item.height * 0.16, 120, 260)
+  const dx = Math.abs(position.x - item.x)
+  const dy = Math.abs(position.y - item.y)
+  const outsideX = Math.max(dx - halfWidth, 0)
+  const outsideY = Math.max(dy - halfHeight, 0)
+  const outsideDistance = Math.hypot(outsideX, outsideY)
+  const expandedBoundsHit = dx <= halfWidth + marginX && dy <= halfHeight + marginY
+  const radiusX = clamp(item.width * 0.48 + marginX, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
+  const radiusY = clamp(item.height * 0.48 + marginY, freeExploreShuffleDiscoverRadius, freeExploreShuffleDiscoverRadiusMax)
   const normalizedX = (position.x - item.x) / radiusX
   const normalizedY = (position.y - item.y) / radiusY
-  const score = (normalizedX * normalizedX) + (normalizedY * normalizedY)
-  if (score > 1) {
+  const ellipseScore = (normalizedX * normalizedX) + (normalizedY * normalizedY)
+  if (!expandedBoundsHit && ellipseScore > 1) {
     return null
   }
+  const boundsScore = outsideDistance / Math.max(marginX, marginY)
   return {
     distance: distance(position, item),
-    score,
+    score: Math.min(ellipseScore, boundsScore),
   }
 }
 
@@ -3283,6 +3295,7 @@ function App() {
   const discoverRouteLightsRef = useRef<FreeExploreRouteLight[]>([])
   const discoverShuffleItemsRef = useRef<EditorItem[]>([])
   const discoverLastAssetScanAtRef = useRef(0)
+  const discoverAssetRadiusExitStartedAtRef = useRef(0)
   const shuffleDescriptionOpenRef = useRef(shuffleDescriptionOpen)
   const shuffleDescriptionDismissingToLoopRef = useRef(shuffleDescriptionDismissingToLoop)
   const shuffleDescriptionRouteAssetIndexRef = useRef(shuffleDescriptionRouteAssetIndex)
@@ -6679,6 +6692,7 @@ function App() {
     setDiscoverCollapsedButtonTargetId(null)
     discoverCollapsedButtonTargetIdRef.current = null
     discoverRouteCompleteAutoCollapsedRef.current = false
+    discoverAssetRadiusExitStartedAtRef.current = 0
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -6899,6 +6913,7 @@ function App() {
     setDiscoverCollapsedButtonTargetId(null)
     discoverCollapsedButtonTargetIdRef.current = null
     discoverRouteCompleteAutoCollapsedRef.current = false
+    discoverAssetRadiusExitStartedAtRef.current = 0
     clearDiscoverRouteCompleteCollapse()
     collectedLightItemIdsRef.current = []
     collectedLightCollectedAtRef.current = {}
@@ -7785,8 +7800,18 @@ function App() {
     const nearestCollectedShuffle = nearestShuffle && currentCollected.has(discoverAssetLightId(nearestShuffle.item.id))
       ? nearestShuffle
       : null
-    const nextActiveId = nearestCollectedShuffle?.item.id ?? null
     const previousActiveId = activeShuffleItemIdRef.current
+    let nextActiveId = nearestCollectedShuffle?.item.id ?? null
+    if (!nextActiveId && previousActiveId) {
+      if (discoverAssetRadiusExitStartedAtRef.current <= 0) {
+        discoverAssetRadiusExitStartedAtRef.current = collectedAt
+      }
+      if (collectedAt - discoverAssetRadiusExitStartedAtRef.current < discoverAssetRadiusExitGraceMs) {
+        nextActiveId = previousActiveId
+      }
+    } else {
+      discoverAssetRadiusExitStartedAtRef.current = 0
+    }
     if (nextActiveId !== previousActiveId) {
       activeShuffleItemIdRef.current = nextActiveId
       setActiveShuffleItemId(nextActiveId)
