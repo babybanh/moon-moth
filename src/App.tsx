@@ -5136,6 +5136,17 @@ function App() {
       const targetId = activeShuffleItemIdRef.current
         ?? shuffleDescriptionPrototypeExamples[shuffleDescriptionRouteAssetIndexRef.current]?.id
         ?? null
+      const routeAssetId = shuffleDescriptionPrototypeExamples[shuffleDescriptionRouteAssetIndexRef.current]?.id ?? null
+      if (targetId && targetId === routeAssetId && activeShuffleItemIdRef.current === targetId) {
+        const targetExampleIndex = shuffleDescriptionPrototypeExamples.findIndex((example) => example.id === targetId)
+        setDiscoverDescriptionCollapsedToButton(false)
+        setDiscoverRouteCompleteCollapsedToButton(false)
+        setDiscoverCollapsedButtonTargetId(null)
+        discoverCollapsedButtonTargetIdRef.current = null
+        discoverRadiusReopenSuppressedItemIdRef.current = null
+        advanceShuffleDescriptionCard(targetExampleIndex >= 0 ? targetExampleIndex : shuffleDescriptionRouteAssetIndexRef.current)
+        return
+      }
       setDiscoverCollapsedButtonTargetId(targetId)
       discoverCollapsedButtonTargetIdRef.current = targetId
       resetShuffleDescriptionCard({ autoCollapse: true })
