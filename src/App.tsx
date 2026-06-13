@@ -764,6 +764,8 @@ type FreeExploreState = {
   debugFast: boolean
   boundaryBlockedInputDirection: Point
   boundaryInputDisabledUntil: number
+  directionResponseBoost: number
+  directionResponseBoostUntil: number
 }
 type FreeExploreRouteLight = {
   assetId: string
@@ -1773,6 +1775,7 @@ type GameCanvasGestureState = {
   action: 'drift' | 'free-direction' | 'shuffle-direction' | null
   direction?: -1 | 1
   start?: Point
+  mothDragActivated?: boolean
   startedNearMoth?: boolean
 }
 type ShuffleInfoEntry = {
@@ -1989,6 +1992,11 @@ const discoverPairPanelEnabled = false
 const freeExploreLightMinY = 520
 const freeExploreGlowTapRadiusMin = 76
 const freeExploreGlowTapRadiusMax = 154
+const freeExploreMothDragStartDistance = 36
+const freeExplorePointerTurnBoostMs = 180
+const freeExplorePointerTurnResponse = 4.6
+const freeExploreMothDragTurnBoostMs = 260
+const freeExploreMothDragTurnResponse = 8.5
 const freeExploreTrailMaxPoints = 120
 const freeExploreTrailMinDistance = 8
 const freeExploreReverseResponse = 2.55
@@ -2339,6 +2347,8 @@ function stoppedFreeExplore(project: EditorProject): FreeExploreState {
     debugFast: false,
     boundaryBlockedInputDirection: { x: 0, y: 0 },
     boundaryInputDisabledUntil: 0,
+    directionResponseBoost: 0,
+    directionResponseBoostUntil: 0,
   }
 }
 
@@ -4610,15 +4620,20 @@ function App() {
           : 0
 
         const currentVelocityDirection = normalizeVector(latestState.velocity)
+        const pointerTurnBoostActive = pointerActive
+          && latestState.directionResponseBoostUntil > time
+          && latestState.directionResponseBoost > 0
         const reversingDirection = movementRequested
           && !keyboardActive
+          && !pointerTurnBoostActive
           && Math.hypot(currentVelocityDirection.x, currentVelocityDirection.y) > 0.001
           && vectorDot(activeDirection, currentVelocityDirection) < -0.18
           && Math.abs(mothMotionRef.current.velocity) > mothStoppedVelocityThreshold * 6
         if (reversingDirection) {
           targetVelocity = 0
         }
-        const response = reversingDirection ? freeExploreReverseResponse : movementRequested && targetVelocity !== 0 ? 2.8 : 1.75
+        const baseResponse = reversingDirection ? freeExploreReverseResponse : movementRequested && targetVelocity !== 0 ? 3.35 : 1.75
+        const response = pointerTurnBoostActive ? Math.max(baseResponse, latestState.directionResponseBoost) : baseResponse
         mothMotionRef.current.velocity += (targetVelocity - mothMotionRef.current.velocity) * (1 - Math.exp(-delta * response))
         const travelDirection = movementRequested && !reversingDirection
           ? activeDirection
@@ -7477,18 +7492,31 @@ function App() {
     freeExploreRef.current.idlePushStartedAt = 0
     freeExploreRef.current.idlePushUntil = 0
     freeExploreRef.current.idlePushCount = 0
+    freeExploreRef.current.directionResponseBoost = freeExplorePointerTurnResponse
+    freeExploreRef.current.directionResponseBoostUntil = now + freeExplorePointerTurnBoostMs
     clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     exploreHasInteractedRef.current = true
     setMessage(freeExploreRef.current.debugFast ? 'Explore debug push' : 'Explore push')
   }
 
-  function updateFreeExplorePointerDirection(direction: Point) {
+  function updateFreeExplorePointerDirection(
+    direction: Point,
+    options: { response?: number; boostMs?: number } = {},
+  ) {
     const normalizedDirection = normalizeVector(direction)
     if (Math.hypot(normalizedDirection.x, normalizedDirection.y) <= 0.001) {
       return
     }
+    const previousDirection = freeExploreRef.current.pointerDirection ?? freeExploreRef.current.direction
+    const directionChanged = Math.hypot(previousDirection.x, previousDirection.y) <= 0.001
+      || vectorDot(previousDirection, normalizedDirection) < 0.985
     freeExploreRef.current.pointerDirection = normalizedDirection
     freeExploreRef.current.direction = normalizedDirection
+    if (directionChanged) {
+      const now = performance.now()
+      freeExploreRef.current.directionResponseBoost = options.response ?? freeExplorePointerTurnResponse
+      freeExploreRef.current.directionResponseBoostUntil = now + (options.boostMs ?? freeExplorePointerTurnBoostMs)
+    }
     clearFreeExploreBoundaryRedirect(freeExploreRef.current)
   }
 
@@ -7619,6 +7647,8 @@ function App() {
     freeExploreRef.current.idlePushCount = 0
     clearFreeExploreBoundaryRedirect(freeExploreRef.current)
     freeExploreRef.current.boundaryInputDisabledUntil = 0
+    freeExploreRef.current.directionResponseBoost = 0
+    freeExploreRef.current.directionResponseBoostUntil = 0
   }
 
   function toggleFreeExploreDebugFast() {
@@ -8513,6 +8543,26 @@ function App() {
     const latest = eventToCanvasPoint(event)
 
     if (gesture.startedNearMoth) {
+      const mothPoint = freeExploreMothScreenPoint()
+      const targetVector = {
+        x: latest.x - mothPoint.x,
+        y: latest.y - mothPoint.y,
+      }
+      const dragDistance = gesture.start ? distance(latest, gesture.start) : Math.hypot(targetVector.x, targetVector.y)
+      if (!gesture.mothDragActivated && dragDistance >= freeExploreMothDragStartDistance) {
+        gesture.mothDragActivated = true
+        startFreeExplorePointer(targetVector)
+        updateFreeExplorePointerDirection(targetVector, {
+          boostMs: freeExploreMothDragTurnBoostMs,
+          response: freeExploreMothDragTurnResponse,
+        })
+        setMessage('Explore moth drag')
+      } else if (gesture.mothDragActivated && Math.hypot(targetVector.x, targetVector.y) > 3) {
+        updateFreeExplorePointerDirection(targetVector, {
+          boostMs: freeExploreMothDragTurnBoostMs,
+          response: freeExploreMothDragTurnResponse,
+        })
+      }
       return true
     }
 
@@ -8542,6 +8592,22 @@ function App() {
     }
     if (gesture.action === 'free-direction') {
       if (gesture.startedNearMoth) {
+        if (gesture.mothDragActivated) {
+          const releasePoint = eventToCanvasPoint(event)
+          const mothPoint = freeExploreMothScreenPoint()
+          const targetVector = {
+            x: releasePoint.x - mothPoint.x,
+            y: releasePoint.y - mothPoint.y,
+          }
+          if (Math.hypot(targetVector.x, targetVector.y) > 3) {
+            updateFreeExplorePointerDirection(targetVector, {
+              boostMs: freeExploreMothDragTurnBoostMs,
+              response: freeExploreMothDragTurnResponse,
+            })
+          }
+          stopFreeExplorePointer()
+          return true
+        }
         const target = nearestFreeExploreAssetLight(freeExploreRef.current.position)
         if (target) {
           const basePushMs = projectRef.current.gameplay.mothForwardReleaseCarryMs ?? 2300
